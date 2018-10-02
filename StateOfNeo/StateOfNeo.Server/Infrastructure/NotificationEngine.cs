@@ -63,117 +63,12 @@ namespace StateOfNeo.Server.Infrastructure
 
         public void Init()
         {
-            Blockchain.PersistCompleted += UpdateBlockCount_Completed;
+            Blockchain.PersistCompleted += Blockchain_PersistCompleted;
         }
 
-        private async void UpdateBlockCount_Completed(object sender, Block e)
+        private void Blockchain_PersistCompleted(object sender, Neo.Core.Block e)
         {
-            //UpdateBlockInfoDB(e.Header.Index);
-            var blockInfo = UpdateBlockInfo(e);
-            var totalTransactionsCount = GetTotalTransactionCount();
-            await _transCountHub.Clients.All.SendAsync("Receive", totalTransactionsCount);
-            var avgTransCount = GetAverageTransactionCount();
-            await _transAvgCountHub.Clients.All.SendAsync("Receive", avgTransCount);
 
-            await this.blockHub.Clients.All.SendAsync("Receive", e.Header.Index);
-            ulong secondsElapsed = 20;
-            if (LastBlockReceiveTime != default(DateTime))
-            {
-                secondsElapsed = (ulong)(DateTime.UtcNow - LastBlockReceiveTime).TotalSeconds;
-            }
-            
-            if (NotificationConstants.DEFAULT_NEO_BLOCKS_STEP < NeoBlocksWithoutNodesUpdate || IsInitialBlockConnection)
-            {
-                NeoBlocksWithoutNodesUpdate = 0;
-                var nodes = this._nodeSynchronizer.GetCachedNodesAs<NodeViewModel>();
-                await _nodeHub.Clients.All.SendAsync("Receive", nodes);
-                this._nodeCache.Update(NodeEngine.GetNodesByBFSAlgo());
-            }
-
-            //if (NeoBlocksWithoutNodesUpdate % NotificationConstants.DEFAULT_NEO_BLOCKS_STEP_P2P_CHECK == 0 || IsInitialBlockConnection)
-            //{
-            //    var failedP2PConnections = _peersEngine.CheckP2PStatus(_nodeSynchronizer.CachedDbNodes);
-            //    await _failP2PHub.Clients.All.SendAsync("Receive", failedP2PConnections);
-            //}
-
-            LastBlockReceiveTime = DateTime.UtcNow;
-            NeoBlocksWithoutNodesUpdate++;
-            IsInitialBlockConnection = false;
-        }
-
-        public void UpdateBlockInfoDB(uint startHeight)
-        {
-            for (uint i = startHeight; i > 0; i--)
-            {
-                var newBLock = Startup.BlockChain.GetBlock(i);
-                UpdateBlockInfo(newBLock);
-            }
-        }
-
-        private BaseBlockInfo UpdateBlockInfo(Block block)
-        {
-            var txsysfee = (int)block.Transactions.Select(t => t.SystemFee).Sum();
-            var txnetfee = (int)Block.CalculateNetFee(block.Transactions);
-            var txoutvalues = (int)block.Transactions.Select(t => t.Outputs.Select(o => o.Value)).SelectMany(x => x).Sum();
-            BaseBlockInfo newBlockInfo = null;
-
-            if (_netSettings.Net == NetConstants.MAIN_NET)
-            {
-                var info = _ctx.MainNetBlockInfos.FirstOrDefault(x => x.BlockHeight == block.Header.Index);
-                if (info == null)
-                {
-                    var dbInfo = new MainNetBlockInfo
-                    {
-                        BlockHeight = block.Header.Index,
-                        SecondsCount = LastBlockReceiveTime == default(DateTime) ? 20 : (int)(DateTime.UtcNow - LastBlockReceiveTime).TotalSeconds,
-                        TxCount = block.Transactions.Length,
-                        TxSystemFees = txsysfee,
-                        TxNetworkFees = txnetfee,
-                        TxOutputValues = txoutvalues
-                    };
-                    _ctx.MainNetBlockInfos.Add(dbInfo);
-                    _ctx.SaveChanges();
-                    newBlockInfo = dbInfo;
-                }
-            }
-            else
-            {
-                var info = _ctx.TestNetBlockInfos.FirstOrDefault(x => x.BlockHeight == block.Header.Index);
-                if (info == null)
-                {
-                    var dbInfo = new TestNetBlockInfo
-                    {
-                        BlockHeight = block.Header.Index,
-                        SecondsCount = (int)(DateTime.UtcNow - LastBlockReceiveTime).TotalSeconds,
-                        TxCount = block.Transactions.Length,
-                        TxSystemFees = txsysfee,
-                        TxNetworkFees = txnetfee,
-                        TxOutputValues = txoutvalues
-                    };
-                    _ctx.TestNetBlockInfos.Add(dbInfo);
-                    _ctx.SaveChanges();
-                    newBlockInfo = dbInfo;
-                }
-            }
-            return newBlockInfo;
-        }
-
-        private long GetTotalTransactionCount()
-        {
-            if (_netSettings.Net == NetConstants.MAIN_NET)
-            {
-                return _ctx.MainNetBlockInfos.OrderByDescending(x => x.Id).Take(5000).Sum(x => x.TxCount);
-            }
-            return _ctx.TestNetBlockInfos.OrderByDescending(x => x.Id).Take(5000).Sum(x => x.TxCount);
-        }
-
-        private decimal GetAverageTransactionCount()
-        {
-            if (_netSettings.Net == NetConstants.MAIN_NET)
-            {
-                return (decimal)GetTotalTransactionCount() / 5000;
-            }
-            return (decimal)GetTotalTransactionCount() / 5000;
         }
     }
 }

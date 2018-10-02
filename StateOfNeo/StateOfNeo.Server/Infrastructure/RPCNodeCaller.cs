@@ -25,6 +25,8 @@ namespace StateOfNeo.Server.Infrastructure
             _netSettings = netSettings.Value;
         }
 
+
+
         public async Task<int?> GetNodeHeight(Node node)
         {
             int? result = null;

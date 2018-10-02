@@ -21,9 +21,6 @@ namespace StateOfNeo.Server.Controllers
             return this.Ok(Blockchain.Default.Height.ToString());
         }
 
-
-
-
         [HttpPost]
         public async Task Post()
         {

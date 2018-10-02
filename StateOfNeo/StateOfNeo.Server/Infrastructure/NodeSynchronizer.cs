@@ -126,6 +126,11 @@ namespace StateOfNeo.Server.Infrastructure
                         dbNode.Version = newVersion;
 
                         await _locationCaller.UpdateNodeLocation(dbNode.Id);
+                        //var peers = await _rPCNodeCaller.GetNodePeers(dbNode);
+                        //if (peers != null)
+                        //{
+                        //    dbNode.Peers = peers.Connected.Count();
+                        //}
                         
                         if (string.IsNullOrEmpty(dbNode.Net))
                         {

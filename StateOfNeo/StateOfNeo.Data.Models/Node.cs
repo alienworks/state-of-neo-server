@@ -1,22 +1,22 @@
 ﻿using StateOfNeo.Common;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 namespace StateOfNeo.Data.Models
 {
-    public class Node
+    public class Node : BaseEntity
     {
-        private IEnumerable<NodeAddress> _nodeAddresses;
-        private IEnumerable<TimeEvent> _events;
-
         public Node()
         {
-            _nodeAddresses = new HashSet<NodeAddress>();
-            _events = new HashSet<TimeEvent>();
+            this.NodeAddresses = new HashSet<NodeAddress>();
+            this.NodeStatusUpdates = new HashSet<NodeStatusUpdate>();
         }
 
         [Key]
         public int Id { get; set; }
+
+        public bool IsHttps { get; set; }
 
         public string Protocol { get; set; }
         public string Url { get; set; }
@@ -36,16 +36,8 @@ namespace StateOfNeo.Data.Models
         public string SuccessUrl { get; set; }
         public string Net { get; set; }
 
-        public virtual IEnumerable<NodeAddress> NodeAddresses
-        {
-            get { return _nodeAddresses; }
-            set { _nodeAddresses = value; }
-        }
+        public virtual ICollection<NodeAddress> NodeAddresses { get; set; }
 
-        public virtual IEnumerable<TimeEvent> Events
-        {
-            get { return _events; }
-            set { _events = value; }
-        }
+        public virtual ICollection<NodeStatusUpdate> NodeStatusUpdates { get; set; }
     }
 }

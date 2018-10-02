@@ -12,11 +12,7 @@ namespace StateOfNeo.Data
 
         }
 
-        public DbSet<BlockchainInfo> BlockchainInfos { get; set; }
-        public DbSet<MainNetBlockInfo> MainNetBlockInfos { get; set; }
-        public DbSet<TestNetBlockInfo> TestNetBlockInfos { get; set; }
         public DbSet<Node> Nodes { get; set; }
         public DbSet<NodeAddress> NodeAddresses { get; set; }
-        public DbSet<TimeEvent> TimeEvents { get; set; }
     }
 }
