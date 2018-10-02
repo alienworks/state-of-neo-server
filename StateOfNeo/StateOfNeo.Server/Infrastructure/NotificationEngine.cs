@@ -1,20 +1,10 @@
 ﻿using Microsoft.AspNetCore.SignalR;
-using Neo.Core;
+using Microsoft.Extensions.Options;
 using StateOfNeo.Common;
+using StateOfNeo.Data;
 using StateOfNeo.Server.Cache;
 using StateOfNeo.Server.Hubs;
-using StateOfNeo.ViewModels;
-using System.Collections.Generic;
-using System.Net.WebSockets;
-using System.Linq;
 using System;
-using StateOfNeo.Data;
-using Microsoft.Extensions.Options;
-using System.Threading.Tasks;
-using Neo;
-using Neo.Implementations.Blockchains.LevelDB;
-using AutoMapper.QueryableExtensions;
-using StateOfNeo.Data.Models;
 
 namespace StateOfNeo.Server.Infrastructure
 {
@@ -63,12 +53,7 @@ namespace StateOfNeo.Server.Infrastructure
 
         public void Init()
         {
-            Blockchain.PersistCompleted += Blockchain_PersistCompleted;
-        }
-
-        private void Blockchain_PersistCompleted(object sender, Neo.Core.Block e)
-        {
-
+            //Blockchain.PersistCompleted += Blockchain_PersistCompleted;
         }
     }
 }

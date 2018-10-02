@@ -4,6 +4,7 @@ using StateOfNeo.Common;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Neo.Network.P2P;
 
 namespace StateOfNeo.Server.Infrastructure
 {
@@ -14,8 +15,8 @@ namespace StateOfNeo.Server.Infrastructure
             var newNode = new NodeViewModel();
             var existingNode = nodeViewModels
                     .FirstOrDefault(
-                        n => n.Ip == node.RemoteEndpoint.Address.ToString().ToMatchedIp() &&
-                        n.Port == node.RemoteEndpoint.Port);
+                        n => n.Ip == node.Remote.Address.ToString().ToMatchedIp() &&
+                        n.Port == node.Remote.Port);
 
             if (existingNode != null)
             {
@@ -29,10 +30,10 @@ namespace StateOfNeo.Server.Infrastructure
             {
                 newNode = new NodeViewModel
                 {
-                    Ip = node.RemoteEndpoint.Address.ToString().ToMatchedIp(),
-                    Port = node.Version?.Port != null ? node.Version.Port : (uint)node.RemoteEndpoint.Port,
+                    Ip = node.Remote.Address.ToString().ToMatchedIp(),
+                    Port = node.Version?.Port != null ? node.Version.Port : (uint)node.Remote.Port,
                     Version = node.Version?.UserAgent,
-                    Peers = privateNode.RemoteNodeCount,
+                    Peers = privateNode.GetRemoteNodes().Count(),
                 };
                 nodeViewModels.Add(newNode);
                 var nodes = privateNode.GetRemoteNodes();
@@ -47,7 +48,7 @@ namespace StateOfNeo.Server.Infrastructure
         public static List<NodeViewModel> GetNodesByBFSAlgo()
         {
             var result = new List<NodeViewModel>();
-            var nodes = Startup.localNode.GetRemoteNodes();
+            var nodes = LocalNode.Singleton.GetRemoteNodes();
             foreach (var node in nodes)
             {
                 BFSNodes(node, ref result);

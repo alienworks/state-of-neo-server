@@ -5,10 +5,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Neo.Core;
-using Neo.Implementations.Blockchains.LevelDB;
-using Neo.IO;
-using Neo.Network;
+using Neo;
+using Neo.Network.P2P;
+using Neo.Persistence.LevelDB;
 using StateOfNeo.Common;
 using StateOfNeo.Data;
 using StateOfNeo.Data.Seed;
@@ -16,17 +15,15 @@ using StateOfNeo.Infrastructure.Mapping;
 using StateOfNeo.Server.Cache;
 using StateOfNeo.Server.Hubs;
 using StateOfNeo.Server.Infrastructure;
-using System.IO;
-using System.IO.Compression;
-using System.Threading.Tasks;
 
 namespace StateOfNeo.Server
 {
     public class Startup
     {
-        public static Blockchain BlockChain { get; private set; }
-
-        public static LocalNode localNode;
+        public ILoggerFactory LoggerFactory { get; set; }
+        public IConfigurationRoot Configuration { get; }
+        public static NeoSystem NeoSystem { get; private set; }
+        public static LocalNode StateOfNeoLocalNode { get; private set; }
 
         public Startup(IHostingEnvironment env)
         {
@@ -39,10 +36,6 @@ namespace StateOfNeo.Server
 
             this.StartBlockchain();
         }
-
-        public ILoggerFactory LoggerFactory { get; set; }
-
-        public IConfigurationRoot Configuration { get; }
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
@@ -124,54 +117,12 @@ namespace StateOfNeo.Server
 
         public void StartBlockchain()
         {
-            BlockChain = Neo.Core.Blockchain.RegisterBlockchain(new LevelDBBlockchain(NeoSettings.Default.DataDirectoryPath));
-
-            localNode = new LocalNode();
-            Task.Run(() =>
+            using (LevelDBStore store = new LevelDBStore(NeoSettings.Default.DataDirectoryPath))
+            using (NeoSystem = new NeoSystem(store))
             {
-                const string acc_path = "chain.acc";
-                const string acc_zip_path = acc_path + ".zip";
-                if (File.Exists(acc_path))
-                {
-                    using (FileStream fs = new FileStream(acc_path, FileMode.Open, FileAccess.Read, FileShare.None))
-                    {
-                        ImportBlocks(fs);
-                    }
-                    File.Delete(acc_path);
-                }
-                else if (File.Exists(acc_zip_path))
-                {
-                    using (FileStream fs = new FileStream(acc_zip_path, FileMode.Open, FileAccess.Read, FileShare.None))
-                    using (ZipArchive zip = new ZipArchive(fs, ZipArchiveMode.Read))
-                    using (Stream zs = zip.GetEntry(acc_path).Open())
-                    {
-                        ImportBlocks(zs);
-                    }
-                    File.Delete(acc_zip_path);
-                }
-
-                localNode.Start(NeoSettings.Default.NodePort, NeoSettings.Default.WsPort);
-            });
-        }
-
-        private void ImportBlocks(Stream stream)
-        {
-            LevelDBBlockchain blockchain = (LevelDBBlockchain)Neo.Core.Blockchain.Default;
-            blockchain.VerifyBlocks = false;
-            using (BinaryReader r = new BinaryReader(stream))
-            {
-                uint count = r.ReadUInt32();
-                for (int height = 0; height < count; height++)
-                {
-                    byte[] array = r.ReadBytes(r.ReadInt32());
-                    if (height > Neo.Core.Blockchain.Default.Height)
-                    {
-                        Block block = array.AsSerializable<Block>();
-                        Neo.Core.Blockchain.Default.AddBlock(block);
-                    }
-                }
+                NeoSystem.StartNode(NeoSettings.Default.NodePort, NeoSettings.Default.WsPort);
+                //StateOfNeoLocalNode = new LocalNode(NeoSystem);
             }
-            blockchain.VerifyBlocks = true;
         }
     }
 }

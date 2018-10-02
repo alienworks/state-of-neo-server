@@ -1,17 +1,13 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
-using Neo;
-using Neo.Core;
+using Neo.Network.P2P;
 using StateOfNeo.Common;
 using StateOfNeo.Data;
-using StateOfNeo.Data.Models;
-using StateOfNeo.Data.Seed;
 using StateOfNeo.Server.Infrastructure;
-using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
+using static Akka.IO.Tcp;
 
 namespace StateOfNeo.Server.Controllers
 {
@@ -33,11 +29,15 @@ namespace StateOfNeo.Server.Controllers
         [HttpGet]
         public async Task<IActionResult> Post([FromQuery]string ip)
         {
-            var remoteNodesCached = Startup.localNode.GetRemoteNodes().ToList();
+            var a = LocalNode.Singleton;
+            var b = object.ReferenceEquals(a, Startup.NeoSystem.LocalNode);
+
+            var remoteNodesCached = LocalNode.Singleton.GetRemoteNodes().ToList();
             var endPoint = new IPEndPoint(IPAddress.Parse(ip), 10333);
-            await Startup.localNode.ConnectToPeerAsync(endPoint);
-            var remoteNodes = Startup.localNode.GetRemoteNodes();
-            var success = remoteNodes.Any(rn => rn.RemoteEndpoint.Address.ToString().ToMatchedIp() == ip);
+            var remoteConnect = new Connect(endPoint);
+            Startup.NeoSystem.LocalNode.Tell(remoteConnect, Startup.NeoSystem.LocalNode);
+            var remoteNodes = LocalNode.Singleton.GetRemoteNodes();
+            var success = remoteNodes.Any(rn => rn.Remote.Address.ToString().ToMatchedIp() == ip);
 
             return this.Ok(success);
         }

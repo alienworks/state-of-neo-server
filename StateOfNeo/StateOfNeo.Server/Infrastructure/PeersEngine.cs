@@ -1,4 +1,5 @@
-﻿using StateOfNeo.Common;
+﻿using Neo.Network.P2P;
+using StateOfNeo.Common;
 using StateOfNeo.Data.Models;
 using System;
 using System.Collections.Generic;
@@ -6,6 +7,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
+using static Akka.IO.Tcp;
 
 namespace StateOfNeo.Server.Infrastructure
 {
@@ -39,15 +41,15 @@ namespace StateOfNeo.Server.Infrastructure
                     foreach (var address in node.NodeAddresses)
                     {
                         var peerIp = address.Ip.ToString().ToMatchedIp();
-                        var weAreConnected = Startup.localNode.GetRemoteNodes().Any(rn => rn.RemoteEndpoint.Address.ToString().ToMatchedIp() == peerIp);
+                        var weAreConnected = LocalNode.Singleton.GetRemoteNodes().Any(rn => rn.Remote.Address.ToString().ToMatchedIp() == peerIp);
                         if (weAreConnected)
                         {
                             continue;
                         }
 
                         var endPoint = new IPEndPoint(IPAddress.Parse(peerIp), 10333);
-                        await Startup.localNode.ConnectToPeerAsync(endPoint);
-                        var success = Startup.localNode.GetRemoteNodes().Any(rn => rn.RemoteEndpoint.Address.ToString().ToMatchedIp() == peerIp);
+                        Startup.NeoSystem.LocalNode.Tell(new Connect(endPoint), Startup.NeoSystem.LocalNode);
+                        var success = LocalNode.Singleton.GetRemoteNodes().Any(rn => rn.Remote.Address.ToString().ToMatchedIp() == peerIp);
                         if (success)
                         {
                             continue;

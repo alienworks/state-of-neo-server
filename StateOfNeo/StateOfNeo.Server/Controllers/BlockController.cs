@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
-using Neo.Core;
+using Neo.Ledger;
 using StateOfNeo.Server.Hubs;
 using System.Threading.Tasks;
 
@@ -18,13 +18,13 @@ namespace StateOfNeo.Server.Controllers
         [HttpGet("[action]")]
         public IActionResult GetHeight()
         {
-            return this.Ok(Blockchain.Default.Height.ToString());
+            return this.Ok(Blockchain.Singleton.Height.ToString());
         }
 
         [HttpPost]
         public async Task Post()
         {
-            await _blockHub.Clients.All.SendAsync(Blockchain.Default.Height.ToString());
+            await _blockHub.Clients.All.SendAsync(Blockchain.Singleton.Height.ToString());
         }
     }
 }
