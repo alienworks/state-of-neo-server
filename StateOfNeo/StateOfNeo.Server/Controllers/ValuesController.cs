@@ -30,12 +30,12 @@ namespace StateOfNeo.Server.Controllers
         public async Task<IActionResult> Post([FromQuery]string ip)
         {
             var a = LocalNode.Singleton;
-            var b = object.ReferenceEquals(a, Startup.NeoSystem.LocalNode);
+            var b = object.ReferenceEquals(a, Program.NeoSystem.LocalNode);
 
             var remoteNodesCached = LocalNode.Singleton.GetRemoteNodes().ToList();
             var endPoint = new IPEndPoint(IPAddress.Parse(ip), 10333);
             var remoteConnect = new Connect(endPoint);
-            Startup.NeoSystem.LocalNode.Tell(remoteConnect, Startup.NeoSystem.LocalNode);
+            Program.NeoSystem.LocalNode.Tell(remoteConnect, Program.NeoSystem.LocalNode);
             var remoteNodes = LocalNode.Singleton.GetRemoteNodes();
             var success = remoteNodes.Any(rn => rn.Remote.Address.ToString().ToMatchedIp() == ip);
 

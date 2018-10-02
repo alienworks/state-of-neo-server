@@ -14,7 +14,6 @@ namespace StateOfNeo.Server.Infrastructure
         private int NeoBlocksWithoutNodesUpdate = 0;
         private ulong TotalTransactionCount = 0;
         private DateTime LastBlockReceiveTime = default(DateTime);
-        private readonly StateOfNeoContext _ctx;
         private readonly IHubContext<NodeHub> _nodeHub;
         private readonly IHubContext<BlockHub> blockHub;
         private readonly NodeCache _nodeCache;
@@ -26,7 +25,8 @@ namespace StateOfNeo.Server.Infrastructure
         private readonly NetSettings _netSettings;
         private readonly PeersEngine _peersEngine;
 
-        public NotificationEngine(IHubContext<NodeHub> nodeHub,
+        public NotificationEngine(
+            IHubContext<NodeHub> nodeHub,
             IHubContext<BlockHub> blockHub,
             IHubContext<TransactionCountHub> transCountHub,
             IHubContext<TransactionAverageCountHub> transAvgCountHub,
@@ -35,10 +35,8 @@ namespace StateOfNeo.Server.Infrastructure
             PeersEngine peersEngine,
             NodeSynchronizer nodeSynchronizer,
             RPCNodeCaller rPCNodeCaller,
-            StateOfNeoContext ctx,
             IOptions<NetSettings> netSettings)
         {
-            _ctx = ctx;
             _nodeHub = nodeHub;
             _nodeCache = nodeCache;
             _transCountHub = transCountHub;
@@ -48,6 +46,7 @@ namespace StateOfNeo.Server.Infrastructure
             _rPCNodeCaller = rPCNodeCaller;
             _netSettings = netSettings.Value;
             _peersEngine = peersEngine;
+
             this.blockHub = blockHub;
         }
 

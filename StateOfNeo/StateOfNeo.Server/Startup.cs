@@ -22,8 +22,6 @@ namespace StateOfNeo.Server
     {
         public ILoggerFactory LoggerFactory { get; set; }
         public IConfigurationRoot Configuration { get; }
-        public static NeoSystem NeoSystem { get; private set; }
-        public static LocalNode StateOfNeoLocalNode { get; private set; }
 
         public Startup(IHostingEnvironment env)
         {
@@ -34,7 +32,7 @@ namespace StateOfNeo.Server
                 .AddEnvironmentVariables();
             Configuration = builder.Build();
 
-            this.StartBlockchain();
+            //this.StartBlockchain();
         }
 
         // This method gets called by the runtime. Use this method to add services to the container.
@@ -45,11 +43,11 @@ namespace StateOfNeo.Server
 
             services.Configure<NetSettings>(Configuration.GetSection("NetSettings"));
 
-            services.AddSingleton<NodeCache>();
-            services.AddSingleton<NodeSynchronizer>();
-            services.AddSingleton<RPCNodeCaller>();
-            services.AddSingleton<PeersEngine>();
-            services.AddSingleton<LocationCaller>();
+            services.AddScoped<NodeCache>();
+            services.AddScoped<NodeSynchronizer>();
+            services.AddScoped<RPCNodeCaller>();
+            services.AddScoped<PeersEngine>();
+            services.AddScoped<LocationCaller>();
 
             services.AddDbContext<StateOfNeoContext>(options =>
             {
@@ -59,7 +57,7 @@ namespace StateOfNeo.Server
 
             services.AddTransient<StateOfNeoSeedData>();
 
-            services.AddSingleton<NotificationEngine>();
+            services.AddTransient<NotificationEngine>();
 
             services.AddCors();
             services.AddSignalR();
@@ -115,14 +113,5 @@ namespace StateOfNeo.Server
             app.UseMvc();
         }
 
-        public void StartBlockchain()
-        {
-            using (LevelDBStore store = new LevelDBStore(NeoSettings.Default.DataDirectoryPath))
-            using (NeoSystem = new NeoSystem(store))
-            {
-                NeoSystem.StartNode(NeoSettings.Default.NodePort, NeoSettings.Default.WsPort);
-                //StateOfNeoLocalNode = new LocalNode(NeoSystem);
-            }
-        }
     }
 }
