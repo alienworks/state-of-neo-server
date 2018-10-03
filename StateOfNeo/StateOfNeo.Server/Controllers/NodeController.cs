@@ -11,14 +11,14 @@ namespace StateOfNeo.Server.Controllers
 {
     public class NodeController : BaseApiController
     {
-        private readonly IHubContext<NodeHub> _nodeHub;
-        private readonly NodeCache _nodeCache;
+        private readonly IHubContext<NodeHub> nodeHub;
+        private readonly NodeCache nodeCache;
         private readonly NodeSynchronizer nodeSynchronizer;
 
         public NodeController(IHubContext<NodeHub> nodeHub, NodeCache nodeCache, NodeSynchronizer nodeSynchronizer)
         {
-            _nodeHub = nodeHub;
-            _nodeCache = nodeCache;
+            this.nodeHub = nodeHub;
+            this.nodeCache = nodeCache;
             this.nodeSynchronizer = nodeSynchronizer;
         }
 

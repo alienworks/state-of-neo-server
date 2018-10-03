@@ -16,31 +16,31 @@ namespace StateOfNeo.Server.Infrastructure
     {
         private Dictionary<string, Tuple<string, string, double, double>> IPs = new Dictionary<string, Tuple<string, string, double, double>>();
 
-        private StateOfNeoContext _ctx;
+        private StateOfNeoContext ctx;
 
         public LocationCaller(StateOfNeoContext ctx)
         {
-            _ctx = ctx;
+            this.ctx = ctx;
         }
 
         public async Task UpdateAllNodeLocations()
         {
-            var addresses = _ctx.NodeAddresses
+            var addresses = this.ctx.NodeAddresses
                 .Include(adr => adr.Node)
                 .Where(adr => !adr.Node.Latitude.HasValue || !adr.Node.Longitude.HasValue)
                 .ToList();
 
             foreach (var address in addresses)
             {
-                var node = _ctx.Nodes
+                var node = this.ctx.Nodes
                     .FirstOrDefault(n => n.Id == address.NodeId);
-                await UpdateNode(node, address.Ip);
+                await this.UpdateNode(node, address.Ip);
             }
         }
 
         public async Task UpdateNodeLocation(int nodeId)
         {
-            var node = _ctx.Nodes
+            var node = this.ctx.Nodes
                 .Include(n => n.NodeAddresses)
                 .FirstOrDefault(n => n.Id == nodeId);
 
@@ -48,7 +48,7 @@ namespace StateOfNeo.Server.Infrastructure
             {
                 foreach (var address in node.NodeAddresses)
                 {
-                    var result = await UpdateNode(node, address.Ip);
+                    var result = await this.UpdateNode(node, address.Ip);
                     if (result)
                     {
                         return;
@@ -64,7 +64,7 @@ namespace StateOfNeo.Server.Infrastructure
                 if (node.Latitude == null || node.Longitude == null)
                 {
 
-                    var response = await CheckIpCall(ip);
+                    var response = await this.CheckIpCall(ip);
                     if (response.IsSuccessStatusCode)
                     {
                         var responseText = await response.Content.ReadAsStringAsync();
@@ -83,6 +83,7 @@ namespace StateOfNeo.Server.Infrastructure
             {
                 return false;
             }
+
             return false;
         }
 

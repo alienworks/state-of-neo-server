@@ -13,9 +13,9 @@ namespace StateOfNeo.Server.Infrastructure
 {
     public class PeersEngine
     {
-        public ICollection<IPEndPoint> Peers { get; private set; }
-
         private readonly ICollection<TcpClient> PeerClients;
+
+        public ICollection<IPEndPoint> Peers { get; private set; }
 
         public PeersEngine()
         {
@@ -41,7 +41,10 @@ namespace StateOfNeo.Server.Infrastructure
                     foreach (var address in node.NodeAddresses)
                     {
                         var peerIp = address.Ip.ToString().ToMatchedIp();
-                        var weAreConnected = LocalNode.Singleton.GetRemoteNodes().Any(rn => rn.Remote.Address.ToString().ToMatchedIp() == peerIp);
+                        var weAreConnected = LocalNode.Singleton
+                            .GetRemoteNodes()
+                            .Any(rn => rn.Remote.Address.ToString().ToMatchedIp() == peerIp);
+
                         if (weAreConnected)
                         {
                             continue;
@@ -49,8 +52,12 @@ namespace StateOfNeo.Server.Infrastructure
 
                         var endPoint = new IPEndPoint(IPAddress.Parse(peerIp), 10333);
                         Program.NeoSystem.LocalNode.Tell(new Connect(endPoint), Program.NeoSystem.LocalNode);
-                        var success = LocalNode.Singleton.GetRemoteNodes().Any(rn => rn.Remote.Address.ToString().ToMatchedIp() == peerIp);
-                        if (success)
+
+                        var weHaveConnected = LocalNode.Singleton
+                            .GetRemoteNodes()
+                            .Any(rn => rn.Remote.Address.ToString().ToMatchedIp() == peerIp);
+
+                        if (weHaveConnected)
                         {
                             continue;
                         }
@@ -74,7 +81,7 @@ namespace StateOfNeo.Server.Infrastructure
                 try
                 {
                     var peerIp = peer.Address.ToString().ToMatchedIp();
-                    TcpClient tcpClient = new TcpClient();
+                    var tcpClient = new TcpClient();
                     tcpClient.Connect(new IPEndPoint(IPAddress.Parse(peerIp), peer.Port));
 
                     if (tcpClient.Connected)

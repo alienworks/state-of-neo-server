@@ -11,20 +11,20 @@ namespace StateOfNeo.Server
 
         public static void Main(string[] args)
         {
-            CreateWebHostBuilder(args).Build().Run();
 
-            InitializeNeoSystem();
+            InitializeNeoSystem(args);
         }
 
         public static IWebHostBuilder CreateWebHostBuilder(string[] args) =>
             WebHost.CreateDefaultBuilder(args)
                 .UseStartup<Startup>();
 
-        private static void InitializeNeoSystem()
+        private static void InitializeNeoSystem(string[] args)
         {
             using (LevelDBStore store = new LevelDBStore(NeoSettings.Default.DataDirectoryPath))
             using (NeoSystem = new NeoSystem(store))
             {
+                CreateWebHostBuilder(args).Build().Run();
                 NeoSystem.StartNode(NeoSettings.Default.NodePort, NeoSettings.Default.WsPort);
             }
         }

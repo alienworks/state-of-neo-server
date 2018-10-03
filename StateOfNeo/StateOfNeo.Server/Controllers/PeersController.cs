@@ -11,11 +11,11 @@ namespace StateOfNeo.Server.Controllers
 {
     public class PeersController : BaseApiController
     {
-        private readonly PeersEngine _peersEngine;
+        private readonly PeersEngine peersEngine;
 
         public PeersController(PeersEngine peersEngine)
         {
-            _peersEngine = peersEngine;
+            this.peersEngine = peersEngine;
         }
 
         [HttpPost]
@@ -26,11 +26,14 @@ namespace StateOfNeo.Server.Controllers
                 var newPeers = new List<IPEndPoint>();
                 foreach (var peer in peers)
                 {
-                    newPeers.Add(new IPEndPoint(IPAddress.Parse(peer.Address.ToMatchedIp()), peer.Port));
+                    var ip = IPAddress.Parse(peer.Address.ToMatchedIp());
+                    newPeers.Add(new IPEndPoint(ip, peer.Port));
                 }
-                _peersEngine.AddNewPeers(newPeers);
-                _peersEngine.UpdateClients();
-                return Ok();
+
+                this.peersEngine.AddNewPeers(newPeers);
+                this.peersEngine.UpdateClients();
+
+                return this.Ok();
             }
             catch (Exception ex)
             {

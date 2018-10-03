@@ -23,7 +23,6 @@ namespace StateOfNeo.Server.Infrastructure
                 existingNode.IsVisited = true;
             }
 
-            //var privateNode = node.GetFieldValue<LocalNode>("localNode");
             var privateNode = ObjectExtensions.GetInstanceField<LocalNode>(typeof(RemoteNode), node, "localNode");
             
             if ((existingNode == null || !existingNode.IsVisited) && node.Version != null)
@@ -35,6 +34,7 @@ namespace StateOfNeo.Server.Infrastructure
                     Version = node.Version?.UserAgent,
                     Peers = privateNode.GetRemoteNodes().Count(),
                 };
+
                 nodeViewModels.Add(newNode);
                 var nodes = privateNode.GetRemoteNodes();
                 foreach (var remoteNode in nodes)
@@ -42,6 +42,7 @@ namespace StateOfNeo.Server.Infrastructure
                     BFSNodes(remoteNode, ref nodeViewModels);
                 }
             }
+
             return;
         }
 
@@ -53,6 +54,7 @@ namespace StateOfNeo.Server.Infrastructure
             {
                 BFSNodes(node, ref result);
             }
+
             return result;
         }
     }

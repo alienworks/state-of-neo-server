@@ -14,16 +14,17 @@ namespace StateOfNeo.Server.Infrastructure
         private int NeoBlocksWithoutNodesUpdate = 0;
         private ulong TotalTransactionCount = 0;
         private DateTime LastBlockReceiveTime = default(DateTime);
-        private readonly IHubContext<NodeHub> _nodeHub;
+
+        private readonly IHubContext<NodeHub> nodeHub;
         private readonly IHubContext<BlockHub> blockHub;
-        private readonly NodeCache _nodeCache;
-        private readonly IHubContext<TransactionCountHub> _transCountHub;
-        private readonly IHubContext<FailedP2PHub> _failP2PHub;
-        private readonly IHubContext<TransactionAverageCountHub> _transAvgCountHub;
-        private readonly NodeSynchronizer _nodeSynchronizer;
-        private readonly RPCNodeCaller _rPCNodeCaller;
-        private readonly NetSettings _netSettings;
-        private readonly PeersEngine _peersEngine;
+        private readonly NodeCache nodeCache;
+        private readonly IHubContext<TransactionCountHub> transCountHub;
+        private readonly IHubContext<FailedP2PHub> failP2PHub;
+        private readonly IHubContext<TransactionAverageCountHub> transAvgCountHub;
+        private readonly NodeSynchronizer nodeSynchronizer;
+        private readonly RPCNodeCaller rPCNodeCaller;
+        private readonly NetSettings netSettings;
+        private readonly PeersEngine peersEngine;
 
         public NotificationEngine(
             IHubContext<NodeHub> nodeHub,
@@ -37,15 +38,15 @@ namespace StateOfNeo.Server.Infrastructure
             RPCNodeCaller rPCNodeCaller,
             IOptions<NetSettings> netSettings)
         {
-            _nodeHub = nodeHub;
-            _nodeCache = nodeCache;
-            _transCountHub = transCountHub;
-            _failP2PHub = failP2PHub;
-            _transAvgCountHub = transAvgCountHub;
-            _nodeSynchronizer = nodeSynchronizer;
-            _rPCNodeCaller = rPCNodeCaller;
-            _netSettings = netSettings.Value;
-            _peersEngine = peersEngine;
+            this.nodeHub = nodeHub;
+            this.nodeCache = nodeCache;
+            this.transCountHub = transCountHub;
+            this.failP2PHub = failP2PHub;
+            this.transAvgCountHub = transAvgCountHub;
+            this.nodeSynchronizer = nodeSynchronizer;
+            this.rPCNodeCaller = rPCNodeCaller;
+            this.netSettings = netSettings.Value;
+            this.peersEngine = peersEngine;
 
             this.blockHub = blockHub;
         }

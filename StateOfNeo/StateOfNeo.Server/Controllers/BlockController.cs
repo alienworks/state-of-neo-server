@@ -8,11 +8,11 @@ namespace StateOfNeo.Server.Controllers
 {
     public class BlockController : BaseApiController
     {
-        private readonly IHubContext<BlockHub> _blockHub;
+        private readonly IHubContext<BlockHub> blockHub;
 
         public BlockController(IHubContext<BlockHub> blockHub)
         {
-            _blockHub = blockHub;
+            this.blockHub = blockHub;
         }
 
         [HttpGet("[action]")]
@@ -24,7 +24,7 @@ namespace StateOfNeo.Server.Controllers
         [HttpPost]
         public async Task Post()
         {
-            await _blockHub.Clients.All.SendAsync(Blockchain.Singleton.Height.ToString());
+            await blockHub.Clients.All.SendAsync(Blockchain.Singleton.Height.ToString());
         }
     }
 }
