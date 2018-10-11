@@ -2,29 +2,17 @@
   "ApplicationConfiguration": {
     "Paths": {
       "Chain": "Chain_{0}",
-      "ApplicationLogs": "ApplicationLogs_{0}"
+      "Index": "Index_{0}",
+      "CertCache": "Certs"
     },
     "P2P": {
-      "Port": 10333,
-      "WsPort": 10334
+      "Port": 20333,
+      "WsPort": 10333
     },
-    "RPC": {
-      "Port": 10332,
-      "SslCert": "",
-      "SslCertPassword": ""
-    },
-    "UnlockWallet": {
-      "Path": "",
-      "Password": "",
-      "StartConsensus": false,
-      "IsActive": false
-    },
-    "DataDirectoryPath": "ChainMainNet",
-    "CertCachePath": "Certs",
-    "NodePort": 10333,
-    "WsPort": 10334,
-    "UriPrefix": [ "" ],
-    "SslCert": "",
-    "SslCertPassword": ""
+    "Urls": {
+      "AddressUrl": "http://localhost:4000/address/{0}",
+      "AssetUrl": "http://localhost:4000/api/main_net/v1/get_asset/{0}",
+      "TransactionUrl": "http://localhost:4000/transaction/{0}"
+    }
   }
 }

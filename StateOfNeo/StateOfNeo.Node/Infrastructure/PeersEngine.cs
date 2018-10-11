@@ -9,7 +9,7 @@ using System.Net.Sockets;
 using System.Threading.Tasks;
 using static Akka.IO.Tcp;
 
-namespace StateOfNeo.Server.Infrastructure
+namespace StateOfNeo.Node.Infrastructure
 {
     public class PeersEngine
     {
@@ -31,7 +31,7 @@ namespace StateOfNeo.Server.Infrastructure
             }
         }
 
-        public async Task<ICollection<string>> CheckP2PStatus(ICollection<Node> nodes)
+        public async Task<ICollection<string>> CheckP2PStatus(ICollection<StateOfNeo.Data.Models.Node> nodes)
         {
             var failedAddresses = new HashSet<string>();
             foreach (var node in nodes)

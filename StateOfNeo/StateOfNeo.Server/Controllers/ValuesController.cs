@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using Neo.Ledger;
 using Neo.Network.P2P;
 using StateOfNeo.Common;
 using StateOfNeo.Data;
@@ -37,7 +38,7 @@ namespace StateOfNeo.Server.Controllers
             var endPoint = new IPEndPoint(IPAddress.Parse(ip), 10333);
             var remoteConnect = new Connect(endPoint);
 
-            Program.NeoSystem.LocalNode.Tell(remoteConnect, Program.NeoSystem.LocalNode);
+            Startup.NeoSystem.LocalNode.Tell(remoteConnect, Startup.NeoSystem.LocalNode);
 
             var remoteNodes = LocalNode.Singleton.GetRemoteNodes();
             var success = remoteNodes.Any(rn => rn.Remote.Address.ToString().ToMatchedIp() == ip);
