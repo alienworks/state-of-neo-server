@@ -2,7 +2,6 @@
 using Microsoft.Extensions.Options;
 using Neo.Ledger;
 using Neo.Wallets;
-using Notifications;
 using StateOfNeo.Common;
 using StateOfNeo.Data;
 using StateOfNeo.Data.Models;
@@ -61,14 +60,7 @@ namespace StateOfNeo.Server.Infrastructure
 
         private void NotificationsBroadcaster_ApplicationExecuted(object sender, Neo.Ledger.Blockchain.ApplicationExecuted e)
         {
-            foreach (var result in e.ExecutionResults)
-            {
-                foreach (var item in result.Notifications)
-                {
-                    var notificationType = item.GetNotificationType();
 
-                }
-            }
         }
     }
 }
