@@ -1,12 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿//using System;
+//using System.Collections.Generic;
+//using System.Text;
 
-namespace StateOfNeo.Data.Models.Enums
-{
-    public enum TransactionType
-    {
-        Invocation,
-        Claim
-    }
-}
+//namespace StateOfNeo.Data.Models.Enums
+//{
+//    public enum TransactionType
+//    {
+//        Invocation,
+//        Claim,
+//        MinerTransaction
+//    }
+//}

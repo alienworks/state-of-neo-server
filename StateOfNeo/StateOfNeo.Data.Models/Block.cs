@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Text;
+using StateOfNeo.Data.Models.Transactions;
 
 namespace StateOfNeo.Data.Models
 {
@@ -21,6 +22,10 @@ namespace StateOfNeo.Data.Models
         public long Timestamp { get; set; }
 
         public int Size { get; set; }
+
+        public ulong ConsensusData { get; set; }
+
+        public string NextConsensusNodeAddress { get; set; }
 
         public string Validator { get; set; }
 

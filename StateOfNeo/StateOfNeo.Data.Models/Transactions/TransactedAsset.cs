@@ -1,22 +1,18 @@
 ﻿using StateOfNeo.Data.Models.Enums;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
 using System.Text;
 
-namespace StateOfNeo.Data.Models
+namespace StateOfNeo.Data.Models.Transactions
 {
-    public class Transaction : BaseEntity
+    public class TransactedAsset : BaseEntity
     {
-        [Key]
-        public string ScriptHash { get; set; }
+        public int Id { get; set; }
 
         public decimal Amount { get; set; }
-
-        public TransactionType Type { get; set; }
-
+        
         public GlobalAssetType AssetType { get; set; }
-
+        
         public int FromAddressId { get; set; }
 
         public virtual Address FromAddress { get; set; }
@@ -25,8 +21,8 @@ namespace StateOfNeo.Data.Models
 
         public virtual Address ToAddress { get; set; }
 
-        public int BlockId { get; set; }
+        public int TransactionId { get; set; }
 
-        public virtual Block Block { get; set; }    
+        public virtual Transaction Transaction { get; set; }
     }
 }

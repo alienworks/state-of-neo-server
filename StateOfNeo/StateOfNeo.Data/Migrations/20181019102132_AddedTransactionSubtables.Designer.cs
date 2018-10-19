@@ -3,15 +3,17 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using StateOfNeo.Data;
 
 namespace StateOfNeo.Data.Migrations
 {
     [DbContext(typeof(StateOfNeoContext))]
-    partial class StateOfNeoContextModelSnapshot : ModelSnapshot
+    [Migration("20181019102132_AddedTransactionSubtables")]
+    partial class AddedTransactionSubtables
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -55,16 +57,11 @@ namespace StateOfNeo.Data.Migrations
                     b.Property<string>("Hash")
                         .ValueGeneratedOnAdd();
 
-                    b.Property<decimal>("ConsensusData")
-                        .HasConversion(new ValueConverter<decimal, decimal>(v => default(decimal), v => default(decimal), new ConverterMappingHints(precision: 20, scale: 0)));
-
                     b.Property<DateTime>("CreatedOn");
 
                     b.Property<int>("Height");
 
                     b.Property<string>("InvocationScript");
-
-                    b.Property<string>("NextConsensusNodeAddress");
 
                     b.Property<int>("Size");
 
@@ -365,7 +362,9 @@ namespace StateOfNeo.Data.Migrations
                     b.Property<string>("ScriptHash")
                         .ValueGeneratedOnAdd();
 
-                    b.Property<string>("BlockId");
+                    b.Property<string>("BlockHash");
+
+                    b.Property<int>("BlockId");
 
                     b.Property<DateTime>("CreatedOn");
 
@@ -393,7 +392,7 @@ namespace StateOfNeo.Data.Migrations
 
                     b.HasKey("ScriptHash");
 
-                    b.HasIndex("BlockId");
+                    b.HasIndex("BlockHash");
 
                     b.HasIndex("EnrollmentTransactionId")
                         .IsUnique()
@@ -517,7 +516,7 @@ namespace StateOfNeo.Data.Migrations
                 {
                     b.HasOne("StateOfNeo.Data.Models.Block", "Block")
                         .WithMany("Transactions")
-                        .HasForeignKey("BlockId");
+                        .HasForeignKey("BlockHash");
 
                     b.HasOne("StateOfNeo.Data.Models.Transactions.EnrollmentTransaction", "EnrollmentTransaction")
                         .WithOne("Transaction")

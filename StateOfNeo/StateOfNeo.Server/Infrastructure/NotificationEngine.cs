@@ -1,20 +1,22 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Options;
+using Neo.Ledger;
+using Neo.Wallets;
+using Notifications;
 using StateOfNeo.Common;
 using StateOfNeo.Data;
+using StateOfNeo.Data.Models;
+using StateOfNeo.Data.Models.Enums;
+using StateOfNeo.Server.Actors;
 using StateOfNeo.Server.Cache;
 using StateOfNeo.Server.Hubs;
 using System;
+using System.Linq;
 
 namespace StateOfNeo.Server.Infrastructure
 {
     public class NotificationEngine
     {
-        private bool IsInitialBlockConnection = false;
-        private int NeoBlocksWithoutNodesUpdate = 0;
-        private ulong TotalTransactionCount = 0;
-        private DateTime LastBlockReceiveTime = default(DateTime);
-
         private readonly IHubContext<NodeHub> nodeHub;
         private readonly IHubContext<BlockHub> blockHub;
         private readonly NodeCache nodeCache;
@@ -47,13 +49,26 @@ namespace StateOfNeo.Server.Infrastructure
             this.rPCNodeCaller = rPCNodeCaller;
             this.netSettings = netSettings.Value;
             this.peersEngine = peersEngine;
-
             this.blockHub = blockHub;
         }
 
         public void Init()
         {
-            //Blockchain.PersistCompleted += Blockchain_PersistCompleted;
+
+
+            //NotificationsBroadcaster.ApplicationExecuted += NotificationsBroadcaster_ApplicationExecuted;
+        }
+
+        private void NotificationsBroadcaster_ApplicationExecuted(object sender, Neo.Ledger.Blockchain.ApplicationExecuted e)
+        {
+            foreach (var result in e.ExecutionResults)
+            {
+                foreach (var item in result.Notifications)
+                {
+                    var notificationType = item.GetNotificationType();
+
+                }
+            }
         }
     }
 }

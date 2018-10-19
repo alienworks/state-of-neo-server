@@ -11,7 +11,6 @@ namespace StateOfNeo.Server
 
         public static void Main(string[] args)
         {
-
             InitializeNeoSystem(args);
         }
 
@@ -21,12 +20,11 @@ namespace StateOfNeo.Server
 
         private static void InitializeNeoSystem(string[] args)
         {
-            using (LevelDBStore store = new LevelDBStore(NeoSettings.Default.DataDirectoryPath))
-            using (NeoSystem = new NeoSystem(store))
-            {
-                CreateWebHostBuilder(args).Build().Run();
-                NeoSystem.StartNode(NeoSettings.Default.NodePort, NeoSettings.Default.WsPort);
-            }
+            LevelDBStore store = new LevelDBStore(NeoSettings.Default.DataDirectoryPath);
+            NeoSystem = new NeoSystem(store);
+            
+            NeoSystem.StartNode(NeoSettings.Default.NodePort, NeoSettings.Default.WsPort);
+            CreateWebHostBuilder(args).Build().Run();            
         }
     }
 }
