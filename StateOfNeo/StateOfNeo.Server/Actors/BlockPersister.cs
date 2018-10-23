@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using Akka.Actor;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Neo;
 using Neo.SmartContract;
@@ -8,6 +9,8 @@ using Neo.Wallets;
 using StateOfNeo.Data;
 using StateOfNeo.Data.Models;
 using StateOfNeo.Data.Models.Transactions;
+using StateOfNeo.Server.Hubs;
+using StateOfNeo.ViewModels;
 using static Neo.Ledger.Blockchain;
 
 namespace StateOfNeo.Server.Actors
@@ -15,16 +18,19 @@ namespace StateOfNeo.Server.Actors
     public class BlockPersister : UntypedActor
     {
         private readonly string connectionString;
-        
-        public BlockPersister(IActorRef blockchain, string connectionString)
+        private readonly IHubContext<BlockHub> blockHub;
+
+        public BlockPersister(IActorRef blockchain, string connectionString,
+            IHubContext<BlockHub> blockHub)
         {
             this.connectionString = connectionString;
+            this.blockHub = blockHub;
 
             blockchain.Tell(new Register());
         }
 
-        public static Props Props(IActorRef blockchain, string connectionString) =>
-            Akka.Actor.Props.Create(() => new BlockPersister(blockchain, connectionString));
+        public static Props Props(IActorRef blockchain, string connectionString, IHubContext<BlockHub> blockHub) =>
+            Akka.Actor.Props.Create(() => new BlockPersister(blockchain, connectionString, blockHub));
 
         protected override void OnReceive(object message)
         {
@@ -58,6 +64,10 @@ namespace StateOfNeo.Server.Actors
                     CreatedOn = createdOn
                 };
 
+                var hubBlock = AutoMapper.Mapper.Map<BlockHubViewModel>(block);
+                hubBlock.TransactionCount = persistedBlock.Transactions.Length;
+                this.blockHub.Clients.All.SendAsync("Receive", hubBlock);
+
                 db.Blocks.Add(block);
                 db.SaveChanges();
 
@@ -70,7 +80,7 @@ namespace StateOfNeo.Server.Actors
                         CreatedOn = DateTime.UtcNow,
                         NetworkFee = (decimal)item.NetworkFee,
                         SystemFee = (decimal)item.SystemFee,
-                        Size = item.Size,                        
+                        Size = item.Size,
                         Version = item.Version
                     };
 
@@ -82,7 +92,7 @@ namespace StateOfNeo.Server.Actors
                         {
                             CreatedOn = DateTime.Now,
                             DataAsHexString = attribute.Data.ToHexString(),
-                            Usage = (int)attribute.Usage                            
+                            Usage = (int)attribute.Usage
                         };
 
                         transaction.Attributes.Add(ta);
@@ -95,7 +105,7 @@ namespace StateOfNeo.Server.Actors
                             CreatedOn = DateTime.UtcNow,
                             Address = witness.ScriptHash.ToAddress(),
                             InvocationScriptAsHexString = witness.InvocationScript.ToHexString(),
-                            VerificationScriptAsHexString = witness.VerificationScript.ToHexString()                            
+                            VerificationScriptAsHexString = witness.VerificationScript.ToHexString()
                         });
                     }
 
@@ -116,7 +126,7 @@ namespace StateOfNeo.Server.Actors
                             CreatedOn = System.DateTime.UtcNow,
                             Name = unboxed.Name,
                             OwnerPublicKey = unboxed.Owner.ToString(),
-                            Precision = unboxed.Precision                            
+                            Precision = unboxed.Precision
                         };
 
                         transaction.RegisterTransaction = registerTransaction;
@@ -193,7 +203,7 @@ namespace StateOfNeo.Server.Actors
                         {
                             input = claimTransaction.Claims[0];
                         }
-                        
+
                         var previousTransaction = db.Transactions
                             .Include(x => x.Assets)
                             .ThenInclude(x => x.ToAddress)
@@ -283,7 +293,7 @@ namespace StateOfNeo.Server.Actors
                     Amount = (decimal)GoverningToken.Amount,
                     OwnerPublicKey = GoverningToken.Owner.ToString(),
                     AdminAddress = GoverningToken.Admin.ToAddress(),
-                    Precision = GoverningToken.Precision                    
+                    Precision = GoverningToken.Precision
                 }
             };
 
@@ -309,7 +319,7 @@ namespace StateOfNeo.Server.Actors
             {
                 Type = Neo.Network.P2P.Payloads.TransactionType.IssueTransaction,
                 ScriptHash = "0x7aadf91ca8ac1e2c323c025a7e492bee2dd90c783b86ebfc3b18db66b530a76d",
-                Size = 69                
+                Size = 69
             };
 
             neoAssetIssueTransaction.Assets.Add(new TransactedAsset

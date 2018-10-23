@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -71,9 +72,10 @@ namespace StateOfNeo.Server
             StateOfNeoSeedData seeder,
             StateOfNeoContext ctx,
             IServiceProvider services,
-            NotificationEngine notificationEngine)
+            NotificationEngine notificationEngine,
+            IHubContext<BlockHub> blockHub)
         {
-            Program.NeoSystem.ActorSystem.ActorOf(BlockPersister.Props(Program.NeoSystem.Blockchain, this.Configuration.GetConnectionString("DefaultConnection")));
+            Program.NeoSystem.ActorSystem.ActorOf(BlockPersister.Props(Program.NeoSystem.Blockchain, this.Configuration.GetConnectionString("DefaultConnection"), blockHub));
             
             if (env.IsDevelopment())
             {

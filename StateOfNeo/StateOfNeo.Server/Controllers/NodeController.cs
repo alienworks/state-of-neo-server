@@ -22,13 +22,27 @@ namespace StateOfNeo.Server.Controllers
             this.nodeSynchronizer = nodeSynchronizer;
         }
 
-        [HttpGet]
+        [HttpGet("[action]")]
         public async Task<IActionResult> Get()
         {
             try
             {
                 var nodes = this.nodeSynchronizer.GetCachedNodesAs<NodeViewModel>().ToList();
                 return Ok(nodes);
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpGet("[action]/{id}")]
+        public async Task<IActionResult> Get(int id)
+        {
+            try
+            {
+                var node = this.nodeSynchronizer.GetCachedNodesAs<NodeViewModel>().ToList().FirstOrDefault(x => x.Id == id);
+                return Ok(node);
             }
             catch (System.Exception ex)
             {

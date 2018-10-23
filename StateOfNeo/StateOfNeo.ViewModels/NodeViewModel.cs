@@ -2,6 +2,7 @@
 {
     public class NodeViewModel
     {
+        public int Id { get; set; }
         public uint? Port { get; set; }
         public string Ip { get; set; }
         public string Protocol { get; set; }

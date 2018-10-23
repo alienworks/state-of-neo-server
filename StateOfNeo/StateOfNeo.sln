@@ -23,8 +23,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StateOfNeo.Infrastructure",
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StateOfNeo.Data.Common", "StateOfNeo.Data.Common\StateOfNeo.Data.Common.csproj", "{325FB6DE-BFA8-4B31-AAAF-4884EDECE878}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StateOfNeo.Node", "StateOfNeo.Node\StateOfNeo.Node.csproj", "{A23B41DF-6D8B-4494-83AF-4D4BDFD8CB62}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -119,18 +117,6 @@ Global
 		{325FB6DE-BFA8-4B31-AAAF-4884EDECE878}.Release|x64.Build.0 = Release|x64
 		{325FB6DE-BFA8-4B31-AAAF-4884EDECE878}.Release|x86.ActiveCfg = Release|x86
 		{325FB6DE-BFA8-4B31-AAAF-4884EDECE878}.Release|x86.Build.0 = Release|x86
-		{A23B41DF-6D8B-4494-83AF-4D4BDFD8CB62}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A23B41DF-6D8B-4494-83AF-4D4BDFD8CB62}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{A23B41DF-6D8B-4494-83AF-4D4BDFD8CB62}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{A23B41DF-6D8B-4494-83AF-4D4BDFD8CB62}.Debug|x64.Build.0 = Debug|Any CPU
-		{A23B41DF-6D8B-4494-83AF-4D4BDFD8CB62}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{A23B41DF-6D8B-4494-83AF-4D4BDFD8CB62}.Debug|x86.Build.0 = Debug|Any CPU
-		{A23B41DF-6D8B-4494-83AF-4D4BDFD8CB62}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{A23B41DF-6D8B-4494-83AF-4D4BDFD8CB62}.Release|Any CPU.Build.0 = Release|Any CPU
-		{A23B41DF-6D8B-4494-83AF-4D4BDFD8CB62}.Release|x64.ActiveCfg = Release|Any CPU
-		{A23B41DF-6D8B-4494-83AF-4D4BDFD8CB62}.Release|x64.Build.0 = Release|Any CPU
-		{A23B41DF-6D8B-4494-83AF-4D4BDFD8CB62}.Release|x86.ActiveCfg = Release|Any CPU
-		{A23B41DF-6D8B-4494-83AF-4D4BDFD8CB62}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -143,7 +129,6 @@ Global
 		{DDE7B849-7852-4DAB-9168-220663098BE6} = {CD261440-6435-45B6-84A5-60FD1D9E656A}
 		{BDC05DA2-6835-4D9C-A958-7B112D608846} = {CD261440-6435-45B6-84A5-60FD1D9E656A}
 		{325FB6DE-BFA8-4B31-AAAF-4884EDECE878} = {CD261440-6435-45B6-84A5-60FD1D9E656A}
-		{A23B41DF-6D8B-4494-83AF-4D4BDFD8CB62} = {143227BD-B2A8-4010-BA38-7FE5ECB46880}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {FC6B077E-E745-4166-B951-9C4A5DD98263}

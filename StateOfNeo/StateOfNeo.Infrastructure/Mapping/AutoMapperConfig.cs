@@ -9,6 +9,7 @@ namespace StateOfNeo.Infrastructure.Mapping
         {
             Mapper.Initialize(cfg => {
                 NodeConfig.InitMap(cfg);
+                BlockConfig.InitMap(cfg);
             });
         }
     }

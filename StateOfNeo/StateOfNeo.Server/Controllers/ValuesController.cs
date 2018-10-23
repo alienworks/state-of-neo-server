@@ -32,18 +32,10 @@ namespace StateOfNeo.Server.Controllers
         }
         
         [HttpGet]
-        public async Task<IActionResult> Post([FromQuery]string ip)
+        public async Task<IActionResult> Get([FromQuery]string ip)
         {
-            var remoteNodesCached = LocalNode.Singleton.GetRemoteNodes().ToList();
-            var endPoint = new IPEndPoint(IPAddress.Parse(ip), 10333);
-            var remoteConnect = new Connect(endPoint);
-
-            Startup.NeoSystem.LocalNode.Tell(remoteConnect, Startup.NeoSystem.LocalNode);
-
-            var remoteNodes = LocalNode.Singleton.GetRemoteNodes();
-            var success = remoteNodes.Any(rn => rn.Remote.Address.ToString().ToMatchedIp() == ip);
-
-            return this.Ok(success);
+            var height = Blockchain.Singleton.Height;
+            return Ok(height);
         }
     }
 }

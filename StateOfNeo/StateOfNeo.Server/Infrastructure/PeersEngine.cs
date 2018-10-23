@@ -51,7 +51,7 @@ namespace StateOfNeo.Server.Infrastructure
                         }
 
                         var endPoint = new IPEndPoint(IPAddress.Parse(peerIp), 10333);
-                        Startup.NeoSystem.LocalNode.Tell(new Connect(endPoint), Startup.NeoSystem.LocalNode);
+                        Program.NeoSystem.LocalNode.Tell(new Connect(endPoint), Program.NeoSystem.LocalNode);
 
                         var weHaveConnected = LocalNode.Singleton
                             .GetRemoteNodes()
