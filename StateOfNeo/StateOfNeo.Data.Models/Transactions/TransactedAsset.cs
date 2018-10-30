@@ -24,5 +24,9 @@ namespace StateOfNeo.Data.Models.Transactions
         public int TransactionId { get; set; }
 
         public virtual Transaction Transaction { get; set; }
+
+        public int AssetId { get; set; }
+
+        public virtual Asset Asset { get; set; }
     }
 }

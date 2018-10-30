@@ -243,13 +243,27 @@ namespace StateOfNeo.Server.Actors
                             db.Addresses.Add(toAddress);
                         }
 
+                        var asset = db.Assets.Where(x => x.Hash == output.AssetId.ToString()).FirstOrDefault();
+                        if (asset == null)
+                        {
+                            asset = new Asset
+                            {
+                                CreatedOn = DateTime.UtcNow,
+                                Hash = output.AssetId.ToString()
+                            };
+
+                            db.Assets.Add(asset);
+                            db.SaveChanges();
+                        }
+
                         var ta = new TransactedAsset
                         {
                             Amount = (decimal)output.Value,
                             FromAddress = fromAddress,
-                            ToAddress = toAddress,
+                            ToAddress = toAddress
                         };
 
+                        asset.TransactedAssets.Add(ta);
                         transaction.Assets.Add(ta);
                         db.SaveChanges();
                     }
