@@ -25,7 +25,7 @@ namespace StateOfNeo.Server.Controllers
             this.paginating = paginating;
         }
 
-        [HttpGet("[action]")]
+        [HttpGet("[action]/{hash}")]
         public IActionResult Get(string hash)
         {
             var block = this.blocks.Find(hash);
