@@ -13,10 +13,12 @@
     <PackageReference Include="Akka" Version="1.3.9" />
     <PackageReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="Neo" Version="2.9.1" />
+    <PackageReference Include="X.PagedList" Version="7.6.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\StateOfNeo.Common\StateOfNeo.Common.csproj" />
+    <ProjectReference Include="..\StateOfNeo.Data.Services\StateOfNeo.Data.Services.csproj" />
     <ProjectReference Include="..\StateOfNeo.Data\StateOfNeo.Data.csproj" />
     <ProjectReference Include="..\StateOfNeo.Infrastructure\StateOfNeo.Infrastructure.csproj" />
     <ProjectReference Include="..\StateOfNeo.ViewModels\StateOfNeo.ViewModels.csproj" />

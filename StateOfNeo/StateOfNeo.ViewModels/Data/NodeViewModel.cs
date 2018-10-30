@@ -1,12 +1,9 @@
 ﻿namespace StateOfNeo.ViewModels
 {
-    public class NodeViewModel
+    public class NodeViewModel : NodeListViewModel
     {
-        public int Id { get; set; }
         public uint? Port { get; set; }
-        public string Ip { get; set; }
         public string Protocol { get; set; }
-        public string Url { get; set; }
 
         public string Version { get; set; }
         public string Type { get; set; }
@@ -15,7 +12,6 @@
         public int? Peers { get; set; }
         public int? MemoryPool { get; set; }
         public string FlagUrl { get; set; }
-        public string SuccessUrl { get; set; }
 
         public string Locale { get; set; }
         public string Location { get; set; }

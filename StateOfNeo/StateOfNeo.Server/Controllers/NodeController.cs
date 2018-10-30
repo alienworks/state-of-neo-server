@@ -1,10 +1,13 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Newtonsoft.Json;
+using StateOfNeo.Data.Services;
 using StateOfNeo.Server.Cache;
 using StateOfNeo.Server.Hubs;
 using StateOfNeo.Server.Infrastructure;
 using StateOfNeo.ViewModels;
+using StateOfNeo.Common.Extensions;
+using System;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -16,12 +19,17 @@ namespace StateOfNeo.Server.Controllers
         private readonly IHubContext<NodeHub> nodeHub;
         private readonly NodeCache nodeCache;
         private readonly NodeSynchronizer nodeSynchronizer;
+        private readonly INodeService nodeService;
 
-        public NodeController(IHubContext<NodeHub> nodeHub, NodeCache nodeCache, NodeSynchronizer nodeSynchronizer)
+        public NodeController(IHubContext<NodeHub> nodeHub,
+            NodeCache nodeCache,
+            NodeSynchronizer nodeSynchronizer, 
+            INodeService nodeService)
         {
             this.nodeHub = nodeHub;
             this.nodeCache = nodeCache;
             this.nodeSynchronizer = nodeSynchronizer;
+            this.nodeService = nodeService;
         }
 
         [HttpGet("[action]")]
@@ -49,6 +57,20 @@ namespace StateOfNeo.Server.Controllers
             catch (System.Exception ex)
             {
                 return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpGet("[action]")]
+        public async Task<IActionResult> Page(int page = 1, int pageSize = 10)
+        {
+            try
+            {
+                var nodes = await this.nodeService.GetPage<NodeListViewModel>(page, pageSize);
+                return Ok(nodes.ToObjectResult());
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
             }
         }
 

@@ -16,7 +16,8 @@ namespace StateOfNeo.Infrastructure.Mapping
                             ? z.NodeAddresses.Select(na => na.Ip).First() 
                             : ""));
 
-            cfg.CreateMap<NodeViewModel, Node>();
+            cfg.CreateMap<NodeViewModel, Node>(); 
+            cfg.CreateMap<Node, NodeListViewModel>().ReverseMap(); 
         }
     }
 }

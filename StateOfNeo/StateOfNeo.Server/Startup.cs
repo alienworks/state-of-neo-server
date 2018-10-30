@@ -12,6 +12,7 @@ using Neo.Persistence.LevelDB;
 using StateOfNeo.Common;
 using StateOfNeo.Data;
 using StateOfNeo.Data.Seed;
+using StateOfNeo.Data.Services;
 using StateOfNeo.Infrastructure.Mapping;
 using StateOfNeo.Server.Actors;
 using StateOfNeo.Server.Cache;
@@ -40,8 +41,14 @@ namespace StateOfNeo.Server
         {
             AutoMapperConfig.Init();
 
+            services.AddResponseCaching();
+
             services.Configure<NetSettings>(this.Configuration.GetSection("NetSettings"));
 
+            // Data.Services
+            services.AddScoped<INodeService, NodeService>();
+
+            // Infrastructure
             services.AddScoped<NodeCache>();
             services.AddScoped<NodeSynchronizer>();
             services.AddScoped<RPCNodeCaller>();
