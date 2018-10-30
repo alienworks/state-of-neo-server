@@ -5,4 +5,8 @@
     <Platforms>AnyCPU;x64;x86</Platforms>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\StateOfNeo.Data.Models\StateOfNeo.Data.Models.csproj" />
+  </ItemGroup>
+
 </Project>

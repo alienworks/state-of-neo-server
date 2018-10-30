@@ -4,9 +4,9 @@ namespace StateOfNeo.Common.Extensions
 {
     public static class PagedListExtension
     {
-        public static object ToObjectResult<T>(this IPagedList<T> list)
+        public static object ToListResult<T>(this IPagedList<T> list)
         {
-            return new { list, meta = list.GetMetaData() };
+            return new { Items = list, MetaData = list.GetMetaData() };
         }
     }
 }

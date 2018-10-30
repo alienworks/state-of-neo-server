@@ -22,10 +22,7 @@
 
         public string Net { get; set; }
 
-        public override int GetHashCode()
-        {
-            var hash = (Ip + Protocol + Port).GetHashCode();
-            return hash;
-        }
+        public override int GetHashCode() => 
+            (this.Ip + this.Protocol + this.Port).GetHashCode();
     }
 }

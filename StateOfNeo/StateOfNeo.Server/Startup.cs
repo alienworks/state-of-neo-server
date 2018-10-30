@@ -18,6 +18,7 @@ using StateOfNeo.Server.Cache;
 using StateOfNeo.Server.Hubs;
 using StateOfNeo.Server.Infrastructure;
 using StateOfNeo.Services;
+using StateOfNeo.Services.Block;
 using System;
 
 namespace StateOfNeo.Server
@@ -46,7 +47,9 @@ namespace StateOfNeo.Server
             services.Configure<NetSettings>(this.Configuration.GetSection("NetSettings"));
 
             // Data.Services
+            services.AddScoped<IPaginatingService, PaginatingService>();
             services.AddScoped<INodeService, NodeService>();
+            services.AddScoped<IBlockService, BlockService>();
 
             // Infrastructure
             services.AddScoped<NodeCache>();

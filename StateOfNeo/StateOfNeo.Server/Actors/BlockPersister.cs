@@ -203,12 +203,20 @@ namespace StateOfNeo.Server.Actors
                         {
                             input = claimTransaction.Claims[0];
                         }
+                        else if (item is Neo.Network.P2P.Payloads.MinerTransaction minerTransaction)
+                        {
 
-                        var previousTransaction = db.Transactions
-                            .Include(x => x.Assets)
-                            .ThenInclude(x => x.ToAddress)
-                            .Where(x => x.ScriptHash == input.PrevHash.ToString())
-                            .FirstOrDefault();
+                        }
+
+                        Transaction previousTransaction = null;
+                        if (input != null)
+                        {
+                            previousTransaction = db.Transactions
+                               .Include(x => x.Assets)
+                               .ThenInclude(x => x.ToAddress)
+                               .Where(x => x.ScriptHash == input.PrevHash.ToString())
+                               .FirstOrDefault();
+                        }
 
                         Data.Models.Address fromAddress = null;
                         if (previousTransaction != null)
