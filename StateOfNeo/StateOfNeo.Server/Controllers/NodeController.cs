@@ -65,7 +65,7 @@ namespace StateOfNeo.Server.Controllers
         {
             try
             {
-                var nodes = await this.nodeService.GetPage<NodeListViewModel>(page, pageSize);
+                var nodes = await this.nodeService.GetPage<NodeViewModel>(page, pageSize);
                 return Ok(nodes.ToObjectResult());
             }
             catch (Exception e)
