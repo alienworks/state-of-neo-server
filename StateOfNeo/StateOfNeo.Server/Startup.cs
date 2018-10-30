@@ -50,6 +50,7 @@ namespace StateOfNeo.Server
             services.AddScoped<IPaginatingService, PaginatingService>();
             services.AddScoped<INodeService, NodeService>();
             services.AddScoped<IBlockService, BlockService>();
+            services.AddScoped<IAssetService, AssetService>();
 
             // Infrastructure
             services.AddScoped<NodeCache>();
