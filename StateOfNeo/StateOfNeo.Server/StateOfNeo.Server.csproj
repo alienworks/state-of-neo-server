@@ -18,9 +18,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\StateOfNeo.Common\StateOfNeo.Common.csproj" />
-    <ProjectReference Include="..\StateOfNeo.Data.Services\StateOfNeo.Data.Services.csproj" />
     <ProjectReference Include="..\StateOfNeo.Data\StateOfNeo.Data.csproj" />
     <ProjectReference Include="..\StateOfNeo.Infrastructure\StateOfNeo.Infrastructure.csproj" />
+    <ProjectReference Include="..\StateOfNeo.Services\StateOfNeo.Services.csproj" />
     <ProjectReference Include="..\StateOfNeo.ViewModels\StateOfNeo.ViewModels.csproj" />
   </ItemGroup>
 

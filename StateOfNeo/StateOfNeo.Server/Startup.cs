@@ -12,12 +12,12 @@ using Neo.Persistence.LevelDB;
 using StateOfNeo.Common;
 using StateOfNeo.Data;
 using StateOfNeo.Data.Seed;
-using StateOfNeo.Data.Services;
 using StateOfNeo.Infrastructure.Mapping;
 using StateOfNeo.Server.Actors;
 using StateOfNeo.Server.Cache;
 using StateOfNeo.Server.Hubs;
 using StateOfNeo.Server.Infrastructure;
+using StateOfNeo.Services;
 using System;
 
 namespace StateOfNeo.Server

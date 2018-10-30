@@ -1,8 +1,9 @@
 ﻿using AutoMapper.QueryableExtensions;
+using StateOfNeo.Data;
 using System.Threading.Tasks;
 using X.PagedList;
 
-namespace StateOfNeo.Data.Services
+namespace StateOfNeo.Services
 {
     public class NodeService : INodeService
     {

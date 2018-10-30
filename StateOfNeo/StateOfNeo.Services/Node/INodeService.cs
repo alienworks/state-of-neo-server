@@ -1,7 +1,7 @@
 ﻿using System.Threading.Tasks;
 using X.PagedList;
 
-namespace StateOfNeo.Data.Services
+namespace StateOfNeo.Services
 {
     public interface INodeService
     {

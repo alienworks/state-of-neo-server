@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Newtonsoft.Json;
-using StateOfNeo.Data.Services;
 using StateOfNeo.Server.Cache;
 using StateOfNeo.Server.Hubs;
 using StateOfNeo.Server.Infrastructure;
@@ -11,6 +10,7 @@ using System;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
+using StateOfNeo.Services;
 
 namespace StateOfNeo.Server.Controllers
 {
