@@ -61,7 +61,12 @@ namespace StateOfNeo.Server.Actors
                     Size = persistedBlock.Size,
                     Timestamp = persistedBlock.Timestamp,
                     Validator = persistedBlock.Witness.ScriptHash.ToString(),
-                    CreatedOn = createdOn
+                    CreatedOn = createdOn,
+                    ConsensusData = persistedBlock.ConsensusData,
+                    InvocationScript = persistedBlock.Witness.InvocationScript.ToHexString(),
+                    VerificationScript = persistedBlock.Witness.VerificationScript.ToHexString(),
+                    NextConsensusNodeAddress = persistedBlock.NextConsensus.ToString(),
+                    PreviousBlockHash = persistedBlock.PrevHash.ToString()
                 };
 
                 var hubBlock = AutoMapper.Mapper.Map<BlockHubViewModel>(block);
