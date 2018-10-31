@@ -1,5 +1,4 @@
 ﻿using AutoMapper;
-using System;
 
 namespace StateOfNeo.Infrastructure.Mapping
 {
@@ -10,6 +9,7 @@ namespace StateOfNeo.Infrastructure.Mapping
             Mapper.Initialize(cfg => {
                 NodeConfig.InitMap(cfg);
                 BlockConfig.InitMap(cfg);
+                AssetConfig.InitMap(cfg);
             });
         }
     }
