@@ -42,7 +42,7 @@ namespace StateOfNeo.Server.Controllers
         [HttpGet("[action]")]
         public async Task<IActionResult> List(int page = 1, int pageSize = 10)
         {
-            var result = await this.paginating.GetPage<Data.Models.Block, BlockListViewModel>(page, pageSize);         
+            var result = await this.paginating.GetPage<Data.Models.Block, BlockListViewModel>(page, pageSize, x => x.Height);         
 
             return this.Ok(result.ToListResult());
         }
