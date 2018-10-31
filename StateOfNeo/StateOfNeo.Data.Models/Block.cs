@@ -33,6 +33,10 @@ namespace StateOfNeo.Data.Models
 
         public string VerificationScript { get; set; }
 
+        public string PreviousBlockHash { get; set; }
+
+        public virtual Block PreviousBlock { get; set; }
+
         public virtual ICollection<Transaction> Transactions { get; set; }
 
         public virtual ICollection<NodeStatusUpdate> NodeStatusUpdates { get; set; }
