@@ -13,11 +13,11 @@ namespace StateOfNeo.Data.Models.Transactions
         
         public GlobalAssetType AssetType { get; set; }
         
-        public int FromAddressId { get; set; }
+        public string FromAddressPublicAddress { get; set; }
 
         public virtual Address FromAddress { get; set; }
 
-        public int ToAddressId { get; set; }
+        public string ToAddressPublicAddress { get; set; }
 
         public virtual Address ToAddress { get; set; }
 

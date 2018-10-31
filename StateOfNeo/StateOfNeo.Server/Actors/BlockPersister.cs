@@ -342,6 +342,24 @@ namespace StateOfNeo.Server.Actors
                 }
             };
 
+            var neo = new Asset
+            {
+                Hash = neoRegisterTransaction.ScriptHash,
+                CreatedOn = DateTime.UtcNow,
+                Name = "NEO",
+                MaxSupply = 100_000_000,
+                Type = Data.Models.Enums.GlobalAssetType.Neo
+            };
+
+            var gas = new Asset
+            {
+                Hash = gasRegisterTransaction.ScriptHash,
+                CreatedOn = DateTime.UtcNow,
+                Name = "GAS",
+                MaxSupply = 100_000_000,
+                Type = Data.Models.Enums.GlobalAssetType.Gas
+            };
+
             var neoAssetIssueTransaction = new Transaction
             {
                 Type = Neo.Network.P2P.Payloads.TransactionType.IssueTransaction,
@@ -358,8 +376,12 @@ namespace StateOfNeo.Server.Actors
                     PublicAddress = Contract.CreateMultiSigRedeemScript(StandbyValidators.Length / 2 + 1, StandbyValidators)
                         .ToScriptHash()
                         .ToAddress()
-                }
+                },
+                Asset = neo
             });
+
+            db.Assets.Add(neo);
+            db.Assets.Add(gas);
 
             genesisBlock.Transactions.Add(minerTransaction);
             genesisBlock.Transactions.Add(neoRegisterTransaction);
