@@ -26,23 +26,33 @@ namespace StateOfNeo.Server.Controllers
         }
 
         [HttpGet("[action]/{hash}")]
-        public IActionResult Get(string hash)
+        public IActionResult ByHash(string hash)
         {
-            var block = this.blocks.Find(hash);
+            var block = this.blocks.Find<BlockDetailsViewModel>(hash);
             if (block == null)
             {
                 return this.BadRequest("Invalid block hash");
             }
 
-            var result = Mapper.Map<BlockDetailsViewModel>(block);
+            return this.Ok(block);
+        }
 
-            return this.Ok(result);
+        [HttpGet("[action]/{height}")]
+        public IActionResult ByHeight(int height)
+        {
+            var block = this.blocks.Find<BlockDetailsViewModel>(height);
+            if (block == null)
+            {
+                return this.BadRequest("Invalid block height");
+            }
+
+            return this.Ok(block);
         }
 
         [HttpGet("[action]")]
         public async Task<IActionResult> List(int page = 1, int pageSize = 10)
         {
-            var result = await this.paginating.GetPage<Data.Models.Block, BlockListViewModel>(page, pageSize, x => x.Height);         
+            var result = await this.paginating.GetPage<Data.Models.Block, BlockListViewModel>(page, pageSize, x => x.Height);
 
             return this.Ok(result.ToListResult());
         }

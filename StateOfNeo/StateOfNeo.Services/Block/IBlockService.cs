@@ -9,6 +9,7 @@ namespace StateOfNeo.Services.Block
 {
     public interface IBlockService
     {
-        Data.Models.Block Find(string hash);
+        T Find<T>(string hash);
+        T Find<T>(int height);
     }
 }

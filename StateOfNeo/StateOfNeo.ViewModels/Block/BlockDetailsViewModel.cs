@@ -1,19 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace StateOfNeo.ViewModels.Block
+﻿namespace StateOfNeo.ViewModels.Block
 {
-    public class BlockDetailsViewModel
+    public class BlockDetailsViewModel : BaseBlockViewModel
     {
-        public string Hash { get; set; }
-
-        public int Height { get; set; }
-
-        public long Timestamp { get; set; }
-
-        public int Size { get; set; }
-
         public ulong ConsensusData { get; set; }
 
         public string NextConsensusNodeAddress { get; set; }
@@ -23,5 +11,9 @@ namespace StateOfNeo.ViewModels.Block
         public string InvocationScript { get; set; }
 
         public string VerificationScript { get; set; }
+
+        public string PreviousBlockHash { get; set; }
+
+        public long SecondsFromPreviousBlock { get; set; }
     }
 }
