@@ -23,9 +23,9 @@ namespace StateOfNeo.Services.Transaction
             this.db = db;
         }
 
-        public T Find<T>(string blockHash) =>
+        public T Find<T>(string hash) =>
             this.db.Transactions
-                .Where(x => x.Block.Hash == blockHash)
+                .Where(x => x.ScriptHash == hash)
                 .ProjectTo<T>()
                 .FirstOrDefault();
 
