@@ -14,6 +14,8 @@ namespace StateOfNeo.Services.Address
 
         int CreatedAddressesCount();
 
-        IEnumerable<PublicAddressListViewModel> TopOneHundred();
+        IEnumerable<PublicAddressListViewModel> TopOneHundredNeo();
+
+        IEnumerable<PublicAddressListViewModel> TopOneHundredGas();
     }
 }

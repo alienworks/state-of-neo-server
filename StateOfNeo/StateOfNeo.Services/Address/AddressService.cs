@@ -53,24 +53,40 @@ namespace StateOfNeo.Services.Address
             return result;
         }
 
-        public IEnumerable<PublicAddressListViewModel> TopOneHundred()
+        public IEnumerable<PublicAddressListViewModel> TopOneHundredNeo()
         {
             var result = this.db.Addresses
-                .Include(x => x.IncomingTransactions).ThenInclude(x => x.Asset)
-                .Include(x => x.OutgoingTransactions).ThenInclude(x => x.Asset)
-                .Include(x => x.OutgoingTransactions).ThenInclude(x => x.Transaction)
                 .Select(x => new
                 {
                     Address = x.PublicAddress,
-                    NeoIncome = x.IncomingTransactions.Any(tr => tr.Asset.Hash == AssetConstants.NeoAssetId) 
+                    NeoIncome = x.IncomingTransactions.Any(tr => tr.Asset.Hash == AssetConstants.NeoAssetId)
                         ? x.IncomingTransactions.Where(tr => tr.Asset.Hash == AssetConstants.NeoAssetId).Sum(tr => tr.Amount)
                         : 0,
+                    NeoOutcome = x.OutgoingTransactions.Any(tr => tr.Asset.Hash == AssetConstants.NeoAssetId)
+                        ? x.OutgoingTransactions.Where(tr => tr.Asset.Hash == AssetConstants.NeoAssetId).Sum(tr => tr.Amount)
+                        : 0
+                })
+                .Select(x => new PublicAddressListViewModel
+                {
+                    Address = x.Address,
+                    Balance = x.NeoIncome - x.NeoOutcome
+                })
+                .OrderByDescending(x => x.Balance)
+                .Take(100)
+                .ToList();
+
+            return result;
+        }
+
+        public IEnumerable<PublicAddressListViewModel> TopOneHundredGas()
+        {
+            var result = this.db.Addresses
+                .Select(x => new
+                {
+                    Address = x.PublicAddress,                    
                     GasIncome = (x.IncomingTransactions.Any(tr => tr.Asset.Hash == AssetConstants.GasAssetId)
                         ? x.IncomingTransactions.Where(tr => tr.Asset.Hash == AssetConstants.GasAssetId).Sum(tr => tr.Amount)
                         : 0),
-                    NeoOutcome = x.OutgoingTransactions.Any(tr => tr.Asset.Hash == AssetConstants.NeoAssetId)
-                        ? x.OutgoingTransactions.Where(tr => tr.Asset.Hash == AssetConstants.NeoAssetId).Sum(tr => tr.Amount)
-                        : 0,
                     GasOutcome = x.OutgoingTransactions.Any(tr => tr.Asset.Hash == AssetConstants.GasAssetId)
                         ? x.OutgoingTransactions.Where(tr => tr.Asset.Hash == AssetConstants.GasAssetId).Sum(tr => tr.Amount)
                         : 0,
@@ -81,10 +97,9 @@ namespace StateOfNeo.Services.Address
                 .Select(x => new PublicAddressListViewModel
                 {
                     Address = x.Address,
-                    NeoBalance = x.NeoIncome - x.NeoOutcome,
-                    GasBalance = x.GasIncome - x.GasOutcome - x.GasFees
+                    Balance = x.GasIncome - x.GasOutcome - x.GasFees
                 })
-                .OrderByDescending(x => x.NeoBalance)
+                .OrderByDescending(x => x.Balance)
                 .Take(100)
                 .ToList();
 

@@ -28,9 +28,16 @@ namespace StateOfNeo.Server.Controllers
         }
 
         [HttpGet("[action]")]
-        public IActionResult Top()
+        public IActionResult TopNeo()
         {
-            var result = this.addresses.TopOneHundred();
+            var result = this.addresses.TopOneHundredNeo();
+            return this.Ok(result);
+        }
+
+        [HttpGet("[action]")]
+        public IActionResult TopGas()
+        {
+            var result = this.addresses.TopOneHundredGas();
             return this.Ok(result);
         }
 
