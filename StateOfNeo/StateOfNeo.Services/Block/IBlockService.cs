@@ -11,5 +11,6 @@ namespace StateOfNeo.Services.Block
     {
         T Find<T>(string hash);
         T Find<T>(int height);
+
     }
 }

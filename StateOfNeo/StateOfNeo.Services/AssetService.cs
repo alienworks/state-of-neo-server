@@ -1,4 +1,5 @@
 ﻿using System.Linq;
+using AutoMapper.QueryableExtensions;
 using StateOfNeo.Data;
 using StateOfNeo.Data.Models;
 
@@ -13,9 +14,10 @@ namespace StateOfNeo.Services
             this.db = db;
         }
 
-        public Asset Find(string hash) => 
+        public T Find<T>(string hash) => 
             this.db.Assets
                 .Where(x => x.Hash.ToString() == hash)
+                .ProjectTo<T>()
                 .FirstOrDefault();        
     }
 }

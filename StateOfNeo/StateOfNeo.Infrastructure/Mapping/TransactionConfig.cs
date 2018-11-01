@@ -11,6 +11,7 @@ namespace StateOfNeo.Infrastructure.Mapping
         {
             cfg.CreateMap<Transaction, TransactionListViewModel>()
                 .ForMember(x => x.FinalizedAt, opt => opt.MapFrom(x => x.Block.Timestamp.ToCurrentDate()))
+                .ForMember(x => x.Timestamp, opt => opt.MapFrom(x => x.Block.Timestamp))
                 .ForMember(x => x.Hash, opt => opt.MapFrom(x => x.ScriptHash))
                 .ReverseMap();
 

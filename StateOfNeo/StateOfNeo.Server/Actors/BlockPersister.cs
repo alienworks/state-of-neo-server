@@ -6,8 +6,10 @@ using Microsoft.EntityFrameworkCore;
 using Neo;
 using Neo.SmartContract;
 using Neo.Wallets;
+using StateOfNeo.Common.Extensions;
 using StateOfNeo.Data;
 using StateOfNeo.Data.Models;
+using StateOfNeo.Data.Models.Enums;
 using StateOfNeo.Data.Models.Transactions;
 using StateOfNeo.Server.Hubs;
 using StateOfNeo.ViewModels;
@@ -53,7 +55,7 @@ namespace StateOfNeo.Server.Actors
                 var persistedBlock = m.Block;
                 var createdOn = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
                 createdOn = createdOn.AddSeconds(persistedBlock.Timestamp).ToLocalTime();
-
+                
                 var block = new Block
                 {
                     Hash = persistedBlock.Hash.ToString(),
@@ -224,7 +226,7 @@ namespace StateOfNeo.Server.Actors
                         }
 
                         Data.Models.Address fromAddress = null;
-                        if (previousTransaction != null)
+                        if (previousTransaction != null && item is Neo.Network.P2P.Payloads.ClaimTransaction == false)
                         {
                             fromAddress = previousTransaction
                                 .Assets
@@ -242,7 +244,8 @@ namespace StateOfNeo.Server.Actors
                             toAddress = new Data.Models.Address
                             {
                                 PublicAddress = output.ScriptHash.ToAddress(),
-                                CreatedOn = DateTime.UtcNow
+                                CreatedOn = DateTime.UtcNow,
+                                FirstTransactionOn = block.Timestamp.ToCurrentDate()
                             };
 
                             db.Addresses.Add(toAddress);
@@ -265,7 +268,8 @@ namespace StateOfNeo.Server.Actors
                         {
                             Amount = (decimal)output.Value,
                             FromAddress = fromAddress,
-                            ToAddress = toAddress
+                            ToAddress = toAddress,
+                            AssetType = output.AssetId.ToString() == "0xc56f33fc6ecfcd0c225c4ab356fee59390af8560be0e930faebe74a6daff7c9b" ? GlobalAssetType.Neo : GlobalAssetType.Gas
                         };
 
                         asset.TransactedAssets.Add(ta);
@@ -375,7 +379,8 @@ namespace StateOfNeo.Server.Actors
                 {
                     PublicAddress = Contract.CreateMultiSigRedeemScript(StandbyValidators.Length / 2 + 1, StandbyValidators)
                         .ToScriptHash()
-                        .ToAddress()
+                        .ToAddress(),
+                    FirstTransactionOn = GenesisBlock.Timestamp.ToCurrentDate()
                 },
                 Asset = neo
             });

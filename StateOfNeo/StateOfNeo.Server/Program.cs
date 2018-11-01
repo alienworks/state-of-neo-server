@@ -24,7 +24,7 @@ namespace StateOfNeo.Server
             NeoSystem = new NeoSystem(store);
             
             NeoSystem.StartNode(NeoSettings.Default.NodePort, NeoSettings.Default.WsPort);
-            CreateWebHostBuilder(args).Build().Run();            
+            CreateWebHostBuilder(args).Build().Run();
         }
     }
 }

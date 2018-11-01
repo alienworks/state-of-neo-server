@@ -18,6 +18,7 @@ using StateOfNeo.Server.Cache;
 using StateOfNeo.Server.Hubs;
 using StateOfNeo.Server.Infrastructure;
 using StateOfNeo.Services;
+using StateOfNeo.Services.Address;
 using StateOfNeo.Services.Block;
 using StateOfNeo.Services.Transaction;
 using System;
@@ -53,6 +54,7 @@ namespace StateOfNeo.Server
             services.AddScoped<IBlockService, BlockService>();
             services.AddScoped<IAssetService, AssetService>();
             services.AddScoped<ITransactionService, TransactionService>();
+            services.AddScoped<IAddressService, AddressService>();
 
             // Infrastructure
             services.AddScoped<NodeCache>();

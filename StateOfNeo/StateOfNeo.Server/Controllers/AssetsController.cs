@@ -25,15 +25,13 @@ namespace StateOfNeo.Server.Controllers
         [HttpGet("[action]")]
         public IActionResult Get(string hash)
         {
-            var asset = this.assets.Find(hash);
+            var asset = this.assets.Find<AssetDetailsViewModel>(hash);
             if (asset == null)
             {
                 return this.BadRequest("Invalid asset hash");
             }
 
-            var result = Mapper.Map<AssetDetailsViewModel>(asset);
-
-            return this.Ok(result);
+            return this.Ok(asset);
         }
 
         [HttpGet("[action]")]

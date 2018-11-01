@@ -7,6 +7,6 @@ namespace StateOfNeo.Services
 {
     public interface IAssetService
     {
-        Asset Find(string hash);
+        T Find<T>(string hash);
     }
 }
