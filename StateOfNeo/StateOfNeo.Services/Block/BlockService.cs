@@ -163,7 +163,7 @@ namespace StateOfNeo.Services.Block
                 query = query.Where(x => x.Timestamp.ToUnixDate() <= filter.EndDate);
             }
 
-            //query = query.Where(x => x.PreviousBlock != null);
+            query = query.Where(x => x.PreviousBlock != null);
             if (filter.UnitOfTime == UnitOfTime.Hour)
             {
                 result = query.ToList().GroupBy(x => new

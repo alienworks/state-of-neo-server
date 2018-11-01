@@ -10,6 +10,7 @@ namespace StateOfNeo.Infrastructure.Mapping
                 NodeConfig.InitMap(cfg);
                 BlockConfig.InitMap(cfg);
                 AssetConfig.InitMap(cfg);
+                AddressConfig.InitMap(cfg);
                 TransactionConfig.InitMap(cfg);
             });
         }

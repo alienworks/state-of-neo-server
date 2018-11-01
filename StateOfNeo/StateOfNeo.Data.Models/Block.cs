@@ -23,6 +23,8 @@ namespace StateOfNeo.Data.Models
 
         public int Size { get; set; }
 
+        public decimal TimeInSeconds { get; set; }
+
         public ulong ConsensusData { get; set; }
 
         public string NextConsensusNodeAddress { get; set; }

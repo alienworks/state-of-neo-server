@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using StateOfNeo.Common.Enums;
+using StateOfNeo.Common.Extensions;
 using StateOfNeo.Services;
 using StateOfNeo.Services.Address;
+using StateOfNeo.ViewModels.Address;
 using StateOfNeo.ViewModels.Chart;
 using System;
 using System.Collections.Generic;
@@ -19,6 +21,14 @@ namespace StateOfNeo.Server.Controllers
         {
             this.addresses = addresses;
             this.paginating = paginating;
+        }
+
+        [HttpGet("[action]")]
+        public async Task<IActionResult> List(int page = 1, int pageSize = 10)
+        {
+            var result = await this.paginating.GetPage<Data.Models.Address, AddressListViewModel>(page, pageSize, x => x.OutgoingTransactions.Select(tr => tr.Transaction.Block.Timestamp).FirstOrDefault());
+
+            return this.Ok(result.ToListResult());
         }
 
         [HttpGet("[action]/{period}")]

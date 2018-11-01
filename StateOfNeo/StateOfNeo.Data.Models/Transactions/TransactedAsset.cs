@@ -11,7 +11,7 @@ namespace StateOfNeo.Data.Models.Transactions
 
         public decimal Amount { get; set; }
         
-        public GlobalAssetType AssetType { get; set; }
+        public AssetType AssetType { get; set; }
         
         public string FromAddressPublicAddress { get; set; }
 

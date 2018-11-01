@@ -3,15 +3,17 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using StateOfNeo.Data;
 
 namespace StateOfNeo.Data.Migrations
 {
     [DbContext(typeof(StateOfNeoContext))]
-    partial class StateOfNeoContextModelSnapshot : ModelSnapshot
+    [Migration("20181101181618_AddedTimeToBlock")]
+    partial class AddedTimeToBlock
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -31,29 +33,6 @@ namespace StateOfNeo.Data.Migrations
                     b.HasKey("PublicAddress");
 
                     b.ToTable("Addresses");
-                });
-
-            modelBuilder.Entity("StateOfNeo.Data.Models.AddressAssetBalance", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
-
-                    b.Property<string>("AddressPublicAddress");
-
-                    b.Property<int>("AssetId");
-
-                    b.Property<decimal>("Balance");
-
-                    b.Property<DateTime>("CreatedOn");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AddressPublicAddress");
-
-                    b.HasIndex("AssetId");
-
-                    b.ToTable("AddressBalances");
                 });
 
             modelBuilder.Entity("StateOfNeo.Data.Models.Asset", b =>
@@ -501,18 +480,6 @@ namespace StateOfNeo.Data.Migrations
                     b.HasIndex("TransactionScriptHash");
 
                     b.ToTable("TransactionWitnesses");
-                });
-
-            modelBuilder.Entity("StateOfNeo.Data.Models.AddressAssetBalance", b =>
-                {
-                    b.HasOne("StateOfNeo.Data.Models.Address", "Address")
-                        .WithMany("Balances")
-                        .HasForeignKey("AddressPublicAddress");
-
-                    b.HasOne("StateOfNeo.Data.Models.Asset", "Asset")
-                        .WithMany("Balances")
-                        .HasForeignKey("AssetId")
-                        .OnDelete(DeleteBehavior.Cascade);
                 });
 
             modelBuilder.Entity("StateOfNeo.Data.Models.Block", b =>

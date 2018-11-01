@@ -21,9 +21,9 @@ namespace StateOfNeo.Server
         private static void InitializeNeoSystem(string[] args)
         {
             LevelDBStore store = new LevelDBStore(NeoSettings.Default.DataDirectoryPath);
-            NeoSystem = new NeoSystem(store);
-            
+            NeoSystem = new NeoSystem(store);            
             NeoSystem.StartNode(NeoSettings.Default.NodePort, NeoSettings.Default.WsPort);
+
             CreateWebHostBuilder(args).Build().Run();
         }
     }

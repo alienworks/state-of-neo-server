@@ -11,6 +11,7 @@ namespace StateOfNeo.Data.Models
     {
         public Address()
         {
+            this.Balances = new HashSet<AddressAssetBalance>();
             this.OutgoingTransactions = new HashSet<TransactedAsset>();
             this.IncomingTransactions = new HashSet<TransactedAsset>();
         }
@@ -26,5 +27,6 @@ namespace StateOfNeo.Data.Models
         [InverseProperty(nameof(TransactedAsset.ToAddress))]
         public ICollection<TransactedAsset> IncomingTransactions { get; set; }
 
+        public virtual ICollection<AddressAssetBalance> Balances { get; set; }
     }
 }
