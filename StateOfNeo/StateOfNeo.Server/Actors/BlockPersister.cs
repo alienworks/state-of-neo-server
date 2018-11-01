@@ -5,6 +5,7 @@ using Akka.Actor;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Neo;
+using Neo.Ledger;
 using Neo.SmartContract;
 using Neo.Wallets;
 using StateOfNeo.Common.Extensions;
@@ -65,237 +66,253 @@ namespace StateOfNeo.Server.Actors
                     this.SeedGenesisBlock(db);
                 }
 
-                var persistedBlock = m.Block;
-                var createdOn = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
-                createdOn = createdOn.AddSeconds(persistedBlock.Timestamp).ToLocalTime();
-                
-                var block = new Block
+                var lastHeight = db.Blocks
+                    .OrderByDescending(x => x.Height)
+                    .Select(x => x.Height)
+                    .FirstOrDefault();
+
+                while (lastHeight < m.Block.Index)
                 {
-                    Hash = persistedBlock.Hash.ToString(),
-                    Height = (int)persistedBlock.Header.Index,
-                    Size = persistedBlock.Size,
-                    Timestamp = persistedBlock.Timestamp,
-                    Validator = persistedBlock.Witness.ScriptHash.ToString(),
-                    CreatedOn = createdOn,
-                    ConsensusData = persistedBlock.ConsensusData,
-                    InvocationScript = persistedBlock.Witness.InvocationScript.ToHexString(),
-                    VerificationScript = persistedBlock.Witness.VerificationScript.ToHexString(),
-                    NextConsensusNodeAddress = persistedBlock.NextConsensus.ToString(),
-                    PreviousBlockHash = persistedBlock.PrevHash.ToString()
+                    var blockHash = Blockchain.Singleton.GetBlockHash((uint)lastHeight + 1);
+                    var blockToPersist = Blockchain.Singleton.GetBlock(blockHash);
+                    this.PersistBlock(blockToPersist, db);
+                    lastHeight++;
+                }
+                
+                db.Dispose();
+            }
+        }
+
+        private void PersistBlock(Neo.Network.P2P.Payloads.Block persistedBlock, StateOfNeoContext db)
+        {
+            var createdOn = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+            createdOn = createdOn.AddSeconds(persistedBlock.Timestamp).ToLocalTime();
+
+            var block = new Block
+            {
+                Hash = persistedBlock.Hash.ToString(),
+                Height = (int)persistedBlock.Header.Index,
+                Size = persistedBlock.Size,
+                Timestamp = persistedBlock.Timestamp,
+                Validator = persistedBlock.Witness.ScriptHash.ToString(),
+                CreatedOn = createdOn,
+                ConsensusData = persistedBlock.ConsensusData,
+                InvocationScript = persistedBlock.Witness.InvocationScript.ToHexString(),
+                VerificationScript = persistedBlock.Witness.VerificationScript.ToHexString(),
+                NextConsensusNodeAddress = persistedBlock.NextConsensus.ToString(),
+                PreviousBlockHash = persistedBlock.PrevHash.ToString()
+            };
+
+            var hubBlock = AutoMapper.Mapper.Map<BlockHubViewModel>(block);
+            hubBlock.TransactionCount = persistedBlock.Transactions.Length;
+            this.blockHub.Clients.All.SendAsync("Receive", hubBlock);
+
+            db.Blocks.Add(block);
+            db.SaveChanges();
+
+            foreach (var item in persistedBlock.Transactions)
+            {
+                var transaction = new Transaction
+                {
+                    Type = item.Type,
+                    ScriptHash = item.Hash.ToString(),
+                    CreatedOn = DateTime.UtcNow,
+                    NetworkFee = (decimal)item.NetworkFee,
+                    SystemFee = (decimal)item.SystemFee,
+                    Size = item.Size,
+                    Version = item.Version
                 };
 
-                var hubBlock = AutoMapper.Mapper.Map<BlockHubViewModel>(block);
-                hubBlock.TransactionCount = persistedBlock.Transactions.Length;
-                this.blockHub.Clients.All.SendAsync("Receive", hubBlock);
+                block.Transactions.Add(transaction);
 
-                db.Blocks.Add(block);
-                db.SaveChanges();
-
-                foreach (var item in persistedBlock.Transactions)
+                foreach (var attribute in item.Attributes)
                 {
-                    var transaction = new Transaction
+                    var ta = new TransactionAttribute
                     {
-                        Type = item.Type,
-                        ScriptHash = item.Hash.ToString(),
-                        CreatedOn = DateTime.UtcNow,
-                        NetworkFee = (decimal)item.NetworkFee,
-                        SystemFee = (decimal)item.SystemFee,
-                        Size = item.Size,
-                        Version = item.Version
+                        CreatedOn = DateTime.Now,
+                        DataAsHexString = attribute.Data.ToHexString(),
+                        Usage = (int)attribute.Usage
                     };
 
-                    block.Transactions.Add(transaction);
+                    transaction.Attributes.Add(ta);
+                }
 
-                    foreach (var attribute in item.Attributes)
+                foreach (var witness in item.Witnesses)
+                {
+                    transaction.Witnesses.Add(new TransactionWitness
                     {
-                        var ta = new TransactionAttribute
-                        {
-                            CreatedOn = DateTime.Now,
-                            DataAsHexString = attribute.Data.ToHexString(),
-                            Usage = (int)attribute.Usage
-                        };
+                        CreatedOn = DateTime.UtcNow,
+                        Address = witness.ScriptHash.ToAddress(),
+                        InvocationScriptAsHexString = witness.InvocationScript.ToHexString(),
+                        VerificationScriptAsHexString = witness.VerificationScript.ToHexString()
+                    });
+                }
 
-                        transaction.Attributes.Add(ta);
-                    }
-
-                    foreach (var witness in item.Witnesses)
+                if (item.Type == Neo.Network.P2P.Payloads.TransactionType.MinerTransaction)
+                {
+                    var unboxed = item as Neo.Network.P2P.Payloads.MinerTransaction;
+                    var minerTransaction = new MinerTransaction { Nonce = unboxed.Nonce };
+                    transaction.MinerTransaction = minerTransaction;
+                }
+                else if (item.Type == Neo.Network.P2P.Payloads.TransactionType.RegisterTransaction)
+                {
+                    var unboxed = item as Neo.Network.P2P.Payloads.RegisterTransaction;
+                    var registerTransaction = new RegisterTransaction
                     {
-                        transaction.Witnesses.Add(new TransactionWitness
+                        AdminAddress = unboxed.Admin.ToAddress().ToString(),
+                        Amount = (decimal)unboxed.Amount,
+                        AssetType = unboxed.AssetType,
+                        CreatedOn = System.DateTime.UtcNow,
+                        Name = unboxed.Name,
+                        OwnerPublicKey = unboxed.Owner.ToString(),
+                        Precision = unboxed.Precision
+                    };
+
+                    transaction.RegisterTransaction = registerTransaction;
+                }
+                else if (item.Type == Neo.Network.P2P.Payloads.TransactionType.EnrollmentTransaction)
+                {
+                    var unboxed = item as Neo.Network.P2P.Payloads.EnrollmentTransaction;
+                    var enrollmentTransaction = new EnrollmentTransaction { PublicKey = unboxed.PublicKey.ToString() };
+                    transaction.EnrollmentTransaction = enrollmentTransaction;
+                }
+                else if (item.Type == Neo.Network.P2P.Payloads.TransactionType.InvocationTransaction)
+                {
+                    var unboxed = item as Neo.Network.P2P.Payloads.InvocationTransaction;
+                    var invocationTransaction = new InvocationTransaction
+                    {
+                        CreatedOn = System.DateTime.UtcNow,
+                        Gas = (decimal)unboxed.Gas,
+                        ScriptAsHexString = unboxed.Script.ToHexString()
+                    };
+
+                    transaction.InvocationTransaction = invocationTransaction;
+                }
+                else if (item.Type == Neo.Network.P2P.Payloads.TransactionType.PublishTransaction)
+                {
+                    var unboxed = item as Neo.Network.P2P.Payloads.PublishTransaction;
+                    var publishTransaction = new PublishTransaction
+                    {
+                        CreatedOn = DateTime.UtcNow,
+                        Author = unboxed.Author,
+                        CodeVersion = unboxed.CodeVersion,
+                        Description = unboxed.Description,
+                        Email = unboxed.Email,
+                        Name = unboxed.Name,
+                        NeedStorage = unboxed.NeedStorage,
+                        ParameterList = string.Join("", unboxed.ParameterList.Select(x => x.ToString())),
+                        ReturnType = unboxed.ReturnType.ToString(),
+                        ScriptAsHexString = unboxed.Script.ToHexString()
+                    };
+
+                    transaction.PublishTransaction = publishTransaction;
+                }
+                else if (item.Type == Neo.Network.P2P.Payloads.TransactionType.StateTransaction)
+                {
+                    var unboxed = item as Neo.Network.P2P.Payloads.StateTransaction;
+                    var stateTransaction = new StateTransaction
+                    {
+                        CreatedOn = DateTime.UtcNow
+                    };
+
+                    foreach (var sd in unboxed.Descriptors)
+                    {
+                        stateTransaction.Descriptors.Add(new StateDescriptor
                         {
                             CreatedOn = DateTime.UtcNow,
-                            Address = witness.ScriptHash.ToAddress(),
-                            InvocationScriptAsHexString = witness.InvocationScript.ToHexString(),
-                            VerificationScriptAsHexString = witness.VerificationScript.ToHexString()
+                            Field = sd.Field,
+                            KeyAsHexString = sd.Key.ToHexString(),
+                            ValueAsHexString = sd.Value.ToHexString(),
+                            Type = sd.Type
                         });
                     }
 
-                    if (item.Type == Neo.Network.P2P.Payloads.TransactionType.MinerTransaction)
+                    transaction.StateTransaction = stateTransaction;
+                }
+
+                for (int i = 0; i < item.Outputs.Length; i++)
+                {
+                    var output = item.Outputs[i];
+                    Neo.Network.P2P.Payloads.CoinReference input = null;
+                    if (item.Inputs.Any())
                     {
-                        var unboxed = item as Neo.Network.P2P.Payloads.MinerTransaction;
-                        var minerTransaction = new MinerTransaction { Nonce = unboxed.Nonce };
-                        transaction.MinerTransaction = minerTransaction;
+                        input = item.Inputs[0];
                     }
-                    else if (item.Type == Neo.Network.P2P.Payloads.TransactionType.RegisterTransaction)
+                    else if (item is Neo.Network.P2P.Payloads.ClaimTransaction claimTransaction)
                     {
-                        var unboxed = item as Neo.Network.P2P.Payloads.RegisterTransaction;
-                        var registerTransaction = new RegisterTransaction
+                        input = claimTransaction.Claims[0];
+                    }
+                    else if (item is Neo.Network.P2P.Payloads.MinerTransaction minerTransaction)
+                    {
+
+                    }
+
+                    Transaction previousTransaction = null;
+                    if (input != null)
+                    {
+                        previousTransaction = db.Transactions
+                           .Include(x => x.Assets)
+                           .ThenInclude(x => x.ToAddress)
+                           .Where(x => x.ScriptHash == input.PrevHash.ToString())
+                           .FirstOrDefault();
+                    }
+
+                    Data.Models.Address fromAddress = null;
+                    if (previousTransaction != null && item is Neo.Network.P2P.Payloads.ClaimTransaction == false)
+                    {
+                        fromAddress = previousTransaction
+                            .Assets
+                            .Skip(input.PrevIndex)
+                            .Select(x => x.ToAddress)
+                            .FirstOrDefault();
+                    }
+
+                    var toAddress = db.Addresses
+                        .Where(x => x.PublicAddress == output.ScriptHash.ToAddress())
+                        .FirstOrDefault();
+
+                    if (toAddress == null)
+                    {
+                        toAddress = new Data.Models.Address
                         {
-                            AdminAddress = unboxed.Admin.ToAddress().ToString(),
-                            Amount = (decimal)unboxed.Amount,
-                            AssetType = unboxed.AssetType,
-                            CreatedOn = System.DateTime.UtcNow,
-                            Name = unboxed.Name,
-                            OwnerPublicKey = unboxed.Owner.ToString(),
-                            Precision = unboxed.Precision
+                            PublicAddress = output.ScriptHash.ToAddress(),
+                            CreatedOn = DateTime.UtcNow,
+                            FirstTransactionOn = block.Timestamp.ToUnixDate()
                         };
 
-                        transaction.RegisterTransaction = registerTransaction;
+                        db.Addresses.Add(toAddress);
                     }
-                    else if (item.Type == Neo.Network.P2P.Payloads.TransactionType.EnrollmentTransaction)
-                    {
-                        var unboxed = item as Neo.Network.P2P.Payloads.EnrollmentTransaction;
-                        var enrollmentTransaction = new EnrollmentTransaction { PublicKey = unboxed.PublicKey.ToString() };
-                        transaction.EnrollmentTransaction = enrollmentTransaction;
-                    }
-                    else if (item.Type == Neo.Network.P2P.Payloads.TransactionType.InvocationTransaction)
-                    {
-                        var unboxed = item as Neo.Network.P2P.Payloads.InvocationTransaction;
-                        var invocationTransaction = new InvocationTransaction
-                        {
-                            CreatedOn = System.DateTime.UtcNow,
-                            Gas = (decimal)unboxed.Gas,
-                            ScriptAsHexString = unboxed.Script.ToHexString()
-                        };
 
-                        transaction.InvocationTransaction = invocationTransaction;
-                    }
-                    else if (item.Type == Neo.Network.P2P.Payloads.TransactionType.PublishTransaction)
+                    var asset = db.Assets.Where(x => x.Hash == output.AssetId.ToString()).FirstOrDefault();
+                    if (asset == null)
                     {
-                        var unboxed = item as Neo.Network.P2P.Payloads.PublishTransaction;
-                        var publishTransaction = new PublishTransaction
+                        asset = new Asset
                         {
                             CreatedOn = DateTime.UtcNow,
-                            Author = unboxed.Author,
-                            CodeVersion = unboxed.CodeVersion,
-                            Description = unboxed.Description,
-                            Email = unboxed.Email,
-                            Name = unboxed.Name,
-                            NeedStorage = unboxed.NeedStorage,
-                            ParameterList = string.Join("", unboxed.ParameterList.Select(x => x.ToString())),
-                            ReturnType = unboxed.ReturnType.ToString(),
-                            ScriptAsHexString = unboxed.Script.ToHexString()
+                            Hash = output.AssetId.ToString()
                         };
 
-                        transaction.PublishTransaction = publishTransaction;
-                    }
-                    else if (item.Type == Neo.Network.P2P.Payloads.TransactionType.StateTransaction)
-                    {
-                        var unboxed = item as Neo.Network.P2P.Payloads.StateTransaction;
-                        var stateTransaction = new StateTransaction
-                        {
-                            CreatedOn = DateTime.UtcNow
-                        };
-
-                        foreach (var sd in unboxed.Descriptors)
-                        {
-                            stateTransaction.Descriptors.Add(new StateDescriptor
-                            {
-                                CreatedOn = DateTime.UtcNow,
-                                Field = sd.Field,
-                                KeyAsHexString = sd.Key.ToHexString(),
-                                ValueAsHexString = sd.Value.ToHexString(),
-                                Type = sd.Type
-                            });
-                        }
-
-                        transaction.StateTransaction = stateTransaction;
-                    }
-
-                    for (int i = 0; i < item.Outputs.Length; i++)
-                    {
-                        var output = item.Outputs[i];
-                        Neo.Network.P2P.Payloads.CoinReference input = null;
-                        if (item.Inputs.Any())
-                        {
-                            input = item.Inputs[0];
-                        }
-                        else if (item is Neo.Network.P2P.Payloads.ClaimTransaction claimTransaction)
-                        {
-                            input = claimTransaction.Claims[0];
-                        }
-                        else if (item is Neo.Network.P2P.Payloads.MinerTransaction minerTransaction)
-                        {
-
-                        }
-
-                        Transaction previousTransaction = null;
-                        if (input != null)
-                        {
-                            previousTransaction = db.Transactions
-                               .Include(x => x.Assets)
-                               .ThenInclude(x => x.ToAddress)
-                               .Where(x => x.ScriptHash == input.PrevHash.ToString())
-                               .FirstOrDefault();
-                        }
-
-                        Data.Models.Address fromAddress = null;
-                        if (previousTransaction != null && item is Neo.Network.P2P.Payloads.ClaimTransaction == false)
-                        {
-                            fromAddress = previousTransaction
-                                .Assets
-                                .Skip(input.PrevIndex)
-                                .Select(x => x.ToAddress)
-                                .FirstOrDefault();
-                        }
-
-                        var toAddress = db.Addresses
-                            .Where(x => x.PublicAddress == output.ScriptHash.ToAddress())
-                            .FirstOrDefault();
-
-                        if (toAddress == null)
-                        {
-                            toAddress = new Data.Models.Address
-                            {
-                                PublicAddress = output.ScriptHash.ToAddress(),
-                                CreatedOn = DateTime.UtcNow,
-                                FirstTransactionOn = block.Timestamp.ToUnixDate()
-                            };
-
-                            db.Addresses.Add(toAddress);
-                        }
-
-                        var asset = db.Assets.Where(x => x.Hash == output.AssetId.ToString()).FirstOrDefault();
-                        if (asset == null)
-                        {
-                            asset = new Asset
-                            {
-                                CreatedOn = DateTime.UtcNow,
-                                Hash = output.AssetId.ToString()
-                            };
-
-                            db.Assets.Add(asset);
-                            db.SaveChanges();
-                        }
-
-                        var ta = new TransactedAsset
-                        {
-                            Amount = (decimal)output.Value,
-                            FromAddress = fromAddress,
-                            ToAddress = toAddress,
-                            AssetType = output.AssetId.ToString() == "0xc56f33fc6ecfcd0c225c4ab356fee59390af8560be0e930faebe74a6daff7c9b" ? GlobalAssetType.Neo : GlobalAssetType.Gas
-                        };
-
-                        asset.TransactedAssets.Add(ta);
-                        transaction.Assets.Add(ta);
+                        db.Assets.Add(asset);
                         db.SaveChanges();
                     }
 
-                    block.Transactions.Add(transaction);
+                    var ta = new TransactedAsset
+                    {
+                        Amount = (decimal)output.Value,
+                        FromAddress = fromAddress,
+                        ToAddress = toAddress,
+                        AssetType = output.AssetId.ToString() == "0xc56f33fc6ecfcd0c225c4ab356fee59390af8560be0e930faebe74a6daff7c9b" ? GlobalAssetType.Neo : GlobalAssetType.Gas
+                    };
+
+                    asset.TransactedAssets.Add(ta);
+                    transaction.Assets.Add(ta);
+                    db.SaveChanges();
                 }
 
-                db.SaveChanges();
-                db.Dispose();
+                block.Transactions.Add(transaction);
             }
+
+            db.SaveChanges();
         }
 
         private void SeedGenesisBlock(StateOfNeoContext db)

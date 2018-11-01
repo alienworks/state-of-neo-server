@@ -12,6 +12,7 @@
             {
                 return MainNetPorts;
             }
+
             return TestNetPorts;
         }
     }
