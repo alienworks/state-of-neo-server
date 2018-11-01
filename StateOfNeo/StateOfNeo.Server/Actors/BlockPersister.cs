@@ -245,7 +245,7 @@ namespace StateOfNeo.Server.Actors
                             {
                                 PublicAddress = output.ScriptHash.ToAddress(),
                                 CreatedOn = DateTime.UtcNow,
-                                FirstTransactionOn = block.Timestamp.ToCurrentDate()
+                                FirstTransactionOn = block.Timestamp.ToUnixDate()
                             };
 
                             db.Addresses.Add(toAddress);
@@ -352,7 +352,7 @@ namespace StateOfNeo.Server.Actors
                 CreatedOn = DateTime.UtcNow,
                 Name = "NEO",
                 MaxSupply = 100_000_000,
-                Type = Data.Models.Enums.GlobalAssetType.Neo
+                Type = GlobalAssetType.Neo
             };
 
             var gas = new Asset
@@ -361,7 +361,7 @@ namespace StateOfNeo.Server.Actors
                 CreatedOn = DateTime.UtcNow,
                 Name = "GAS",
                 MaxSupply = 100_000_000,
-                Type = Data.Models.Enums.GlobalAssetType.Gas
+                Type = GlobalAssetType.Gas
             };
 
             var neoAssetIssueTransaction = new Transaction
@@ -374,13 +374,13 @@ namespace StateOfNeo.Server.Actors
             neoAssetIssueTransaction.Assets.Add(new TransactedAsset
             {
                 Amount = 100000000,
-                AssetType = Data.Models.Enums.GlobalAssetType.Neo,
+                AssetType = GlobalAssetType.Neo,
                 ToAddress = new Data.Models.Address
                 {
                     PublicAddress = Contract.CreateMultiSigRedeemScript(StandbyValidators.Length / 2 + 1, StandbyValidators)
                         .ToScriptHash()
                         .ToAddress(),
-                    FirstTransactionOn = GenesisBlock.Timestamp.ToCurrentDate()
+                    FirstTransactionOn = GenesisBlock.Timestamp.ToUnixDate()
                 },
                 Asset = neo
             });

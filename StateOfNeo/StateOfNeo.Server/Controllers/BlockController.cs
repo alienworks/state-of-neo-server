@@ -7,6 +7,7 @@ using StateOfNeo.Server.Hubs;
 using StateOfNeo.Services;
 using StateOfNeo.Services.Block;
 using StateOfNeo.ViewModels.Block;
+using StateOfNeo.ViewModels.Chart;
 using System;
 using System.Threading.Tasks;
 
@@ -55,6 +56,20 @@ namespace StateOfNeo.Server.Controllers
             var result = await this.paginating.GetPage<Data.Models.Block, BlockListViewModel>(page, pageSize, x => x.Height);
 
             return this.Ok(result.ToListResult());
+        }
+
+        [HttpPost("[action]")]
+        public IActionResult BlockSizeChart([FromBody]ChartFilterViewModel filter)
+        {
+            var result = this.blocks.GetBlockSizeStats(filter);
+            return this.Ok(result);
+        }
+
+        [HttpPost("[action]")]
+        public IActionResult BlockTimeChart([FromBody]ChartFilterViewModel filter)
+        {
+            var result = this.blocks.GetBlockTimeStats(filter);
+            return this.Ok(result);
         }
 
         [HttpGet("[action]")]

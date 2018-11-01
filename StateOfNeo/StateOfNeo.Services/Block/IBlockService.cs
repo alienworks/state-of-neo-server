@@ -1,4 +1,5 @@
-﻿using System;
+﻿using StateOfNeo.ViewModels.Chart;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,5 +13,7 @@ namespace StateOfNeo.Services.Block
         T Find<T>(string hash);
         T Find<T>(int height);
 
+        IEnumerable<ChartStatsViewModel> GetBlockSizeStats(ChartFilterViewModel filter);
+        IEnumerable<ChartStatsViewModel> GetBlockTimeStats(ChartFilterViewModel filter);
     }
 }

@@ -8,6 +8,9 @@ using Microsoft.EntityFrameworkCore;
 using Neo.Network.P2P.Payloads;
 using StateOfNeo.Data.Models.Enums;
 using AutoMapper.QueryableExtensions;
+using StateOfNeo.ViewModels.Chart;
+using StateOfNeo.Common.Enums;
+using StateOfNeo.Common.Extensions;
 
 namespace StateOfNeo.Services.Transaction
 {
@@ -35,5 +38,75 @@ namespace StateOfNeo.Services.Transaction
                 .SelectMany(x => x.Assets.Where(a => a.AssetType == GlobalAssetType.Gas))
                 .Sum(x => x.Amount)
             : 0;
+
+        public IEnumerable<ChartStatsViewModel> GetStats(ChartFilterViewModel filter)
+        {
+            var query = this.db.Transactions.AsQueryable();
+            var result = new List<ChartStatsViewModel>();
+
+            if (filter.StartDate != null)
+            {
+                query = query.Where(x => x.Block.Timestamp.ToUnixDate() >= filter.StartDate);
+            }
+
+            if (filter.EndDate != null)
+            {
+                query = query.Where(x => x.Block.Timestamp.ToUnixDate() <= filter.EndDate);
+            }
+
+            if (filter.UnitOfTime == UnitOfTime.Hour)
+            {
+                result = query.GroupBy(x => new
+                {
+                    x.Block.Timestamp.ToUnixDate().Year,
+                    x.Block.Timestamp.ToUnixDate().Month,
+                    x.Block.Timestamp.ToUnixDate().Day,
+                    x.Block.Timestamp.ToUnixDate().Hour
+                })
+                .Select(x => new ChartStatsViewModel
+                {
+                    StartDate = new DateTime(x.Key.Year, x.Key.Month, x.Key.Day, x.Key.Hour, 0, 0),
+                    UnitOfTime = UnitOfTime.Hour,
+                    Value = x.Count()
+                })
+                .OrderBy(x => x.StartDate)
+                .ToList();
+            }
+            else if (filter.UnitOfTime == UnitOfTime.Day)
+            {
+                result = query.GroupBy(x => new
+                {
+                    x.Block.Timestamp.ToUnixDate().Year,
+                    x.Block.Timestamp.ToUnixDate().Month,
+                    x.Block.Timestamp.ToUnixDate().Day
+                })
+                .Select(x => new ChartStatsViewModel
+                {
+                    StartDate = new DateTime(x.Key.Year, x.Key.Month, x.Key.Day),
+                    UnitOfTime = UnitOfTime.Day,
+                    Value = x.Count()
+                })
+                .OrderBy(x => x.StartDate)
+                .ToList();
+            }
+            else if (filter.UnitOfTime == UnitOfTime.Month)
+            {
+                result = query.GroupBy(x => new
+                {
+                    x.Block.Timestamp.ToUnixDate().Year,
+                    x.Block.Timestamp.ToUnixDate().Month
+                })
+                .Select(x => new ChartStatsViewModel
+                {
+                    StartDate = new DateTime(x.Key.Year, x.Key.Month, 1),
+                    UnitOfTime = UnitOfTime.Month,
+                    Value = x.Count()
+                })
+                .OrderBy(x => x.StartDate)
+                .ToList();
+            }
+
+            return result;
+        }
     }
 }

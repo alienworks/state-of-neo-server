@@ -2,6 +2,7 @@
 using StateOfNeo.Common.Enums;
 using StateOfNeo.Services;
 using StateOfNeo.Services.Address;
+using StateOfNeo.ViewModels.Chart;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -21,7 +22,7 @@ namespace StateOfNeo.Server.Controllers
         }
 
         [HttpGet("[action]/{period}")]
-        public IActionResult Average(TimePeriod period)
+        public IActionResult Average(UnitOfTime period)
         {
             var result = this.addresses.CreatedAddressesPer(period);
             return this.Ok(result);
@@ -52,6 +53,13 @@ namespace StateOfNeo.Server.Controllers
         public IActionResult Created()
         {
             var result = this.addresses.CreatedAddressesCount();
+            return this.Ok(result);
+        }
+        
+        [HttpPost("[action]")]
+        public IActionResult Chart([FromBody]ChartFilterViewModel filter)
+        {
+            var result = this.addresses.GetStats(filter);
             return this.Ok(result);
         }
     }

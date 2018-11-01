@@ -9,6 +9,7 @@ using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using StateOfNeo.Common.Extensions;
 using StateOfNeo.Data.Models.Transactions;
+using StateOfNeo.ViewModels.Chart;
 
 namespace StateOfNeo.Server.Controllers
 {
@@ -41,7 +42,7 @@ namespace StateOfNeo.Server.Controllers
             var result = await this.paginating.GetPage<Transaction, TransactionListViewModel>(
                 page, 
                 pageSize, 
-                x => x.Block.Timestamp.ToCurrentDate(),
+                x => x.Block.Timestamp.ToUnixDate(),
                 x => blockHash == null ? true : x.Block.Hash == blockHash);
 
             return this.Ok(result.ToListResult());
@@ -51,6 +52,13 @@ namespace StateOfNeo.Server.Controllers
         public IActionResult TotalClaimed()
         {
             var result = this.transactions.TotalClaimed();
+            return this.Ok(result);
+        }
+
+        [HttpPost("[action]")]
+        public IActionResult Chart([FromBody]ChartFilterViewModel filter)
+        {
+            var result = this.transactions.GetStats(filter);
             return this.Ok(result);
         }
     }

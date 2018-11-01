@@ -1,5 +1,6 @@
 ﻿using StateOfNeo.Common.Enums;
 using StateOfNeo.ViewModels.Address;
+using StateOfNeo.ViewModels.Chart;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -10,9 +11,11 @@ namespace StateOfNeo.Services.Address
     {
         int ActiveAddressesInThePastThreeMonths();
 
-        int CreatedAddressesPer(TimePeriod timePeriod);
+        int CreatedAddressesPer(UnitOfTime timePeriod);
 
         int CreatedAddressesCount();
+
+        IEnumerable<ChartStatsViewModel> GetStats(ChartFilterViewModel filter);
 
         IEnumerable<PublicAddressListViewModel> TopOneHundredNeo();
 

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using StateOfNeo.ViewModels.Chart;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -9,5 +10,7 @@ namespace StateOfNeo.Services.Transaction
         T Find<T>(string hash);
 
         decimal TotalClaimed();
+
+        IEnumerable<ChartStatsViewModel> GetStats(ChartFilterViewModel filter);
     }
 }
