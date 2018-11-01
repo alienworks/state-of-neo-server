@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Akka.Actor;
+using AutoMapper;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Neo;
@@ -66,51 +67,48 @@ namespace StateOfNeo.Server.Actors
                     this.SeedGenesisBlock(db);
                 }
 
-                var lastHeight = db.Blocks
+                var currentHeight = db.Blocks
                     .OrderByDescending(x => x.Height)
                     .Select(x => x.Height)
                     .FirstOrDefault();
 
-                while (lastHeight < m.Block.Index)
+                while (currentHeight < m.Block.Index)
                 {
-                    var blockHash = Blockchain.Singleton.GetBlockHash((uint)lastHeight + 1);
-                    var blockToPersist = Blockchain.Singleton.GetBlock(blockHash);
-                    this.PersistBlock(blockToPersist, db);
-                    lastHeight++;
+                    var hash = Blockchain.Singleton.GetBlockHash((uint)currentHeight + 1);
+                    var block = Blockchain.Singleton.GetBlock(hash);
+                    this.PersistBlock(block, db);
+                    currentHeight++;
                 }
                 
                 db.Dispose();
             }
         }
 
-        private void PersistBlock(Neo.Network.P2P.Payloads.Block persistedBlock, StateOfNeoContext db)
+        private void PersistBlock(Neo.Network.P2P.Payloads.Block blockToPersist, StateOfNeoContext db)
         {
-            var createdOn = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
-            createdOn = createdOn.AddSeconds(persistedBlock.Timestamp).ToLocalTime();
-
             var block = new Block
             {
-                Hash = persistedBlock.Hash.ToString(),
-                Height = (int)persistedBlock.Header.Index,
-                Size = persistedBlock.Size,
-                Timestamp = persistedBlock.Timestamp,
-                Validator = persistedBlock.Witness.ScriptHash.ToString(),
-                CreatedOn = createdOn,
-                ConsensusData = persistedBlock.ConsensusData,
-                InvocationScript = persistedBlock.Witness.InvocationScript.ToHexString(),
-                VerificationScript = persistedBlock.Witness.VerificationScript.ToHexString(),
-                NextConsensusNodeAddress = persistedBlock.NextConsensus.ToString(),
-                PreviousBlockHash = persistedBlock.PrevHash.ToString()
+                Hash = blockToPersist.Hash.ToString(),
+                Height = (int)blockToPersist.Header.Index,
+                Size = blockToPersist.Size,
+                Timestamp = blockToPersist.Timestamp,
+                Validator = blockToPersist.Witness.ScriptHash.ToString(),
+                CreatedOn = blockToPersist.Timestamp.ToUnixDate(),
+                ConsensusData = blockToPersist.ConsensusData,
+                InvocationScript = blockToPersist.Witness.InvocationScript.ToHexString(),
+                VerificationScript = blockToPersist.Witness.VerificationScript.ToHexString(),
+                NextConsensusNodeAddress = blockToPersist.NextConsensus.ToString(),
+                PreviousBlockHash = blockToPersist.PrevHash.ToString()
             };
 
-            var hubBlock = AutoMapper.Mapper.Map<BlockHubViewModel>(block);
-            hubBlock.TransactionCount = persistedBlock.Transactions.Length;
+            var hubBlock = Mapper.Map<BlockHubViewModel>(block);
+            hubBlock.TransactionCount = blockToPersist.Transactions.Length;
             this.blockHub.Clients.All.SendAsync("Receive", hubBlock);
 
             db.Blocks.Add(block);
             db.SaveChanges();
 
-            foreach (var item in persistedBlock.Transactions)
+            foreach (var item in blockToPersist.Transactions)
             {
                 var transaction = new Transaction
                 {
@@ -266,8 +264,9 @@ namespace StateOfNeo.Server.Actors
                             .Select(x => x.ToAddress)
                             .FirstOrDefault();
                     }
-
+                    
                     var toAddress = db.Addresses
+                        .Include(x => x.Balances).ThenInclude(x => x.Asset)
                         .Where(x => x.PublicAddress == output.ScriptHash.ToAddress())
                         .FirstOrDefault();
 
@@ -281,6 +280,7 @@ namespace StateOfNeo.Server.Actors
                         };
 
                         db.Addresses.Add(toAddress);
+                        db.SaveChanges();
                     }
 
                     var asset = db.Assets.Where(x => x.Hash == output.AssetId.ToString()).FirstOrDefault();
@@ -295,14 +295,72 @@ namespace StateOfNeo.Server.Actors
                         db.Assets.Add(asset);
                         db.SaveChanges();
                     }
-
+                                        
                     var ta = new TransactedAsset
                     {
                         Amount = (decimal)output.Value,
                         FromAddress = fromAddress,
                         ToAddress = toAddress,
-                        AssetType = output.AssetId.ToString() == "0xc56f33fc6ecfcd0c225c4ab356fee59390af8560be0e930faebe74a6daff7c9b" ? GlobalAssetType.Neo : GlobalAssetType.Gas
+                        AssetType = output.AssetId.ToString() == "0xc56f33fc6ecfcd0c225c4ab356fee59390af8560be0e930faebe74a6daff7c9b" ? AssetType.NEO : AssetType.GAS
                     };
+
+                    var toBalance = db.AddressBalances
+                        .Include(x => x.Asset)
+                        .Where(x => x.Asset.Hash == asset.Hash && x.AddressPublicAddress == toAddress.PublicAddress)
+                        .FirstOrDefault();
+
+                    if (toBalance == null)
+                    {
+                        toBalance = new AddressAssetBalance
+                        {
+                            AddressPublicAddress = toAddress.PublicAddress,
+                            AssetId = asset.Id,
+                            CreatedOn = DateTime.UtcNow,
+                            Balance = 0
+                        };
+
+                        db.AddressBalances.Add(toBalance);
+                        db.SaveChanges();
+                    }
+
+                    if (fromAddress != null)
+                    {
+                        var fromBalance = db.AddressBalances
+                            .Include(x => x.Asset)
+                            .Where(x => x.Asset.Hash == asset.Hash && x.AddressPublicAddress == fromAddress.PublicAddress)
+                            .FirstOrDefault();
+
+                        if (fromBalance == null)
+                        {
+                            fromBalance = new AddressAssetBalance
+                            {
+                                AddressPublicAddress = fromAddress.PublicAddress,
+                                AssetId = asset.Id,
+                                CreatedOn = DateTime.UtcNow,
+                                Balance = 0
+                            };
+
+                            db.AddressBalances.Add(fromBalance);
+                            db.SaveChanges();
+                        }
+
+                        fromBalance.Balance -= ta.Amount;
+                        db.SaveChanges();
+
+                        if (transaction.SystemFee != 0)
+                        {
+                            var fromAddressGasBalance = db.AddressBalances
+                                .Include(x => x.Asset)
+                                .Where(x => x.Asset.Type == AssetType.GAS && x.AddressPublicAddress == fromAddress.PublicAddress)
+                                .FirstOrDefault();
+
+                            fromAddressGasBalance.Balance -= transaction.SystemFee;
+
+                            db.SaveChanges();
+                        }
+                    }
+
+                    toBalance.Balance += ta.Amount;
 
                     asset.TransactedAssets.Add(ta);
                     transaction.Assets.Add(ta);
@@ -382,7 +440,7 @@ namespace StateOfNeo.Server.Actors
                 CreatedOn = DateTime.UtcNow,
                 Name = "NEO",
                 MaxSupply = 100_000_000,
-                Type = GlobalAssetType.Neo
+                Type = AssetType.NEO
             };
 
             var gas = new Asset
@@ -391,7 +449,7 @@ namespace StateOfNeo.Server.Actors
                 CreatedOn = DateTime.UtcNow,
                 Name = "GAS",
                 MaxSupply = 100_000_000,
-                Type = GlobalAssetType.Gas
+                Type = AssetType.GAS
             };
 
             var neoAssetIssueTransaction = new Transaction
@@ -401,19 +459,33 @@ namespace StateOfNeo.Server.Actors
                 Size = 69
             };
 
-            neoAssetIssueTransaction.Assets.Add(new TransactedAsset
+            var toAddress = new Data.Models.Address
             {
-                Amount = 100000000,
-                AssetType = GlobalAssetType.Neo,
-                ToAddress = new Data.Models.Address
-                {
-                    PublicAddress = Contract.CreateMultiSigRedeemScript(StandbyValidators.Length / 2 + 1, StandbyValidators)
+                PublicAddress = Contract.CreateMultiSigRedeemScript(StandbyValidators.Length / 2 + 1, StandbyValidators)
                         .ToScriptHash()
                         .ToAddress(),
-                    FirstTransactionOn = GenesisBlock.Timestamp.ToUnixDate()
-                },
+                FirstTransactionOn = GenesisBlock.Timestamp.ToUnixDate()
+            };
+
+            var transactedAsset = new TransactedAsset
+            {
+                Amount = 100000000,
+                AssetType = AssetType.NEO,
+                ToAddress = toAddress,
                 Asset = neo
-            });
+            };
+
+            neoAssetIssueTransaction.Assets.Add(transactedAsset);
+
+            var balance = new AddressAssetBalance
+            {
+                CreatedOn = DateTime.UtcNow,
+                Address = toAddress,
+                Asset = neo,
+                Balance = transactedAsset.Amount                
+            };
+
+            db.AddressBalances.Add(balance);
 
             db.Assets.Add(neo);
             db.Assets.Add(gas);

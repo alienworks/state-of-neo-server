@@ -9,7 +9,7 @@ namespace StateOfNeo.ViewModels.Transaction
     {
         public decimal Amount { get; set; }
 
-        public GlobalAssetType AssetType { get; set; }
+        public AssetType AssetType { get; set; }
 
         public string FromAddress { get; set; }
 

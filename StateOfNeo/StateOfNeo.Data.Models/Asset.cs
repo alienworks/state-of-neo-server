@@ -8,6 +8,7 @@ namespace StateOfNeo.Data.Models
     {
         public Asset()
         {
+            this.Balances = new HashSet<AddressAssetBalance>();
             this.TransactedAssets = new HashSet<TransactedAsset>();
         }
 
@@ -17,9 +18,11 @@ namespace StateOfNeo.Data.Models
 
         public string Hash { get; set; }
 
-        public GlobalAssetType Type { get; set; }
+        public AssetType Type { get; set; }
 
         public int MaxSupply { get; set; }
+
+        public virtual ICollection<AddressAssetBalance> Balances { get; set; }
 
         public virtual ICollection<TransactedAsset> TransactedAssets { get; set; }
     }

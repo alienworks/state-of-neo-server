@@ -4,9 +4,10 @@ using System.Text;
 
 namespace StateOfNeo.Data.Models.Enums
 {
-    public enum GlobalAssetType
+    public enum AssetType
     {
-        Neo,
-        Gas
+        NEO,
+        GAS,
+        NEP5
     }
 }

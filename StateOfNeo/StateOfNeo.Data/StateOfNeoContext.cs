@@ -14,6 +14,7 @@ namespace StateOfNeo.Data
         }
 
         public DbSet<Address> Addresses { get; set; }
+        public DbSet<AddressAssetBalance> AddressBalances { get; set; }
         public DbSet<Asset> Assets { get; set; }
         public DbSet<Block> Blocks { get; set; }
         public DbSet<Node> Nodes { get; set; }

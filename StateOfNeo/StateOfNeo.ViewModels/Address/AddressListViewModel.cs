@@ -14,6 +14,6 @@ namespace StateOfNeo.ViewModels.Address
 
         public DateTime LastTransactionTime { get; set; }
 
-        public IEnumerable<AddressAssetViewModel> Assets { get; set; }
+        public IEnumerable<AddressAssetViewModel> Balances { get; set; }
     }
 }
