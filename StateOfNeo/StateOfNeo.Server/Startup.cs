@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Neo;
 using Neo.Network.P2P;
 using Neo.Persistence.LevelDB;
@@ -88,9 +89,14 @@ namespace StateOfNeo.Server
             StateOfNeoContext ctx,
             IServiceProvider services,
             NotificationEngine notificationEngine,
+            IOptions<NetSettings> netSettings,
             IHubContext<BlockHub> blockHub)
         {
-            Program.NeoSystem.ActorSystem.ActorOf(BlockPersister.Props(Program.NeoSystem.Blockchain, this.Configuration.GetConnectionString("DefaultConnection"), blockHub));
+            Program.NeoSystem.ActorSystem.ActorOf(BlockPersister.Props(
+                Program.NeoSystem.Blockchain, 
+                this.Configuration.GetConnectionString("DefaultConnection"), 
+                blockHub, 
+                netSettings.Value.Net));
             
             if (env.IsDevelopment())
             {

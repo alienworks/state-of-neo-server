@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Akka.Actor;
 using Microsoft.AspNetCore.SignalR;
@@ -19,20 +20,32 @@ namespace StateOfNeo.Server.Actors
 {
     public class BlockPersister : UntypedActor
     {
+        private readonly Dictionary<string, string> hashesByNet = new Dictionary<string, string>()
+        {
+            { "genesisBlock-PrivNet", "0x996e37358dc369912041f966f8c5d8d3a8255ba5dcbd3447f8a82b55db869099" },
+            { "genesisBlock-TestNet", "0xb3181718ef6167105b70920e4a8fbbd0a0a56aacf460d70e10ba6fa1668f1fef" },
+            { "genesisBlock-MainNet", "0xd42561e3d30e15be6400b6df2f328e02d2bf6354c41dce433bc57687c82144bf" },
+            { "neoIssue-PrivNet", "0x7aadf91ca8ac1e2c323c025a7e492bee2dd90c783b86ebfc3b18db66b530a76d" },
+            { "neoIssue-TestNet", "0xbdecbb623eee6f9ade28d5a8ff5fb3ea9c9d73af039e0286201b3b0291fb4d4a" },
+            { "neoIssue-MainNet", "0x3631f66024ca6f5b033d7e0809eb993443374830025af904fb51b0334f127cda" },
+        };
+
         private readonly string connectionString;
+        private readonly string net;
         private readonly IHubContext<BlockHub> blockHub;
 
         public BlockPersister(IActorRef blockchain, string connectionString,
-            IHubContext<BlockHub> blockHub)
+            IHubContext<BlockHub> blockHub, string net)
         {
             this.connectionString = connectionString;
             this.blockHub = blockHub;
+            this.net = net;
 
             blockchain.Tell(new Register());
         }
 
-        public static Props Props(IActorRef blockchain, string connectionString, IHubContext<BlockHub> blockHub) =>
-            Akka.Actor.Props.Create(() => new BlockPersister(blockchain, connectionString, blockHub));
+        public static Props Props(IActorRef blockchain, string connectionString, IHubContext<BlockHub> blockHub, string net) =>
+            Akka.Actor.Props.Create(() => new BlockPersister(blockchain, connectionString, blockHub, net));
 
         protected override void OnReceive(object message)
         {
@@ -289,7 +302,7 @@ namespace StateOfNeo.Server.Actors
         {
             var genesisBlock = new Block
             {
-                Hash = "0x996e37358dc369912041f966f8c5d8d3a8255ba5dcbd3447f8a82b55db869099",
+                Hash = this.hashesByNet["genesisBlock-" + this.net],
                 Height = 0,
                 Timestamp = GenesisBlock.Timestamp,
                 Size = GenesisBlock.Size,
@@ -367,7 +380,7 @@ namespace StateOfNeo.Server.Actors
             var neoAssetIssueTransaction = new Transaction
             {
                 Type = Neo.Network.P2P.Payloads.TransactionType.IssueTransaction,
-                ScriptHash = "0x7aadf91ca8ac1e2c323c025a7e492bee2dd90c783b86ebfc3b18db66b530a76d",
+                ScriptHash = this.hashesByNet["neoIssue-" + this.net],
                 Size = 69
             };
 
