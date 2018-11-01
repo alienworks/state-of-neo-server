@@ -26,15 +26,13 @@ namespace StateOfNeo.Server.Controllers
         [HttpGet("[action]/{hash}")]
         public IActionResult Get(string hash)
         {
-            var transaction = this.transactions.Find(hash);
+            var transaction = this.transactions.Find<TransactionDetailsViewModel>(hash);
             if (transaction == null)
             {
                 return this.BadRequest("Invalid block hash");
             }
 
-            var result = Mapper.Map<TransactionDetailsViewModel>(transaction);
-
-            return this.Ok(result);
+            return this.Ok(transaction);
         }
 
         [HttpGet("[action]")]
@@ -43,10 +41,17 @@ namespace StateOfNeo.Server.Controllers
             var result = await this.paginating.GetPage<Transaction, TransactionListViewModel>(
                 page, 
                 pageSize, 
-                x => x.CreatedOn,
+                x => x.Block.Timestamp.ToCurrentDate(),
                 x => blockHash == null ? true : x.Block.Hash == blockHash);
 
             return this.Ok(result.ToListResult());
+        }
+
+        [HttpGet("[action]")]
+        public IActionResult TotalClaimed()
+        {
+            var result = this.transactions.TotalClaimed();
+            return this.Ok(result);
         }
     }
 }

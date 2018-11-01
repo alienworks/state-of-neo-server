@@ -5,6 +5,9 @@ using System.Text;
 using StateOfNeo.Data;
 using StateOfNeo.Data.Models.Transactions;
 using Microsoft.EntityFrameworkCore;
+using Neo.Network.P2P.Payloads;
+using StateOfNeo.Data.Models.Enums;
+using AutoMapper.QueryableExtensions;
 
 namespace StateOfNeo.Services.Transaction
 {
@@ -17,13 +20,20 @@ namespace StateOfNeo.Services.Transaction
             this.db = db;
         }
 
-        public Data.Models.Transactions.Transaction Find(string hash) =>
+        public T Find<T>(string blockHash) =>
             this.db.Transactions
-                .Include(x => x.Block)
-                .Include(x => x.Assets)
-                .Include(x => x.Attributes)
-                .Include(x => x.Witnesses)
-                .Where(x => x.ScriptHash == hash)
+                .Where(x => x.Block.Hash == blockHash)
+                .ProjectTo<T>()
                 .FirstOrDefault();
+
+        public decimal TotalClaimed() =>
+            this.db.Transactions
+                .Any(x => x.Type == TransactionType.ClaimTransaction)
+            ? this.db.Transactions
+                .Include(x => x.Assets).ThenInclude(x => x.Asset)
+                .Where(x => x.Type == TransactionType.ClaimTransaction)
+                .SelectMany(x => x.Assets.Where(a => a.AssetType == GlobalAssetType.Gas))
+                .Sum(x => x.Amount)
+            : 0;
     }
 }

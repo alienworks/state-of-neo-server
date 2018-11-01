@@ -6,6 +6,8 @@ namespace StateOfNeo.Services.Transaction
 {
     public interface ITransactionService
     {
-        Data.Models.Transactions.Transaction Find(string hash);
+        T Find<T>(string hash);
+
+        decimal TotalClaimed();
     }
 }
