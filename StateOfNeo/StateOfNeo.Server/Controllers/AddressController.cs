@@ -42,7 +42,11 @@ namespace StateOfNeo.Server.Controllers
                 page, 
                 pageSize, 
                 x => x.OutgoingTransactions
-                    .Select(tr => tr.Transaction.Block.Timestamp)
+                    .Select(z => z.Transaction)
+                    .Union(x.IncomingTransactions.Select(z => z.Transaction))
+                    .Select(z => z.Block.Timestamp)
+                    .Distinct()
+                    .OrderByDescending(ts => ts)
                     .FirstOrDefault());
 
             return this.Ok(result.ToListResult());
