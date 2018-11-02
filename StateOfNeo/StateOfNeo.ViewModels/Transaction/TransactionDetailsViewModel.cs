@@ -25,6 +25,8 @@ namespace StateOfNeo.ViewModels.Transaction
 
         public string BlockHash { get; set; }
 
+        public int BlockHeight { get; set; }
+
         public IEnumerable<TransactedAssetViewModel> Assets { get; set; }
 
         public IEnumerable<TransactionAttributeViewModel> Attributes { get; set; }
