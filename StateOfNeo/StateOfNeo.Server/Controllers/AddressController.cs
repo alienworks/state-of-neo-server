@@ -23,10 +23,27 @@ namespace StateOfNeo.Server.Controllers
             this.paginating = paginating;
         }
 
+        [HttpGet("[action]/{address}")]
+        public IActionResult Get(string address)
+        {
+            var result = this.addresses.Find<AddressDetailsViewModel>(address);
+            if (result == null)
+            {
+                return this.BadRequest("Invalid address.");
+            }
+
+            return this.Ok(result);
+        }
+
         [HttpGet("[action]")]
         public async Task<IActionResult> List(int page = 1, int pageSize = 10)
         {
-            var result = await this.paginating.GetPage<Data.Models.Address, AddressListViewModel>(page, pageSize, x => x.OutgoingTransactions.Select(tr => tr.Transaction.Block.Timestamp).FirstOrDefault());
+            var result = await this.paginating.GetPage<Data.Models.Address, AddressListViewModel>(
+                page, 
+                pageSize, 
+                x => x.OutgoingTransactions
+                    .Select(tr => tr.Transaction.Block.Timestamp)
+                    .FirstOrDefault());
 
             return this.Ok(result.ToListResult());
         }

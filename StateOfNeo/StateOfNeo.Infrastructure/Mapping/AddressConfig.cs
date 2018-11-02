@@ -29,6 +29,18 @@ namespace StateOfNeo.Infrastructure.Mapping
             cfg.CreateMap<AddressAssetBalance, AddressAssetViewModel>()
                 .ForMember(x => x.Name, opt => opt.MapFrom(x => x.Asset.Name))
                 .ReverseMap();
+
+            cfg.CreateMap<Address, AddressDetailsViewModel>()
+                .ForMember(x => x.Address, opt => opt.MapFrom(x => x.PublicAddress))
+                .ForMember(x => x.Created, opt => opt.MapFrom(x => x.FirstTransactionOn))
+                .ForMember(x => x.Transactions, opt => opt.MapFrom(x => x.IncomingTransactions.Select(z => z.Transaction).Union(x.OutgoingTransactions.Select(z => z.Transaction))))
+                .ForMember(x => x.LastTransactionTime, opt => opt.MapFrom(
+                    x => x.OutgoingTransactions
+                        .Select(tr => tr.Transaction.Block.Timestamp)
+                        .OrderByDescending(ts => ts)
+                        .FirstOrDefault()
+                        .ToUnixDate()))
+                .ReverseMap();
         }
     }
 }

@@ -9,6 +9,8 @@ namespace StateOfNeo.Services.Address
 {
     public interface IAddressService
     {
+        T Find<T>(string address);
+
         int ActiveAddressesInThePastThreeMonths();
 
         int CreatedAddressesPer(UnitOfTime timePeriod);
