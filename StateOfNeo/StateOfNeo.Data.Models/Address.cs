@@ -21,6 +21,8 @@ namespace StateOfNeo.Data.Models
 
         public DateTime FirstTransactionOn { get; set; }
 
+        public DateTime LastTransactionOn { get; set; }
+
         [InverseProperty(nameof(TransactedAsset.FromAddress))]
         public ICollection<TransactedAsset> OutgoingTransactions { get; set; }
 

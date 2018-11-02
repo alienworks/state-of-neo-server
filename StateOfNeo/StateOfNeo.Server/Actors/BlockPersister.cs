@@ -283,6 +283,8 @@ namespace StateOfNeo.Server.Actors
                         db.SaveChanges();
                     }
 
+                    toAddress.LastTransactionOn = block.Timestamp.ToUnixDate();
+
                     var asset = db.Assets.Where(x => x.Hash == output.AssetId.ToString()).FirstOrDefault();
                     if (asset == null)
                     {
@@ -325,6 +327,8 @@ namespace StateOfNeo.Server.Actors
 
                     if (fromAddress != null)
                     {
+                        fromAddress.LastTransactionOn = block.Timestamp.ToUnixDate();
+
                         var fromBalance = db.AddressBalances
                             .Include(x => x.Asset)
                             .Where(x => x.Asset.Hash == asset.Hash && x.AddressPublicAddress == fromAddress.PublicAddress)

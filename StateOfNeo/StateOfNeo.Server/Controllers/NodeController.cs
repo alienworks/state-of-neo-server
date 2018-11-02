@@ -46,6 +46,20 @@ namespace StateOfNeo.Server.Controllers
             }
         }
 
+        [HttpGet("[action]")]
+        public async Task<IActionResult> Update()
+        {
+            try
+            {
+                await this.nodeSynchronizer.Init();
+                return Ok();
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
         [HttpGet("[action]/{id}")]
         public async Task<IActionResult> Get(int id)
         {

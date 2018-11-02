@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Akka.Actor;
+using Microsoft.AspNetCore.Mvc;
 using Neo.Network.P2P;
 using StateOfNeo.Common;
 using System.Linq;
@@ -14,6 +15,7 @@ namespace StateOfNeo.Server.Controllers
         public async Task<IActionResult> Checkip(string ip)
         {
             var remoteNodesCached = LocalNode.Singleton.GetRemoteNodes().ToList();
+
             var endPoint = new IPEndPoint(IPAddress.Parse(ip), 10333);
             var remoteConnect = new Connect(endPoint);
 

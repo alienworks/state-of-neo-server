@@ -41,13 +41,7 @@ namespace StateOfNeo.Server.Controllers
             var result = await this.paginating.GetPage<Data.Models.Address, AddressListViewModel>(
                 page, 
                 pageSize, 
-                x => x.OutgoingTransactions
-                    .Select(z => z.Transaction)
-                    .Union(x.IncomingTransactions.Select(z => z.Transaction))
-                    .Select(z => z.Block.Timestamp)
-                    .Distinct()
-                    .OrderByDescending(ts => ts)
-                    .FirstOrDefault());
+                x => x.LastTransactionOn);
 
             return this.Ok(result.ToListResult());
         }

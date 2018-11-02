@@ -22,15 +22,7 @@ namespace StateOfNeo.Infrastructure.Mapping
                         .Union(x.IncomingTransactions.Select(z => z.Transaction))
                         .Distinct()
                         .Count()))
-                .ForMember(x => x.LastTransactionTime, opt => opt.MapFrom(
-                    x => x.OutgoingTransactions
-                            .Select(z => z.Transaction)
-                            .Union(x.IncomingTransactions.Select(z => z.Transaction))
-                            .Select(z => z.Block.Timestamp)
-                            .Distinct()
-                            .OrderByDescending(ts => ts)
-                            .FirstOrDefault()
-                            .ToUnixDate()))
+                .ForMember(x => x.LastTransactionTime, opt => opt.MapFrom(x => x.LastTransactionOn))
                 .ReverseMap();
 
             cfg.CreateMap<AddressAssetBalance, AddressAssetViewModel>()
