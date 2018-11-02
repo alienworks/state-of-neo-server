@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
 using StateOfNeo.Common.Constants;
 using StateOfNeo.Common.Enums;
@@ -53,7 +54,13 @@ namespace StateOfNeo.Services.Address
 
             return result;
         }
-        
+
+        public T Find<T>(string address) => 
+            this.db.Addresses
+                .Where(x => x.PublicAddress == address)
+                .ProjectTo<T>()
+                .FirstOrDefault();        
+
         public IEnumerable<ChartStatsViewModel> GetStats(ChartFilterViewModel filter)
         {
             var query = this.db.Addresses.AsQueryable();
