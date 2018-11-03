@@ -94,7 +94,7 @@ namespace StateOfNeo.Server.Infrastructure
             {
                 using (var http = new HttpClient())
                 {
-                    var req = new HttpRequestMessage(HttpMethod.Get, $"https://api.ipdata.co/{ip}");
+                    var req = new HttpRequestMessage(HttpMethod.Get, $"https://ipapi.co/{ip}/json");
                     response = await http.SendAsync(req);
                 }
             }
