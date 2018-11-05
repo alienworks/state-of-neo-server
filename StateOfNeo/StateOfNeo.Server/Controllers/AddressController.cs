@@ -83,6 +83,7 @@ namespace StateOfNeo.Server.Controllers
         
         [HttpPost("[action]")]
         public IActionResult Chart([FromBody]ChartFilterViewModel filter)
+
         {
             var result = this.addresses.GetStats(filter);
             return this.Ok(result);

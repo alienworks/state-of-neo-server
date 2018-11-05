@@ -63,5 +63,12 @@ namespace StateOfNeo.Server.Controllers
             var result = this.transactions.GetStats(filter);
             return this.Ok(result);
         }
+
+        [HttpGet("[action]")]
+        public IActionResult PieChart()
+        {
+            IEnumerable<ChartStatsViewModel> result = this.transactions.GetPieStats();
+            return this.Ok(result);
+        }
     }
 }
