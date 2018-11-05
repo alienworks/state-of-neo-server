@@ -1,4 +1,8 @@
 ﻿using Akka.Actor;
+using Neo.Ledger;
+using Neo.Network.P2P.Payloads;
+using Neo.SmartContract;
+using StateOfNeo.Common.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,7 +22,20 @@ namespace StateOfNeo.Server.Actors
         {
             if (message is ApplicationExecuted m)
             {
-                
+                var transaction = m.Transaction as InvocationTransaction;
+                foreach (var result in m.ExecutionResults)
+                {
+                    foreach (var item in result.Notifications)
+                    {
+                        var type = item.GetNotificationType();
+                        if (type == "transfer")
+                        {
+                            var contractHash = item.ScriptHash;
+
+
+                        }
+                    }
+                }
             }
         }
 

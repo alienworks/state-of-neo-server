@@ -18,7 +18,7 @@ namespace StateOfNeo.Data.Models
 
         public string Hash { get; set; }
 
-        public Neo.Network.P2P.Payloads.AssetType GlobalType { get; set; }
+        public Neo.Network.P2P.Payloads.AssetType? GlobalType { get; set; }
 
         public AssetType Type { get; set; }
 
