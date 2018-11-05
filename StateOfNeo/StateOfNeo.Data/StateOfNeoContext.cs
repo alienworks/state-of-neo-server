@@ -30,5 +30,11 @@ namespace StateOfNeo.Data
         public DbSet<RegisterTransaction> RegisterTransactions { get; set; }
         public DbSet<StateTransaction> StateTransactions { get; set; }
         public DbSet<StateDescriptor> StateDescriptors { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<Address>()
+                .HasIndex(x => x.LastTransactionOn);
+        }
     }
 }
