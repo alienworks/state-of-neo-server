@@ -3,6 +3,7 @@ using StateOfNeo.Data.Models;
 using StateOfNeo.ViewModels.Asset;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace StateOfNeo.Infrastructure.Mapping
@@ -12,10 +13,14 @@ namespace StateOfNeo.Infrastructure.Mapping
         internal static void InitMap(IMapperConfigurationExpression cfg)
         {
             cfg.CreateMap<Asset, AssetListViewModel>()
-                    .ReverseMap();
+                .ForMember(x => x.TotalSupply, opt => opt.MapFrom(x => (decimal)x.MaxSupply))
+                .ReverseMap();
 
             cfg.CreateMap<Asset, AssetDetailsViewModel>()
-                    .ReverseMap();
+                .ForMember(x => x.TotalSupply, opt => opt.MapFrom(x => (decimal)x.MaxSupply))
+                .ForMember(x => x.TransactionsCount, opt => opt.MapFrom(x => x.TransactedAssets.Count))
+                .ForMember(x => x.AddressesCount, opt => opt.MapFrom(x => x.TransactedAssets.Select(ta => ta.FromAddressPublicAddress).Union(x.TransactedAssets.Select(ta => ta.ToAddressPublicAddress)).Distinct().Count()))
+                .ReverseMap();
         }
     }
 }

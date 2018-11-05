@@ -19,8 +19,8 @@ namespace StateOfNeo.Services.Address
 
         IEnumerable<ChartStatsViewModel> GetStats(ChartFilterViewModel filter);
 
-        IEnumerable<PublicAddressListViewModel> TopOneHundredNeo();
+        IEnumerable<AddressListViewModel> TopOneHundredNeo();
 
-        IEnumerable<PublicAddressListViewModel> TopOneHundredGas();
+        IEnumerable<AddressListViewModel> TopOneHundredGas();
     }
 }

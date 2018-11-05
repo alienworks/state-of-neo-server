@@ -36,14 +36,14 @@ namespace StateOfNeo.Services.Address
             if (timePeriod == UnitOfTime.Hour)
             {
                 result = this.db.Addresses.Count() / this.db.Addresses
-                       .GroupBy(x => new { x.FirstTransactionOn.Year, x.FirstTransactionOn.Month, x.FirstTransactionOn.Day, x.FirstTransactionOn.Hour })
-                       .Count();
+                    .GroupBy(x => new { x.FirstTransactionOn.Year, x.FirstTransactionOn.Month, x.FirstTransactionOn.Day, x.FirstTransactionOn.Hour })
+                    .Count();
             }
             else if (timePeriod == UnitOfTime.Day)
             {
                 result = this.db.Addresses.Count() / this.db.Addresses
-                       .GroupBy(x => new { x.FirstTransactionOn.Year, x.FirstTransactionOn.Month, x.FirstTransactionOn.Day })
-                       .Count();
+                    .GroupBy(x => new { x.FirstTransactionOn.Year, x.FirstTransactionOn.Month, x.FirstTransactionOn.Day })
+                    .Count();
             }
             else if (timePeriod == UnitOfTime.Month)
             {
@@ -131,53 +131,34 @@ namespace StateOfNeo.Services.Address
             return result;
         }
 
-        public IEnumerable<PublicAddressListViewModel> TopOneHundredNeo()
+        public IEnumerable<AddressListViewModel> TopOneHundredNeo()
         {
             var result = this.db.Addresses
-                .Select(x => new
-                {
-                    Address = x.PublicAddress,
-                    NeoIncome = x.IncomingTransactions.Any(tr => tr.Asset.Hash == AssetConstants.NeoAssetId)
-                        ? x.IncomingTransactions.Where(tr => tr.Asset.Hash == AssetConstants.NeoAssetId).Sum(tr => tr.Amount)
-                        : 0,
-                    NeoOutcome = x.OutgoingTransactions.Any(tr => tr.Asset.Hash == AssetConstants.NeoAssetId)
-                        ? x.OutgoingTransactions.Where(tr => tr.Asset.Hash == AssetConstants.NeoAssetId).Sum(tr => tr.Amount)
-                        : 0
-                })
-                .Select(x => new PublicAddressListViewModel
-                {
-                    Address = x.Address,
-                    Balance = x.NeoIncome - x.NeoOutcome
-                })
-                .OrderByDescending(x => x.Balance)
+                .Where(x => x.Balances.Any(b => b.Asset.Hash == AssetConstants.NeoAssetId))
+                //.Select(x => new PublicAddressListViewModel
+                //{
+                //    Address = x.PublicAddress,
+                //    Balance = x.Balances.Where(b => b.Asset.Hash == AssetConstants.NeoAssetId).Select(b => b.Balance).FirstOrDefault()
+                //})
+                .OrderByDescending(x => x.Balances.Where(b => b.Asset.Hash == AssetConstants.NeoAssetId).Select(b => b.Balance).FirstOrDefault())
+                .ProjectTo<AddressListViewModel>()
                 .Take(100)
                 .ToList();
 
             return result;
         }
 
-        public IEnumerable<PublicAddressListViewModel> TopOneHundredGas()
+        public IEnumerable<AddressListViewModel> TopOneHundredGas()
         {
             var result = this.db.Addresses
-                .Select(x => new
-                {
-                    Address = x.PublicAddress,                    
-                    GasIncome = (x.IncomingTransactions.Any(tr => tr.Asset.Hash == AssetConstants.GasAssetId)
-                        ? x.IncomingTransactions.Where(tr => tr.Asset.Hash == AssetConstants.GasAssetId).Sum(tr => tr.Amount)
-                        : 0),
-                    GasOutcome = x.OutgoingTransactions.Any(tr => tr.Asset.Hash == AssetConstants.GasAssetId)
-                        ? x.OutgoingTransactions.Where(tr => tr.Asset.Hash == AssetConstants.GasAssetId).Sum(tr => tr.Amount)
-                        : 0,
-                    GasFees = x.OutgoingTransactions.Any()
-                        ? x.OutgoingTransactions.Select(tr => tr.Transaction.SystemFee).Sum()
-                        : 0
-                })
-                .Select(x => new PublicAddressListViewModel
-                {
-                    Address = x.Address,
-                    Balance = x.GasIncome - x.GasOutcome - x.GasFees
-                })
-                .OrderByDescending(x => x.Balance)
+                .Where(x => x.Balances.Any(b => b.Asset.Hash == AssetConstants.GasAssetId))
+                //.Select(x => new PublicAddressListViewModel
+                //{
+                //    Address = x.PublicAddress,
+                //    Balance = x.Balances.Where(b => b.Asset.Hash == AssetConstants.GasAssetId).Select(b => b.Balance).FirstOrDefault()
+                //})
+                .OrderByDescending(x => x.Balances.Where(b => b.Asset.Hash == AssetConstants.GasAssetId).Select(b => b.Balance).FirstOrDefault())
+                .ProjectTo<AddressListViewModel>()
                 .Take(100)
                 .ToList();
 
