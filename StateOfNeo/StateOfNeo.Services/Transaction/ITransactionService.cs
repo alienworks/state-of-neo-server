@@ -12,5 +12,6 @@ namespace StateOfNeo.Services.Transaction
         decimal TotalClaimed();
 
         IEnumerable<ChartStatsViewModel> GetStats(ChartFilterViewModel filter);
+        IEnumerable<ChartStatsViewModel> GetPieStats();
     }
 }

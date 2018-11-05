@@ -41,18 +41,20 @@ namespace StateOfNeo.Services.Transaction
 
         public IEnumerable<ChartStatsViewModel> GetStats(ChartFilterViewModel filter)
         {
+            if (filter.StartDate == null)
+            {
+                var dbTxLatestTime = this.db.Transactions
+                    .OrderByDescending(x => x.Block.CreatedOn)
+                    .Select(x => x.Block.CreatedOn)
+                    .FirstOrDefault();
+
+                filter.StartDate = dbTxLatestTime;
+            }
+
             var query = this.db.Transactions.AsQueryable();
             var result = new List<ChartStatsViewModel>();
 
-            if (filter.StartDate != null)
-            {
-                query = query.Where(x => x.Block.Timestamp.ToUnixDate() >= filter.StartDate);
-            }
-
-            if (filter.EndDate != null)
-            {
-                query = query.Where(x => x.Block.Timestamp.ToUnixDate() <= filter.EndDate);
-            }
+            query = query.Where(x => x.Block.Timestamp.ToUnixDate() >= filter.GetEndPeriod());
 
             if (filter.UnitOfTime == UnitOfTime.Hour)
             {
@@ -107,6 +109,19 @@ namespace StateOfNeo.Services.Transaction
             }
 
             return result;
+        }
+
+        public IEnumerable<ChartStatsViewModel> GetPieStats()
+        {
+            return this.db.Transactions
+                 .Select(x => x.Type)
+                 .GroupBy(x => x)
+                 .Select(x => new ChartStatsViewModel
+                 {
+                     Label = x.Key.ToString(),
+                     Value = x.Count()
+                 })
+                 .ToList();
         }
     }
 }

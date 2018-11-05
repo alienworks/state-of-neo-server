@@ -29,12 +29,12 @@ namespace StateOfNeo.Services.Block
                 .ProjectTo<T>()
                 .FirstOrDefault();
 
-        public T Find<T>(int height) => 
+        public T Find<T>(int height) =>
             this.db.Blocks
                  .Where(x => x.Height == height)
                  .ProjectTo<T>()
                  .FirstOrDefault();
-        
+
         public int AverageBlockSize(UnitOfTime timePeriod)
         {
             var result = 0;
@@ -80,19 +80,11 @@ namespace StateOfNeo.Services.Block
 
         public IEnumerable<ChartStatsViewModel> GetBlockSizeStats(ChartFilterViewModel filter)
         {
+            ConfirmStartDateValue(filter);
             var query = this.db.Blocks.AsQueryable();
             var result = new List<ChartStatsViewModel>();
 
-            if (filter.StartDate != null)
-            {
-                query = query.Where(x => x.Timestamp.ToUnixDate() >= filter.StartDate);
-            }
-
-            if (filter.EndDate != null)
-            {
-                query = query.Where(x => x.Timestamp.ToUnixDate() <= filter.EndDate);
-            }
-
+            query = query.Where(x => x.Timestamp.ToUnixDate() >= filter.GetEndPeriod());
             if (filter.UnitOfTime == UnitOfTime.Hour)
             {
                 result = query.ToList().GroupBy(x => new
@@ -150,19 +142,11 @@ namespace StateOfNeo.Services.Block
 
         public IEnumerable<ChartStatsViewModel> GetBlockTimeStats(ChartFilterViewModel filter)
         {
+            ConfirmStartDateValue(filter);
             var query = this.db.Blocks.Include(x => x.PreviousBlock).AsQueryable();
             var result = new List<ChartStatsViewModel>();
 
-            if (filter.StartDate != null)
-            {
-                query = query.Where(x => x.Timestamp.ToUnixDate() >= filter.StartDate);
-            }
-
-            if (filter.EndDate != null)
-            {
-                query = query.Where(x => x.Timestamp.ToUnixDate() <= filter.EndDate);
-            }
-
+            query = query.Where(x => x.Timestamp.ToUnixDate() >= filter.GetEndPeriod());
             query = query.Where(x => x.PreviousBlock != null);
             if (filter.UnitOfTime == UnitOfTime.Hour)
             {
@@ -217,6 +201,19 @@ namespace StateOfNeo.Services.Block
             }
 
             return result;
+        }
+
+        private void ConfirmStartDateValue(ChartFilterViewModel filter)
+        {
+            if (filter.StartDate == null)
+            {
+                var latestDbBlockTime = this.db.Blocks
+                    .OrderByDescending(x => x.CreatedOn)
+                    .Select(x => x.CreatedOn)
+                    .FirstOrDefault();
+
+                filter.StartDate = latestDbBlockTime;
+            }
         }
     }
 }

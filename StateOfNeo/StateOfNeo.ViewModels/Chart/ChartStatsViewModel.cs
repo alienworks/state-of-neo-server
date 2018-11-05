@@ -7,6 +7,8 @@ namespace StateOfNeo.ViewModels.Chart
 {
     public class ChartStatsViewModel
     {
+        public string Label { get; set; }
+
         public DateTime StartDate { get; set; }
 
         public UnitOfTime UnitOfTime { get; set; }
