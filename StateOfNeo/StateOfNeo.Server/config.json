@@ -5,11 +5,11 @@
       "ApplicationLogs": "ApplicationLogs_{0}"
     },
     "P2P": {
-      "Port": 10333,
-      "WsPort": 10334
+      "Port": 20333,
+      "WsPort": 20334
     },
     "RPC": {
-      "Port": 10332,
+      "Port": 20332,
       "SslCert": "",
       "SslCertPassword": ""
     },
@@ -19,10 +19,10 @@
       "StartConsensus": false,
       "IsActive": false
     },
-    "DataDirectoryPath": "ChainMainNet",
+    "DataDirectoryPath": "ChainTestNet",
     "CertCachePath": "Certs",
-    "NodePort": 10333,
-    "WsPort": 10334,
+    "NodePort": 20333,
+    "WsPort": 20334,
     "UriPrefix": [ "" ],
     "SslCert": "",
     "SslCertPassword": ""
