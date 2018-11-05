@@ -36,8 +36,11 @@ namespace StateOfNeo.Server.Actors
         private readonly string net;
         private readonly IHubContext<BlockHub> blockHub;
 
-        public BlockPersister(IActorRef blockchain, string connectionString,
-            IHubContext<BlockHub> blockHub, string net)
+        public BlockPersister(
+            IActorRef blockchain, 
+            string connectionString,
+            IHubContext<BlockHub> blockHub, 
+            string net)
         {
             this.connectionString = connectionString;
             this.blockHub = blockHub;
@@ -101,10 +104,6 @@ namespace StateOfNeo.Server.Actors
                 PreviousBlockHash = blockToPersist.PrevHash.ToString()
             };
 
-            var hubBlock = Mapper.Map<BlockHubViewModel>(block);
-            hubBlock.TransactionCount = blockToPersist.Transactions.Length;
-            this.blockHub.Clients.All.SendAsync("Receive", hubBlock);
-
             db.Blocks.Add(block);
             db.SaveChanges();
 
@@ -167,6 +166,19 @@ namespace StateOfNeo.Server.Actors
                     };
 
                     transaction.RegisterTransaction = registerTransaction;
+
+                    var asset = new Asset
+                    {
+                        CreatedOn = DateTime.UtcNow,
+                        Name = unboxed.Name,
+                        MaxSupply = (int)unboxed.Amount,
+                        GlobalType = unboxed.AssetType,
+                        Type = AssetType.OTHER,
+                        Hash = item.Hash.ToString()
+                    };
+
+                    db.Assets.Add(asset);
+                    db.SaveChanges();
                 }
                 else if (item.Type == Neo.Network.P2P.Payloads.TransactionType.EnrollmentTransaction)
                 {
@@ -286,18 +298,7 @@ namespace StateOfNeo.Server.Actors
                     toAddress.LastTransactionOn = block.Timestamp.ToUnixDate();
 
                     var asset = db.Assets.Where(x => x.Hash == output.AssetId.ToString()).FirstOrDefault();
-                    if (asset == null)
-                    {
-                        asset = new Asset
-                        {
-                            CreatedOn = DateTime.UtcNow,
-                            Hash = output.AssetId.ToString()
-                        };
-
-                        db.Assets.Add(asset);
-                        db.SaveChanges();
-                    }
-                                        
+                    
                     var ta = new TransactedAsset
                     {
                         Amount = (decimal)output.Value,
@@ -375,6 +376,10 @@ namespace StateOfNeo.Server.Actors
             }
 
             db.SaveChanges();
+
+            var hubBlock = Mapper.Map<BlockHubViewModel>(block);
+            hubBlock.TransactionCount = blockToPersist.Transactions.Length;
+            this.blockHub.Clients.All.SendAsync("Receive", hubBlock);
         }
 
         private void SeedGenesisBlock(StateOfNeoContext db)
@@ -444,7 +449,8 @@ namespace StateOfNeo.Server.Actors
                 CreatedOn = DateTime.UtcNow,
                 Name = "NEO",
                 MaxSupply = 100_000_000,
-                Type = AssetType.NEO
+                Type = AssetType.NEO,
+                GlobalType = Neo.Network.P2P.Payloads.AssetType.GoverningToken
             };
 
             var gas = new Asset
@@ -453,7 +459,8 @@ namespace StateOfNeo.Server.Actors
                 CreatedOn = DateTime.UtcNow,
                 Name = "GAS",
                 MaxSupply = 100_000_000,
-                Type = AssetType.GAS
+                Type = AssetType.GAS,
+                GlobalType = Neo.Network.P2P.Payloads.AssetType.UtilityToken
             };
 
             var neoAssetIssueTransaction = new Transaction
