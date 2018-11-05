@@ -131,32 +131,34 @@ namespace StateOfNeo.Services.Address
             return result;
         }
 
-        public IEnumerable<PublicAddressListViewModel> TopOneHundredNeo()
+        public IEnumerable<AddressListViewModel> TopOneHundredNeo()
         {
             var result = this.db.Addresses
                 .Where(x => x.Balances.Any(b => b.Asset.Hash == AssetConstants.NeoAssetId))
-                .Select(x => new PublicAddressListViewModel
-                {
-                    Address = x.PublicAddress,
-                    Balance = x.Balances.Where(b => b.Asset.Hash == AssetConstants.NeoAssetId).Select(b => b.Balance).FirstOrDefault()
-                })
-                .OrderByDescending(x => x.Balance)
+                //.Select(x => new PublicAddressListViewModel
+                //{
+                //    Address = x.PublicAddress,
+                //    Balance = x.Balances.Where(b => b.Asset.Hash == AssetConstants.NeoAssetId).Select(b => b.Balance).FirstOrDefault()
+                //})
+                .OrderByDescending(x => x.Balances.Where(b => b.Asset.Hash == AssetConstants.NeoAssetId).Select(b => b.Balance).FirstOrDefault())
+                .ProjectTo<AddressListViewModel>()
                 .Take(100)
                 .ToList();
 
             return result;
         }
 
-        public IEnumerable<PublicAddressListViewModel> TopOneHundredGas()
+        public IEnumerable<AddressListViewModel> TopOneHundredGas()
         {
             var result = this.db.Addresses
                 .Where(x => x.Balances.Any(b => b.Asset.Hash == AssetConstants.GasAssetId))
-                .Select(x => new PublicAddressListViewModel
-                {
-                    Address = x.PublicAddress,
-                    Balance = x.Balances.Where(b => b.Asset.Hash == AssetConstants.GasAssetId).Select(b => b.Balance).FirstOrDefault()
-                })
-                .OrderByDescending(x => x.Balance)
+                //.Select(x => new PublicAddressListViewModel
+                //{
+                //    Address = x.PublicAddress,
+                //    Balance = x.Balances.Where(b => b.Asset.Hash == AssetConstants.GasAssetId).Select(b => b.Balance).FirstOrDefault()
+                //})
+                .OrderByDescending(x => x.Balances.Where(b => b.Asset.Hash == AssetConstants.GasAssetId).Select(b => b.Balance).FirstOrDefault())
+                .ProjectTo<AddressListViewModel>()
                 .Take(100)
                 .ToList();
 
