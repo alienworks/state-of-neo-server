@@ -22,7 +22,7 @@ namespace StateOfNeo.Server.Controllers
             this.assets = assets;
         }
 
-        [HttpGet("[action]")]
+        [HttpGet("[action]/{hash}")]
         public IActionResult Get(string hash)
         {
             var asset = this.assets.Find<AssetDetailsViewModel>(hash);

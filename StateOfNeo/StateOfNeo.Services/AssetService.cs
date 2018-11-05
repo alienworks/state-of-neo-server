@@ -16,7 +16,7 @@ namespace StateOfNeo.Services
 
         public T Find<T>(string hash) => 
             this.db.Assets
-                .Where(x => x.Hash.ToString() == hash)
+                .Where(x => x.Hash == hash)
                 .ProjectTo<T>()
                 .FirstOrDefault();        
     }
