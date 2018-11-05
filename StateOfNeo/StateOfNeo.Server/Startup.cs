@@ -110,7 +110,7 @@ namespace StateOfNeo.Server
             app.UseCors(builder =>
             {
                 builder
-                    .WithOrigins("http://localhost:8111", "http://localhost:4200")
+                    .WithOrigins("http://stateofneo.io", "https://stateofneo.io", "http://localhost:4200")
                     .AllowAnyMethod()
                     .AllowAnyHeader()
                     .AllowCredentials();

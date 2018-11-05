@@ -16,12 +16,13 @@ namespace StateOfNeo.Server
 
         public static IWebHostBuilder CreateWebHostBuilder(string[] args) =>
             WebHost.CreateDefaultBuilder(args)
+                .UseUrls("http://*:80")
                 .UseStartup<Startup>();
 
         private static void InitializeNeoSystem(string[] args)
         {
             LevelDBStore store = new LevelDBStore(NeoSettings.Default.DataDirectoryPath);
-            NeoSystem = new NeoSystem(store);            
+            NeoSystem = new NeoSystem(store);
             NeoSystem.StartNode(NeoSettings.Default.NodePort, NeoSettings.Default.WsPort);
 
             CreateWebHostBuilder(args).Build().Run();
