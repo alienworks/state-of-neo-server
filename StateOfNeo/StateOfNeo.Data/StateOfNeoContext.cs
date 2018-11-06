@@ -2,6 +2,7 @@
 using StateOfNeo.Data.Models;
 using StateOfNeo.Data.Models.Transactions;
 using System;
+using System.Linq;
 
 namespace StateOfNeo.Data
 {
@@ -33,8 +34,17 @@ namespace StateOfNeo.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<Address>()
-                .HasIndex(x => x.LastTransactionOn);
+            modelBuilder.Entity<Address>().HasIndex(x => x.LastTransactionOn);
+
+            var decimalProps = modelBuilder.Model
+                .GetEntityTypes()
+                .SelectMany(t => t.GetProperties())
+                .Where(p => p.ClrType == typeof(decimal));
+
+            foreach (var property in decimalProps)
+            {
+                property.Relational().ColumnType = "decimal(18, 9)";
+            }
         }
     }
 }
