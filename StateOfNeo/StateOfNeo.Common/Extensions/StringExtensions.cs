@@ -1,4 +1,7 @@
-﻿using System;
+﻿using Neo;
+using Neo.Cryptography;
+using System;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -31,6 +34,16 @@ namespace StateOfNeo.Common
             }
 
             return sb.ToString();
+        }
+
+        public static UInt160 ToScriptHash(this string address)
+        {
+            byte[] data = address.Base58CheckDecode();
+            if (data.Length != 21)
+                throw new FormatException();
+            //if (data[0] != Settings.Default.AddressVersion)
+            //    throw new FormatException();
+            return new UInt160(data.Skip(1).ToArray());
         }
     }
 }

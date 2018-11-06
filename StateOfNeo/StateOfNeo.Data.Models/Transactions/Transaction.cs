@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace StateOfNeo.Data.Models.Transactions
 {
@@ -9,6 +10,8 @@ namespace StateOfNeo.Data.Models.Transactions
         {
             this.Assets = new HashSet<TransactedAsset>();
             this.Attributes = new HashSet<TransactionAttribute>();
+            this.GlobalIncomingAssets = new HashSet<TransactedAsset>();
+            this.GlobalOutgoingAssets = new HashSet<TransactedAsset>();
             this.Witnesses = new HashSet<TransactionWitness>();
         }
 
@@ -28,7 +31,14 @@ namespace StateOfNeo.Data.Models.Transactions
         public string BlockId { get; set; }
 
         public virtual Block Block { get; set; }
+        
+        [InverseProperty(nameof(TransactedAsset.InGlobalTransaction))]
+        public virtual ICollection<TransactedAsset> GlobalIncomingAssets { get; set; }
 
+        [InverseProperty(nameof(TransactedAsset.OutGlobalTransaction))]
+        public virtual ICollection<TransactedAsset> GlobalOutgoingAssets { get; set; }
+
+        [InverseProperty(nameof(TransactedAsset.Transaction))]
         public virtual ICollection<TransactedAsset> Assets { get; set; }
 
         public virtual ICollection<TransactionAttribute> Attributes { get; set; }

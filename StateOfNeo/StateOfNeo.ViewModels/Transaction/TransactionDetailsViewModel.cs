@@ -27,6 +27,10 @@ namespace StateOfNeo.ViewModels.Transaction
 
         public int BlockHeight { get; set; }
 
+        public IEnumerable<TransactedAssetViewModel> GlobalIncomingAssets { get; set; }
+
+        public IEnumerable<TransactedAssetViewModel> GlobalOutgoingAssets { get; set; }
+
         public IEnumerable<TransactedAssetViewModel> Assets { get; set; }
 
         public IEnumerable<TransactionAttributeViewModel> Attributes { get; set; }

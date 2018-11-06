@@ -39,13 +39,25 @@ namespace StateOfNeo.Server.Controllers
         [HttpGet("[action]")]
         public async Task<IActionResult> List(int page = 1, int pageSize = 10, string blockHash = null, string address = null)
         {
+            if (!string.IsNullOrEmpty(address))
+            {
+                var res = this.transactions.TransactionsForAddress<TransactionListViewModel>(address, page, pageSize);
+                return this.Ok(res.ToListResult());
+            }
+
             var result = await this.paginating.GetPage<Transaction, TransactionListViewModel>(
                 page, 
                 pageSize, 
                 x => x.Block.Timestamp.ToUnixDate(),
                 x => 
-                    (blockHash == null ? true : x.Block.Hash == blockHash) 
-                    && (address == null ? true : x.Assets.Any(a => a.FromAddress.PublicAddress == address || a.ToAddress.PublicAddress == address)));
+                    (blockHash == null 
+                        ? true 
+                        : x.Block.Hash == blockHash) 
+                    && (address == null 
+                        ? true 
+                        : (x.Assets.Any(a => a.FromAddress.PublicAddress == address || a.ToAddress.PublicAddress == address) 
+                            || x.GlobalIncomingAssets.Any(a => a.FromAddressPublicAddress == address) 
+                            || x.GlobalOutgoingAssets.Any(a => a.ToAddressPublicAddress == address))));
 
             return this.Ok(result.ToListResult());
         }
