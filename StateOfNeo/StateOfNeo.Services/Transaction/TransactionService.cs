@@ -59,6 +59,22 @@ namespace StateOfNeo.Services.Transaction
             return result;
         }
 
+        public IPagedList<T> GetPageTransactions<T>(int page = 1, int pageSize = 10, string blockHash = null)
+        {
+            var query = this.db.Transactions
+                .AsQueryable();
+
+            if (!string.IsNullOrEmpty(blockHash))
+            {
+                query = query.Where(x => x.BlockId == blockHash);
+            }
+
+            return query
+                .OrderByDescending(x => x.Timestamp)
+                .ProjectTo<T>()
+                .ToPagedList(page, pageSize);
+        }
+
         public IEnumerable<ChartStatsViewModel> GetStats(ChartFilterViewModel filter)
         {
             if (filter.StartDate == null)

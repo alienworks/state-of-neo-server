@@ -28,6 +28,8 @@ namespace StateOfNeo.Data.Models.Transactions
 
         public int Version { get; set; }
 
+        public long Timestamp { get; set; }
+
         public string BlockId { get; set; }
 
         public virtual Block Block { get; set; }

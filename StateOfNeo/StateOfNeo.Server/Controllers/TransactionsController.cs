@@ -45,19 +45,7 @@ namespace StateOfNeo.Server.Controllers
                 return this.Ok(res.ToListResult());
             }
 
-            var result = await this.paginating.GetPage<Transaction, TransactionListViewModel>(
-                page, 
-                pageSize, 
-                x => x.Block.Timestamp.ToUnixDate(),
-                x => 
-                    (blockHash == null 
-                        ? true 
-                        : x.Block.Hash == blockHash) 
-                    && (address == null 
-                        ? true 
-                        : (x.Assets.Any(a => a.FromAddress.PublicAddress == address || a.ToAddress.PublicAddress == address) 
-                            || x.GlobalIncomingAssets.Any(a => a.FromAddressPublicAddress == address) 
-                            || x.GlobalOutgoingAssets.Any(a => a.ToAddressPublicAddress == address))));
+            var result = this.transactions.GetPageTransactions<TransactionListViewModel>(page, pageSize, blockHash);
 
             return this.Ok(result.ToListResult());
         }

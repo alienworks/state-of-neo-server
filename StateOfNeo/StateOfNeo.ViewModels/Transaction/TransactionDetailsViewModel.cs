@@ -1,4 +1,5 @@
 ﻿using Neo.Network.P2P.Payloads;
+using StateOfNeo.Common.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -15,7 +16,7 @@ namespace StateOfNeo.ViewModels.Transaction
 
         public long Timestamp { get; set; }
 
-        public DateTime FinalizedAt { get; set; }
+        public DateTime FinalizedAt => this.Timestamp.ToUnixDate();
 
         public decimal NetworkFee { get; set; }
 

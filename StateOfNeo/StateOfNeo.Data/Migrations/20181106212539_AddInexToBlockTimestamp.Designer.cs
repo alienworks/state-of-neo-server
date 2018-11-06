@@ -3,15 +3,17 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using StateOfNeo.Data;
 
 namespace StateOfNeo.Data.Migrations
 {
     [DbContext(typeof(StateOfNeoContext))]
-    partial class StateOfNeoContextModelSnapshot : ModelSnapshot
+    [Migration("20181106212539_AddInexToBlockTimestamp")]
+    partial class AddInexToBlockTimestamp
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -447,8 +449,6 @@ namespace StateOfNeo.Data.Migrations
                     b.Property<decimal>("SystemFee")
                         .HasColumnType("decimal(20, 9)");
 
-                    b.Property<long>("Timestamp");
-
                     b.Property<byte>("Type");
 
                     b.Property<int>("Version");
@@ -480,8 +480,6 @@ namespace StateOfNeo.Data.Migrations
                     b.HasIndex("StateTransactionId")
                         .IsUnique()
                         .HasFilter("[StateTransactionId] IS NOT NULL");
-
-                    b.HasIndex("Timestamp");
 
                     b.ToTable("Transactions");
                 });

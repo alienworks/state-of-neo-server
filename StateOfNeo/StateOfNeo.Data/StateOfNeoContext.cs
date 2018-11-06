@@ -36,6 +36,10 @@ namespace StateOfNeo.Data
         {
             modelBuilder.Entity<Address>().HasIndex(x => x.LastTransactionOn);
 
+            modelBuilder.Entity<Block>().HasIndex(x => x.Timestamp);
+
+            modelBuilder.Entity<Transaction>().HasIndex(x => x.Timestamp);
+
             var decimalProps = modelBuilder.Model
                 .GetEntityTypes()
                 .SelectMany(t => t.GetProperties())
@@ -43,7 +47,7 @@ namespace StateOfNeo.Data
 
             foreach (var property in decimalProps)
             {
-                property.Relational().ColumnType = "decimal(18, 9)";
+                property.Relational().ColumnType = "decimal(20, 9)";
             }
         }
     }

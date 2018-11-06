@@ -12,6 +12,8 @@ namespace StateOfNeo.Services.Transaction
 
         decimal TotalClaimed();
 
+        IPagedList<T> GetPageTransactions<T>(int page = 1, int pageSize = 10, string blockHash = null);
+        
         IPagedList<T> TransactionsForAddress<T>(string address, int page = 1, int pageSize = 10);
 
         IEnumerable<ChartStatsViewModel> GetStats(ChartFilterViewModel filter);
