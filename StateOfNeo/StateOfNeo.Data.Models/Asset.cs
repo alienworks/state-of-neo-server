@@ -16,13 +16,19 @@ namespace StateOfNeo.Data.Models
 
         public string Name { get; set; }
 
+        public string Symbol { get; set; }
+
         public string Hash { get; set; }
+
+        public int Decimals { get; set; }
 
         public Neo.Network.P2P.Payloads.AssetType? GlobalType { get; set; }
 
         public AssetType Type { get; set; }
 
-        public int MaxSupply { get; set; }
+        public long MaxSupply { get; set; }
+
+        public long CurrentSupply { get; set; }
 
         public virtual ICollection<AddressAssetBalance> Balances { get; set; }
 
