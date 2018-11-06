@@ -92,12 +92,15 @@ namespace StateOfNeo.Server
             IOptions<NetSettings> netSettings,
             IHubContext<BlockHub> blockHub)
         {
+            var connectionString = this.Configuration.GetConnectionString("DefaultConnection");
             Program.NeoSystem.ActorSystem.ActorOf(BlockPersister.Props(
                 Program.NeoSystem.Blockchain, 
-                this.Configuration.GetConnectionString("DefaultConnection"), 
+                connectionString, 
                 blockHub, 
                 netSettings.Value.Net));
-            
+
+            Program.NeoSystem.ActorSystem.ActorOf(NotificationsListener.Props(Program.NeoSystem.Blockchain, connectionString));
+
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
@@ -132,6 +135,5 @@ namespace StateOfNeo.Server
 
             app.UseMvc();
         }
-
     }
 }
