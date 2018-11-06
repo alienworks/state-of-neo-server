@@ -4,6 +4,7 @@ using Neo.VM;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Globalization;
 using System.Linq;
 using System.Numerics;
 using System.Text;
@@ -27,11 +28,10 @@ namespace StateOfNeo.Common.Extensions
                     var rawValue = stackItems.ElementAt(i).GetByteArray();
                     if (property.PropertyType == typeof(BigInteger))
                     {
-                        var valueAsString = rawValue.ToHexString().HexStringToString();
-                        if (BigInteger.TryParse(valueAsString, out BigInteger defaultInt))
-                        {
-                            SetPropertyValue(property.Name, instance, BigInteger.Parse(valueAsString));
-                        }
+                        var valueAsString = rawValue.ToHexString();
+                        var result = BigInteger.Parse(valueAsString, NumberStyles.AllowHexSpecifier);
+                        
+                        SetPropertyValue(property.Name, instance, result);                        
                     }
                     else if (property.PropertyType == typeof(byte[]))
                     {
