@@ -38,7 +38,7 @@ namespace StateOfNeo.Server.Actors
             {
                 var transaction = m.Transaction as InvocationTransaction;
                 var optionsBuilder = new DbContextOptionsBuilder<StateOfNeoContext>();
-                optionsBuilder.UseSqlServer(this.connectionString);
+                optionsBuilder.UseSqlServer(this.connectionString, opts => opts.CommandTimeout((int)TimeSpan.FromMinutes(10).TotalSeconds));
                 var db = new StateOfNeoContext(optionsBuilder.Options);
 
                 foreach (var result in m.ExecutionResults)

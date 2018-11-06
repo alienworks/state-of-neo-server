@@ -37,6 +37,7 @@ namespace StateOfNeo.Data
             modelBuilder.Entity<Address>().HasIndex(x => x.LastTransactionOn);
 
             modelBuilder.Entity<Block>().HasIndex(x => x.Timestamp);
+            modelBuilder.Entity<Block>().HasIndex(x => x.Height);
 
             modelBuilder.Entity<Transaction>().HasIndex(x => x.Timestamp);
 

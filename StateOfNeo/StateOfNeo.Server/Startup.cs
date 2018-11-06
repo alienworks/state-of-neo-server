@@ -65,7 +65,9 @@ namespace StateOfNeo.Server
             services.AddScoped<LocationCaller>();
 
             services
-                .AddDbContext<StateOfNeoContext>(options => options.UseSqlServer(this.Configuration.GetConnectionString("DefaultConnection")))
+                .AddDbContext<StateOfNeoContext>(options => options.UseSqlServer(
+                    this.Configuration.GetConnectionString("DefaultConnection"),
+                    opts => opts.CommandTimeout((int)TimeSpan.FromMinutes(10).TotalSeconds)))
                 .AddEntityFrameworkSqlServer();
 
             services.AddTransient<StateOfNeoSeedData>();
@@ -99,7 +101,7 @@ namespace StateOfNeo.Server
                 blockHub, 
                 netSettings.Value.Net));
 
-            Program.NeoSystem.ActorSystem.ActorOf(NotificationsListener.Props(Program.NeoSystem.Blockchain, connectionString));
+        //    Program.NeoSystem.ActorSystem.ActorOf(NotificationsListener.Props(Program.NeoSystem.Blockchain, connectionString));
 
             if (env.IsDevelopment())
             {

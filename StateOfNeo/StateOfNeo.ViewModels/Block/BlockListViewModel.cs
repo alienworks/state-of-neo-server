@@ -1,4 +1,5 @@
-﻿using System;
+﻿using StateOfNeo.Common.Extensions;
+using System;
 
 namespace StateOfNeo.ViewModels.Block
 {
@@ -6,6 +7,6 @@ namespace StateOfNeo.ViewModels.Block
     {
         public int TransactionsCount { get; set; }
 
-        public DateTime FinalizedAt => new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).AddSeconds(this.Timestamp).ToLocalTime();
+        public DateTime FinalizedAt => this.Timestamp.ToUnixDate();
     }
 }

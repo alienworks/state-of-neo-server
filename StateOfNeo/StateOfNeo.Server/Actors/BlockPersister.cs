@@ -61,7 +61,7 @@ namespace StateOfNeo.Server.Actors
             if (message is PersistCompleted m)
             {
                 var optionsBuilder = new DbContextOptionsBuilder<StateOfNeoContext>();
-                optionsBuilder.UseSqlServer(this.connectionString);
+                optionsBuilder.UseSqlServer(this.connectionString, opts => opts.CommandTimeout((int)TimeSpan.FromMinutes(10).TotalSeconds));
                 var db = new StateOfNeoContext(optionsBuilder.Options);
 
                 if (db.Blocks.Any(x => x.Hash == m.Block.Hash.ToString()))
@@ -113,6 +113,17 @@ namespace StateOfNeo.Server.Actors
                 NextConsensusNodeAddress = blockToPersist.NextConsensus.ToString(),
                 PreviousBlockHash = blockToPersist.PrevHash.ToString()
             };
+
+            double timeInSeconds = 20;
+            if (block.Height > 0)
+            {
+                var hash = Blockchain.Singleton.GetBlockHash((uint)block.Height - 1);
+                var previousBlock = Blockchain.Singleton.GetBlock(hash);
+
+                timeInSeconds = (block.CreatedOn - previousBlock.Timestamp.ToUnixDate()).TotalSeconds;
+            }
+
+            block.TimeInSeconds = timeInSeconds;
 
             db.Blocks.Add(block);
 
