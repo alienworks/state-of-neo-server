@@ -37,6 +37,10 @@ namespace StateOfNeo.Server.Actors
         private readonly string net;
         private readonly IHubContext<BlockHub> blockHub;
 
+        private readonly ICollection<Data.Models.Asset> pendingAssets = new List<Data.Models.Asset>();
+        private readonly ICollection<Data.Models.Address> pendingAddresses = new List<Data.Models.Address>();
+        private readonly ICollection<Data.Models.AddressAssetBalance> pendingBalances = new List<Data.Models.AddressAssetBalance>();
+
         public BlockPersister(IActorRef blockchain, string connectionString, IHubContext<BlockHub> blockHub, string net)
         {
             this.connectionString = connectionString;
@@ -68,19 +72,29 @@ namespace StateOfNeo.Server.Actors
                 }
 
                 var currentHeight = db.Blocks.OrderByDescending(x => x.Height).Select(x => x.Height).FirstOrDefault();
+
+                Block persisted = null;
+                Neo.Network.P2P.Payloads.Block block = null;
+
                 while (currentHeight < m.Block.Index)
                 {
                     var hash = Blockchain.Singleton.GetBlockHash((uint)currentHeight + 1);
-                    var block = Blockchain.Singleton.GetBlock(hash);
-                    this.PersistBlock(block, db);
+                    block = Blockchain.Singleton.GetBlock(hash);
+                    persisted = this.PersistBlock(block, db);
                     currentHeight++;
+                    if (currentHeight % 250 == 0)
+                    {
+                        this.SaveEmitAndClear(db, persisted, block.Transactions.Length);
+                    }
                 }
-                
+
+                this.SaveEmitAndClear(db, persisted, block.Transactions.Length);
+
                 db.Dispose();
             }
         }
 
-        private void PersistBlock(Neo.Network.P2P.Payloads.Block blockToPersist, StateOfNeoContext db)
+        private Block PersistBlock(Neo.Network.P2P.Payloads.Block blockToPersist, StateOfNeoContext db)
         {
             var block = new Block
             {
@@ -98,7 +112,6 @@ namespace StateOfNeo.Server.Actors
             };
 
             db.Blocks.Add(block);
-            db.SaveChanges();
 
             foreach (var item in blockToPersist.Transactions)
             {
@@ -173,7 +186,7 @@ namespace StateOfNeo.Server.Actors
                     };
 
                     db.Assets.Add(asset);
-                    db.SaveChanges();
+                    pendingAssets.Add(asset);
                 }
                 else if (item.Type == Neo.Network.P2P.Payloads.TransactionType.EnrollmentTransaction)
                 {
@@ -243,7 +256,7 @@ namespace StateOfNeo.Server.Actors
                     var fromAddress = this.GetAddress(db, fromPublicAddress, blockTime);
                     var amount = (decimal)item.References[input].Value;
                     var assetHash = item.References[input].AssetId.ToString();
-                    var asset = db.Assets.Where(x => x.Hash == assetHash).FirstOrDefault();
+                    var asset = this.GetAsset(db, assetHash);
                     var ta = new TransactedAsset
                     {
                         Amount = amount,
@@ -257,23 +270,10 @@ namespace StateOfNeo.Server.Actors
                     fromAddress.LastTransactionOn = blockTime;
                     var fromBalance = this.GetBalance(db, asset.Hash, fromAddress.PublicAddress, asset.Id);
                     fromBalance.Balance -= ta.Amount;
-                    if (fromBalance.Balance < 0)
-                    {
-
-                    }
 
                     transaction.GlobalIncomingAssets.Add(ta);
-                    db.SaveChanges();
                 }
-
-                if (item is Neo.Network.P2P.Payloads.ClaimTransaction claimTransaction)
-                {
-                    for (int i = 0; i < claimTransaction.Claims.Length; i++)
-                    {
-
-                    }
-                }
-
+                
                 for (int i = 0; i < item.Outputs.Length; i++)
                 {
                     var output = item.Outputs[i];
@@ -283,7 +283,7 @@ namespace StateOfNeo.Server.Actors
 
                     var amount = (decimal)output.Value;
                     var assetHash = output.AssetId.ToString();
-                    var asset = db.Assets.Where(x => x.Hash == assetHash).FirstOrDefault();
+                    var asset = this.GetAsset(db, assetHash);
                     var ta = new TransactedAsset
                     {
                         Amount = amount,
@@ -299,24 +299,49 @@ namespace StateOfNeo.Server.Actors
                     toBalance.Balance += ta.Amount;
 
                     transaction.GlobalOutgoingAssets.Add(ta);
-                    db.SaveChanges();
                 }
 
                 block.Transactions.Add(transaction);
             }
 
+            return block;
+        }
+
+        private void SaveEmitAndClear(StateOfNeoContext db, Block block, int transactions)
+        {
             db.SaveChanges();
+            this.pendingAddresses.Clear();
+            this.pendingBalances.Clear();
+            this.pendingAssets.Clear();
 
             var hubBlock = Mapper.Map<BlockHubViewModel>(block);
-            hubBlock.TransactionCount = blockToPersist.Transactions.Length;
+            hubBlock.TransactionCount = transactions;
             this.blockHub.Clients.All.SendAsync("Receive", hubBlock);
         }
+
+        private Asset GetAsset(StateOfNeoContext db, string hash)
+        {
+            var asset = db.Assets.Where(x => x.Hash == hash).FirstOrDefault();
+
+            if (asset == null)
+            {
+                asset = this.pendingAssets.Where(x => x.Hash == hash).FirstOrDefault();
+            }
+
+            return asset;
+        }
+
         private AddressAssetBalance GetBalance(StateOfNeoContext db, string hash, string address, int assetId)
         {
             var balance = db.AddressBalances
                 .Include(x => x.Asset)
                 .Where(x => x.Asset.Hash == hash && x.AddressPublicAddress == address)
                 .FirstOrDefault();
+
+            if (balance == null)
+            {
+                balance = pendingBalances.FirstOrDefault(x => x.AddressPublicAddress == address && x.Asset.Hash == hash);
+            }
 
             if (balance == null)
             {
@@ -329,7 +354,7 @@ namespace StateOfNeo.Server.Actors
                 };
 
                 db.AddressBalances.Add(balance);
-                db.SaveChanges();
+                pendingBalances.Add(balance);
             }
 
             return balance;
@@ -345,6 +370,11 @@ namespace StateOfNeo.Server.Actors
 
             if (result == null)
             {
+                result = pendingAddresses.FirstOrDefault(x => x.PublicAddress == address);
+            }
+
+            if (result == null)
+            {
                 result = new Data.Models.Address
                 {
                     PublicAddress = address,
@@ -353,7 +383,7 @@ namespace StateOfNeo.Server.Actors
                 };
 
                 db.Addresses.Add(result);
-                db.SaveChanges();
+                pendingAddresses.Add(result);
             }
 
             return result;

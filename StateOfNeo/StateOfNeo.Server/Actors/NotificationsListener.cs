@@ -74,7 +74,7 @@ namespace StateOfNeo.Server.Actors
                                 };
 
                                 db.Assets.Add(asset);
-                     //           db.SaveChanges();
+                                db.SaveChanges();
                             }
 
                             var notification = item.GetNotification<TransferNotification>();
@@ -90,7 +90,16 @@ namespace StateOfNeo.Server.Actors
                             var toAddress = db.Addresses.Where(x => x.PublicAddress == to).FirstOrDefault();
                             if (toAddress == null)
                             {
+                                toAddress = new Data.Models.Address
+                                {
+                                    CreatedOn = DateTime.UtcNow,
+                                    FirstTransactionOn = DateTime.UtcNow,
+                                    LastTransactionOn = DateTime.UtcNow,
+                                    PublicAddress = to
+                                };
 
+                                db.Addresses.Add(toAddress);
+                                db.SaveChanges();
                             }
 
                             var ta = new Data.Models.Transactions.TransactedAsset
@@ -101,7 +110,7 @@ namespace StateOfNeo.Server.Actors
                                 ToAddressPublicAddress = to,
                                 AssetType = Data.Models.Enums.AssetType.NEP5,
                                 CreatedOn = DateTime.UtcNow,
-                                TransactionScriptHash = transaction.Hash.ToString()
+                                TransactionScriptHash = transaction.Hash.ToString()                                
                             };
 
                             db.TransactedAssets.Add(ta);
@@ -140,7 +149,7 @@ namespace StateOfNeo.Server.Actors
 
                             toBalance.Balance += ta.Amount;
 
-                      //      db.SaveChanges();
+                            db.SaveChanges();
                         }
                     }
                 }

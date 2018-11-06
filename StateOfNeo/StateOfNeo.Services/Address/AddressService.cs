@@ -133,14 +133,11 @@ namespace StateOfNeo.Services.Address
 
         public IEnumerable<AddressListViewModel> TopOneHundredNeo()
         {
-            var result = this.db.Addresses
-                .Where(x => x.Balances.Any(b => b.Asset.Hash == AssetConstants.NeoAssetId))
-                //.Select(x => new PublicAddressListViewModel
-                //{
-                //    Address = x.PublicAddress,
-                //    Balance = x.Balances.Where(b => b.Asset.Hash == AssetConstants.NeoAssetId).Select(b => b.Balance).FirstOrDefault()
-                //})
-                .OrderByDescending(x => x.Balances.Where(b => b.Asset.Hash == AssetConstants.NeoAssetId).Select(b => b.Balance).FirstOrDefault())
+            var result = this.db.AddressBalances
+                .Include(x => x.Address)
+                .Where(x => x.Asset.Hash == AssetConstants.NeoAssetId)
+                .OrderByDescending(x => x.Balance)
+                .Select(x => x.Address)
                 .ProjectTo<AddressListViewModel>()
                 .Take(100)
                 .ToList();
@@ -150,14 +147,11 @@ namespace StateOfNeo.Services.Address
 
         public IEnumerable<AddressListViewModel> TopOneHundredGas()
         {
-            var result = this.db.Addresses
-                .Where(x => x.Balances.Any(b => b.Asset.Hash == AssetConstants.GasAssetId))
-                //.Select(x => new PublicAddressListViewModel
-                //{
-                //    Address = x.PublicAddress,
-                //    Balance = x.Balances.Where(b => b.Asset.Hash == AssetConstants.GasAssetId).Select(b => b.Balance).FirstOrDefault()
-                //})
-                .OrderByDescending(x => x.Balances.Where(b => b.Asset.Hash == AssetConstants.GasAssetId).Select(b => b.Balance).FirstOrDefault())
+            var result = this.db.AddressBalances
+                .Include(x => x.Address)
+                .Where(x => x.Asset.Hash == AssetConstants.GasAssetId)
+                .OrderByDescending(x => x.Balance)
+                .Select(x => x.Address)
                 .ProjectTo<AddressListViewModel>()
                 .Take(100)
                 .ToList();
