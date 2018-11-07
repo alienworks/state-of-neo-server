@@ -8,6 +8,7 @@ namespace StateOfNeo.Data.Models.Enums
     {
         NEO,
         GAS,
-        NEP5
+        NEP5,
+        OTHER
     }
 }

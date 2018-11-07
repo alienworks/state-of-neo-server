@@ -15,7 +15,7 @@ namespace StateOfNeo.Infrastructure.Mapping
                 .ReverseMap();
 
             cfg.CreateMap<Block, BlockDetailsViewModel>()
-                .ForMember(x => x.SecondsFromPreviousBlock, y => y.MapFrom(z => (long)(z.CreatedOn - z.PreviousBlock.CreatedOn).TotalSeconds))
+                .ForMember(x => x.SecondsFromPreviousBlock, y => y.MapFrom(z => z.TimeInSeconds))
                 .ReverseMap();
 
             cfg.CreateMap<Block, BlockListViewModel>()

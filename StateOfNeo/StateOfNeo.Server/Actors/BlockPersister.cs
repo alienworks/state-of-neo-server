@@ -8,12 +8,16 @@ using Microsoft.EntityFrameworkCore;
 using Neo;
 using Neo.Ledger;
 using Neo.SmartContract;
+using Neo.VM;
 using Neo.Wallets;
+using StateOfNeo.Common;
+using StateOfNeo.Common.Constants;
 using StateOfNeo.Common.Extensions;
 using StateOfNeo.Data;
 using StateOfNeo.Data.Models;
 using StateOfNeo.Data.Models.Enums;
 using StateOfNeo.Data.Models.Transactions;
+using StateOfNeo.Server.Actors.Notifications;
 using StateOfNeo.Server.Hubs;
 using StateOfNeo.ViewModels;
 using static Neo.Ledger.Blockchain;
@@ -36,8 +40,11 @@ namespace StateOfNeo.Server.Actors
         private readonly string net;
         private readonly IHubContext<BlockHub> blockHub;
 
-        public BlockPersister(IActorRef blockchain, string connectionString,
-            IHubContext<BlockHub> blockHub, string net)
+        private readonly ICollection<Data.Models.Asset> pendingAssets = new List<Data.Models.Asset>();
+        private readonly ICollection<Data.Models.Address> pendingAddresses = new List<Data.Models.Address>();
+        private readonly ICollection<Data.Models.AddressAssetBalance> pendingBalances = new List<Data.Models.AddressAssetBalance>();
+
+        public BlockPersister(IActorRef blockchain, string connectionString, IHubContext<BlockHub> blockHub, string net)
         {
             this.connectionString = connectionString;
             this.blockHub = blockHub;
@@ -54,7 +61,7 @@ namespace StateOfNeo.Server.Actors
             if (message is PersistCompleted m)
             {
                 var optionsBuilder = new DbContextOptionsBuilder<StateOfNeoContext>();
-                optionsBuilder.UseSqlServer(this.connectionString);
+                optionsBuilder.UseSqlServer(this.connectionString, opts => opts.CommandTimeout((int)TimeSpan.FromMinutes(10).TotalSeconds));
                 var db = new StateOfNeoContext(optionsBuilder.Options);
 
                 if (db.Blocks.Any(x => x.Hash == m.Block.Hash.ToString()))
@@ -67,24 +74,30 @@ namespace StateOfNeo.Server.Actors
                     this.SeedGenesisBlock(db);
                 }
 
-                var currentHeight = db.Blocks
-                    .OrderByDescending(x => x.Height)
-                    .Select(x => x.Height)
-                    .FirstOrDefault();
+                var currentHeight = db.Blocks.OrderByDescending(x => x.Height).Select(x => x.Height).FirstOrDefault();
+
+                Block persisted = null;
+                Neo.Network.P2P.Payloads.Block block = null;
 
                 while (currentHeight < m.Block.Index)
                 {
                     var hash = Blockchain.Singleton.GetBlockHash((uint)currentHeight + 1);
-                    var block = Blockchain.Singleton.GetBlock(hash);
-                    this.PersistBlock(block, db);
+                    block = Blockchain.Singleton.GetBlock(hash);
+                    persisted = this.PersistBlock(block, db);
                     currentHeight++;
+                    if (currentHeight % 500 == 0)
+                    {
+                        this.SaveEmitAndClear(db, persisted, block.Transactions.Length);
+                    }
                 }
-                
+
+                this.SaveEmitAndClear(db, persisted, block.Transactions.Length);
+
                 db.Dispose();
             }
         }
 
-        private void PersistBlock(Neo.Network.P2P.Payloads.Block blockToPersist, StateOfNeoContext db)
+        private Block PersistBlock(Neo.Network.P2P.Payloads.Block blockToPersist, StateOfNeoContext db)
         {
             var block = new Block
             {
@@ -101,12 +114,19 @@ namespace StateOfNeo.Server.Actors
                 PreviousBlockHash = blockToPersist.PrevHash.ToString()
             };
 
-            var hubBlock = Mapper.Map<BlockHubViewModel>(block);
-            hubBlock.TransactionCount = blockToPersist.Transactions.Length;
-            this.blockHub.Clients.All.SendAsync("Receive", hubBlock);
+            double timeInSeconds = 20;
+            if (block.Height > 0)
+            {
+                var hash = Blockchain.Singleton.GetBlockHash((uint)block.Height - 1);
+                var previousBlock = Blockchain.Singleton.GetBlock(hash);
+                var previousBlockTime = previousBlock.Timestamp.ToUnixDate();
+
+                timeInSeconds = (block.CreatedOn - previousBlockTime).TotalSeconds;
+            }
+
+            block.TimeInSeconds = timeInSeconds;
 
             db.Blocks.Add(block);
-            db.SaveChanges();
 
             foreach (var item in blockToPersist.Transactions)
             {
@@ -118,7 +138,8 @@ namespace StateOfNeo.Server.Actors
                     NetworkFee = (decimal)item.NetworkFee,
                     SystemFee = (decimal)item.SystemFee,
                     Size = item.Size,
-                    Version = item.Version
+                    Version = item.Version,
+                    Timestamp = block.Timestamp
                 };
 
                 block.Transactions.Add(transaction);
@@ -167,6 +188,21 @@ namespace StateOfNeo.Server.Actors
                     };
 
                     transaction.RegisterTransaction = registerTransaction;
+
+                    var asset = new Asset
+                    {
+                        CreatedOn = DateTime.UtcNow,
+                        Name = unboxed.Name,
+                        MaxSupply = (long)unboxed.Amount,
+                        GlobalType = unboxed.AssetType,
+                        Type = AssetType.OTHER,
+                        Hash = item.Hash.ToString(),
+                        Decimals = unboxed.Precision,
+                        Symbol = unboxed.Name
+                    };
+
+                    db.Assets.Add(asset);
+                    pendingAssets.Add(asset);
                 }
                 else if (item.Type == Neo.Network.P2P.Payloads.TransactionType.EnrollmentTransaction)
                 {
@@ -183,6 +219,8 @@ namespace StateOfNeo.Server.Actors
                         Gas = (decimal)unboxed.Gas,
                         ScriptAsHexString = unboxed.Script.ToHexString()
                     };
+
+                    this.TrackInvocationTransaction(unboxed, db);
 
                     transaction.InvocationTransaction = invocationTransaction;
                 }
@@ -228,153 +266,291 @@ namespace StateOfNeo.Server.Actors
                     transaction.StateTransaction = stateTransaction;
                 }
 
+                for (int i = 0; i < item.Inputs.Length; i++)
+                {
+                    var input = item.Inputs[i];
+                    var blockTime = block.Timestamp.ToUnixDate();
+                    var fromPublicAddress = item.References[input].ScriptHash.ToAddress();
+                    var fromAddress = this.GetAddress(db, fromPublicAddress, blockTime);
+                    var amount = (decimal)item.References[input].Value;
+                    var assetHash = item.References[input].AssetId.ToString();
+                    var asset = this.GetAsset(db, assetHash);
+                    var ta = new TransactedAsset
+                    {
+                        Amount = amount,
+                        FromAddress = fromAddress,
+                        AssetType = assetHash == AssetConstants.NeoAssetId ? AssetType.NEO : AssetType.GAS,
+                        CreatedOn = DateTime.UtcNow,
+                        AssetId = asset.Id,
+                        FromAddressPublicAddress = fromPublicAddress                        
+                    };
+
+                    fromAddress.LastTransactionOn = blockTime;
+                    var fromBalance = this.GetBalance(db, asset.Hash, fromAddress.PublicAddress, asset.Id);
+                    fromBalance.Balance -= ta.Amount;
+
+                    transaction.GlobalIncomingAssets.Add(ta);
+                }
+                
                 for (int i = 0; i < item.Outputs.Length; i++)
                 {
                     var output = item.Outputs[i];
-                    Neo.Network.P2P.Payloads.CoinReference input = null;
-                    if (item.Inputs.Any())
-                    {
-                        input = item.Inputs[0];
-                    }
-                    else if (item is Neo.Network.P2P.Payloads.ClaimTransaction claimTransaction)
-                    {
-                        input = claimTransaction.Claims[0];
-                    }
-                    else if (item is Neo.Network.P2P.Payloads.MinerTransaction minerTransaction)
-                    {
+                    var blockTime = block.Timestamp.ToUnixDate();
+                    var toPublicAddress = output.ScriptHash.ToAddress();
+                    var toAddress = this.GetAddress(db, toPublicAddress, blockTime);
 
-                    }
-
-                    Transaction previousTransaction = null;
-                    if (input != null)
-                    {
-                        previousTransaction = db.Transactions
-                           .Include(x => x.Assets)
-                           .ThenInclude(x => x.ToAddress)
-                           .Where(x => x.ScriptHash == input.PrevHash.ToString())
-                           .FirstOrDefault();
-                    }
-
-                    Data.Models.Address fromAddress = null;
-                    if (previousTransaction != null && item is Neo.Network.P2P.Payloads.ClaimTransaction == false)
-                    {
-                        fromAddress = previousTransaction
-                            .Assets
-                            .Skip(input.PrevIndex)
-                            .Select(x => x.ToAddress)
-                            .FirstOrDefault();
-                    }
-                    
-                    var toAddress = db.Addresses
-                        .Include(x => x.Balances).ThenInclude(x => x.Asset)
-                        .Where(x => x.PublicAddress == output.ScriptHash.ToAddress())
-                        .FirstOrDefault();
-
-                    if (toAddress == null)
-                    {
-                        toAddress = new Data.Models.Address
-                        {
-                            PublicAddress = output.ScriptHash.ToAddress(),
-                            CreatedOn = DateTime.UtcNow,
-                            FirstTransactionOn = block.Timestamp.ToUnixDate()
-                        };
-
-                        db.Addresses.Add(toAddress);
-                        db.SaveChanges();
-                    }
-
-                    toAddress.LastTransactionOn = block.Timestamp.ToUnixDate();
-
-                    var asset = db.Assets.Where(x => x.Hash == output.AssetId.ToString()).FirstOrDefault();
-                    if (asset == null)
-                    {
-                        asset = new Asset
-                        {
-                            CreatedOn = DateTime.UtcNow,
-                            Hash = output.AssetId.ToString()
-                        };
-
-                        db.Assets.Add(asset);
-                        db.SaveChanges();
-                    }
-                                        
+                    var amount = (decimal)output.Value;
+                    var assetHash = output.AssetId.ToString();
+                    var asset = this.GetAsset(db, assetHash);
                     var ta = new TransactedAsset
                     {
-                        Amount = (decimal)output.Value,
-                        FromAddress = fromAddress,
+                        Amount = amount,
                         ToAddress = toAddress,
-                        AssetType = output.AssetId.ToString() == "0xc56f33fc6ecfcd0c225c4ab356fee59390af8560be0e930faebe74a6daff7c9b" ? AssetType.NEO : AssetType.GAS
+                        AssetType = assetHash == AssetConstants.NeoAssetId ? AssetType.NEO : AssetType.GAS,
+                        CreatedOn = DateTime.UtcNow,
+                        AssetId = asset.Id,
+                        ToAddressPublicAddress = toPublicAddress
                     };
 
-                    var toBalance = db.AddressBalances
-                        .Include(x => x.Asset)
-                        .Where(x => x.Asset.Hash == asset.Hash && x.AddressPublicAddress == toAddress.PublicAddress)
-                        .FirstOrDefault();
-
-                    if (toBalance == null)
-                    {
-                        toBalance = new AddressAssetBalance
-                        {
-                            AddressPublicAddress = toAddress.PublicAddress,
-                            AssetId = asset.Id,
-                            CreatedOn = DateTime.UtcNow,
-                            Balance = 0
-                        };
-
-                        db.AddressBalances.Add(toBalance);
-                        db.SaveChanges();
-                    }
-
-                    if (fromAddress != null)
-                    {
-                        fromAddress.LastTransactionOn = block.Timestamp.ToUnixDate();
-
-                        var fromBalance = db.AddressBalances
-                            .Include(x => x.Asset)
-                            .Where(x => x.Asset.Hash == asset.Hash && x.AddressPublicAddress == fromAddress.PublicAddress)
-                            .FirstOrDefault();
-
-                        if (fromBalance == null)
-                        {
-                            fromBalance = new AddressAssetBalance
-                            {
-                                AddressPublicAddress = fromAddress.PublicAddress,
-                                AssetId = asset.Id,
-                                CreatedOn = DateTime.UtcNow,
-                                Balance = 0
-                            };
-
-                            db.AddressBalances.Add(fromBalance);
-                            db.SaveChanges();
-                        }
-
-                        fromBalance.Balance -= ta.Amount;
-                        db.SaveChanges();
-
-                        if (transaction.SystemFee != 0)
-                        {
-                            var fromAddressGasBalance = db.AddressBalances
-                                .Include(x => x.Asset)
-                                .Where(x => x.Asset.Type == AssetType.GAS && x.AddressPublicAddress == fromAddress.PublicAddress)
-                                .FirstOrDefault();
-
-                            fromAddressGasBalance.Balance -= transaction.SystemFee;
-
-                            db.SaveChanges();
-                        }
-                    }
-
+                    toAddress.LastTransactionOn = blockTime;
+                    var toBalance = this.GetBalance(db, asset.Hash, toAddress.PublicAddress, asset.Id);
                     toBalance.Balance += ta.Amount;
 
-                    asset.TransactedAssets.Add(ta);
-                    transaction.Assets.Add(ta);
-                    db.SaveChanges();
+                    transaction.GlobalOutgoingAssets.Add(ta);
                 }
 
                 block.Transactions.Add(transaction);
             }
 
+            return block;
+        }
+
+        private void TrackInvocationTransaction(Neo.Network.P2P.Payloads.InvocationTransaction transaction, StateOfNeoContext db)
+        {
+            var executionResults = new List<AppExecutionResult>();
+            using (ApplicationEngine engine = new ApplicationEngine(TriggerType.Application, transaction, Blockchain.Singleton.GetSnapshot().Clone(), transaction.Gas))
+            {
+                engine.LoadScript(transaction.Script);
+                if (engine.Execute())
+                {
+                    engine.Service.Commit();
+                }
+
+                executionResults.Add(new AppExecutionResult
+                {
+                    Trigger = TriggerType.Application,
+                    ScriptHash = transaction.Script.ToScriptHash(),
+                    VMState = engine.State,
+                    GasConsumed = engine.GasConsumed,
+                    Stack = engine.ResultStack.ToArray(),
+                    Notifications = engine.Service.Notifications.ToArray()
+                });
+            }
+
+            foreach (var result in executionResults)
+            {
+                foreach (var item in result.Notifications)
+                {
+                    var type = item.GetNotificationType();
+                    if (type == "transfer")
+                    {
+                        var name = this.TestInvoke(db, item.ScriptHash, "name").HexStringToString();
+                        var assetHash = item.ScriptHash.ToString();
+                        var asset = this.GetAsset(db, assetHash);
+                        if (asset == null)
+                        {
+                            var symbol = this.TestInvoke(db, item.ScriptHash, "symbol").HexStringToString();
+
+                            var decimalsHex = this.TestInvoke(db, item.ScriptHash, "decimals");
+                            var decimals = Convert.ToInt32(decimalsHex, 16);
+
+                            var totalSupplyHex = this.TestInvoke(db, item.ScriptHash, "totalSupply");
+                            var totalSupply = Convert.ToInt64(totalSupplyHex, 16);
+
+                            asset = new Asset
+                            {
+                                CreatedOn = DateTime.UtcNow,
+                                GlobalType = null,
+                                Hash = assetHash,
+                                Name = name,
+                                MaxSupply = totalSupply,
+                                Type = Data.Models.Enums.AssetType.NEP5,
+                                Decimals = decimals,
+                                CurrentSupply = totalSupply,
+                                Symbol = symbol
+                            };
+
+                            db.Assets.Add(asset);
+                            this.pendingAssets.Add(asset);
+                        }
+
+                        var notification = item.GetNotification<TransferNotification>();
+                        var from = new UInt160(notification.From).ToAddress();
+                        var to = new UInt160(notification.To).ToAddress();
+
+                        var fromAddress = this.GetAddress(db, from, DateTime.UtcNow);
+                        if (fromAddress == null)
+                        {
+
+                        }
+
+                        var toAddress = this.GetAddress(db, to, DateTime.UtcNow);
+                        if (toAddress == null)
+                        {
+
+                        }
+
+                        var ta = new Data.Models.Transactions.TransactedAsset
+                        {
+                            Amount = (decimal)notification.Amount,
+                            Asset = asset,
+                            FromAddressPublicAddress = from,
+                            ToAddressPublicAddress = to,
+                            AssetType = Data.Models.Enums.AssetType.NEP5,
+                            CreatedOn = DateTime.UtcNow,
+                            TransactionScriptHash = transaction.Hash.ToString()
+                        };
+
+                        db.TransactedAssets.Add(ta);
+
+                        var fromBalance = this.GetBalance(db, asset.Hash, from, asset.Id);
+                        if (fromBalance == null)
+                        {
+
+                        }
+
+                        fromBalance.Balance -= ta.Amount;
+                        if (fromBalance.Balance < 0)
+                        {
+
+                        }
+
+                        var toBalance = this.GetBalance(db, asset.Hash, to, asset.Id);
+                        if (toBalance == null)
+                        {
+                            toBalance = new AddressAssetBalance
+                            {
+                                AddressPublicAddress = toAddress.PublicAddress,
+                                Asset = asset,
+                                Balance = 0,
+                                CreatedOn = DateTime.UtcNow
+                            };
+
+                            db.AddressBalances.Add(toBalance);
+                            this.pendingBalances.Add(toBalance);
+                        }
+
+                        toBalance.Balance += ta.Amount;
+                    }
+                }
+            }
+        }
+
+        private string TestInvoke(StateOfNeoContext db, UInt160 contractHash, string operation, params object[] args)
+        {
+            using (var sb = new ScriptBuilder())
+            {
+                var parameters = new ContractParameter[]
+                {
+                    new ContractParameter { Type = ContractParameterType.String, Value = operation },
+                    new ContractParameter { Type = ContractParameterType.Array, Value = new ContractParameter[0] }
+                };
+
+                sb.EmitAppCall(contractHash, parameters);
+                var script = sb.ToArray();
+
+                var engine = ApplicationEngine.Run(script, testMode: true);
+                var result = engine.ResultStack.FirstOrDefault();
+                if (result == null)
+                {
+                    return "";
+                }
+
+                return result.GetByteArray().ToHexString();
+            }
+        }
+
+        private void SaveEmitAndClear(StateOfNeoContext db, Block block, int transactions)
+        {
             db.SaveChanges();
+            this.pendingAddresses.Clear();
+            this.pendingBalances.Clear();
+            this.pendingAssets.Clear();
+
+            var hubBlock = Mapper.Map<BlockHubViewModel>(block);
+            hubBlock.TransactionCount = transactions;
+            this.blockHub.Clients.All.SendAsync("Receive", hubBlock);
+        }
+
+        private Asset GetAsset(StateOfNeoContext db, string hash)
+        {
+            var asset = db.Assets.Where(x => x.Hash == hash).FirstOrDefault();
+
+            if (asset == null)
+            {
+                asset = this.pendingAssets.Where(x => x.Hash == hash).FirstOrDefault();
+            }
+
+            return asset;
+        }
+
+        private AddressAssetBalance GetBalance(StateOfNeoContext db, string hash, string address, int assetId)
+        {
+            var balance = db.AddressBalances
+                .Include(x => x.Asset)
+                .Where(x => x.Asset.Hash == hash && x.AddressPublicAddress == address)
+                .FirstOrDefault();
+
+            if (balance == null)
+            {
+                balance = pendingBalances.FirstOrDefault(x => x.AddressPublicAddress == address && x.Asset.Hash == hash);
+            }
+
+            if (balance == null)
+            {
+                balance = new AddressAssetBalance
+                {
+                    AddressPublicAddress = address,
+                    AssetId = assetId,
+                    CreatedOn = DateTime.UtcNow,
+                    Balance = 0
+                };
+
+                db.AddressBalances.Add(balance);
+                pendingBalances.Add(balance);
+            }
+
+            return balance;
+        }
+
+        private Data.Models.Address GetAddress(StateOfNeoContext db, string address, DateTime blockTime)
+        {
+            var result = db.Addresses
+                .Include(x => x.Balances)
+                .ThenInclude(x => x.Asset)
+                .Where(x => x.PublicAddress == address)
+                .FirstOrDefault();
+
+            if (result == null)
+            {
+                result = pendingAddresses.FirstOrDefault(x => x.PublicAddress == address);
+            }
+
+            if (result == null)
+            {
+                result = new Data.Models.Address
+                {
+                    PublicAddress = address,
+                    CreatedOn = DateTime.UtcNow,
+                    FirstTransactionOn = blockTime,
+                    LastTransactionOn = blockTime
+                };
+
+                db.Addresses.Add(result);
+                pendingAddresses.Add(result);
+            }
+
+            return result;
         }
 
         private void SeedGenesisBlock(StateOfNeoContext db)
@@ -405,7 +581,7 @@ namespace StateOfNeo.Server.Actors
             var neoRegisterTransaction = new Transaction
             {
                 Type = Neo.Network.P2P.Payloads.TransactionType.RegisterTransaction,
-                ScriptHash = "0xc56f33fc6ecfcd0c225c4ab356fee59390af8560be0e930faebe74a6daff7c9b",
+                ScriptHash = AssetConstants.NeoAssetId,
                 Size = 107,
                 CreatedOn = DateTime.UtcNow,
                 RegisterTransaction = new RegisterTransaction
@@ -423,7 +599,7 @@ namespace StateOfNeo.Server.Actors
             var gasRegisterTransaction = new Transaction
             {
                 Type = Neo.Network.P2P.Payloads.TransactionType.RegisterTransaction,
-                ScriptHash = "0x602c79718b16e442de58778e148d0b1084e3b2dffd5de6b7b16cee7969282de7",
+                ScriptHash = AssetConstants.GasAssetId,
                 Size = 106,
                 CreatedOn = DateTime.UtcNow,
                 RegisterTransaction = new RegisterTransaction
@@ -443,8 +619,12 @@ namespace StateOfNeo.Server.Actors
                 Hash = neoRegisterTransaction.ScriptHash,
                 CreatedOn = DateTime.UtcNow,
                 Name = "NEO",
+                Symbol = "NEO",
                 MaxSupply = 100_000_000,
-                Type = AssetType.NEO
+                Type = AssetType.NEO,
+                GlobalType = Neo.Network.P2P.Payloads.AssetType.GoverningToken,
+                CurrentSupply = 100_000_000,
+                Decimals = 0
             };
 
             var gas = new Asset
@@ -452,8 +632,11 @@ namespace StateOfNeo.Server.Actors
                 Hash = gasRegisterTransaction.ScriptHash,
                 CreatedOn = DateTime.UtcNow,
                 Name = "GAS",
+                Symbol = "GAS",
                 MaxSupply = 100_000_000,
-                Type = AssetType.GAS
+                Type = AssetType.GAS,
+                GlobalType = Neo.Network.P2P.Payloads.AssetType.UtilityToken,
+                Decimals = 8                
             };
 
             var neoAssetIssueTransaction = new Transaction
@@ -466,9 +649,10 @@ namespace StateOfNeo.Server.Actors
             var toAddress = new Data.Models.Address
             {
                 PublicAddress = Contract.CreateMultiSigRedeemScript(StandbyValidators.Length / 2 + 1, StandbyValidators)
-                        .ToScriptHash()
-                        .ToAddress(),
-                FirstTransactionOn = GenesisBlock.Timestamp.ToUnixDate()
+                    .ToScriptHash()
+                    .ToAddress(),
+                FirstTransactionOn = GenesisBlock.Timestamp.ToUnixDate(),
+                LastTransactionOn = GenesisBlock.Timestamp.ToUnixDate()
             };
 
             var transactedAsset = new TransactedAsset
@@ -476,10 +660,12 @@ namespace StateOfNeo.Server.Actors
                 Amount = 100000000,
                 AssetType = AssetType.NEO,
                 ToAddress = toAddress,
-                Asset = neo
+                Asset = neo,
+                OutGlobalTransactionScriptHash = neoAssetIssueTransaction.ScriptHash,
+                CreatedOn = DateTime.UtcNow
             };
 
-            neoAssetIssueTransaction.Assets.Add(transactedAsset);
+            neoAssetIssueTransaction.GlobalOutgoingAssets.Add(transactedAsset);
 
             var balance = new AddressAssetBalance
             {

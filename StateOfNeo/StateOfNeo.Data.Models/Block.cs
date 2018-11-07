@@ -23,7 +23,7 @@ namespace StateOfNeo.Data.Models
 
         public int Size { get; set; }
 
-        public decimal TimeInSeconds { get; set; }
+        public double TimeInSeconds { get; set; }
 
         public ulong ConsensusData { get; set; }
 

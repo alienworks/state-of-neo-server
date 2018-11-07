@@ -11,6 +11,7 @@ using AutoMapper.QueryableExtensions;
 using StateOfNeo.ViewModels.Chart;
 using StateOfNeo.Common.Enums;
 using StateOfNeo.Common.Extensions;
+using X.PagedList;
 
 namespace StateOfNeo.Services.Transaction
 {
@@ -33,37 +34,73 @@ namespace StateOfNeo.Services.Transaction
             this.db.Transactions
                 .Any(x => x.Type == TransactionType.ClaimTransaction)
             ? this.db.Transactions
-                .Include(x => x.Assets).ThenInclude(x => x.Asset)
+                .Include(x => x.GlobalOutgoingAssets).ThenInclude(x => x.Asset)
                 .Where(x => x.Type == TransactionType.ClaimTransaction)
-                .SelectMany(x => x.Assets.Where(a => a.AssetType == Data.Models.Enums.AssetType.GAS))
+                .SelectMany(x => x.GlobalOutgoingAssets.Where(a => a.AssetType == Data.Models.Enums.AssetType.GAS))
                 .Sum(x => x.Amount)
             : 0;
+
+        public IPagedList<T> TransactionsForAddress<T>(string address, int page = 1, int pageSize = 10)
+        {
+            var incoming = this.db.Addresses
+                .Include(x => x.IncomingTransactions).ThenInclude(x => x.OutGlobalTransaction).ThenInclude(x => x.Block)
+                .Where(x => x.PublicAddress == address)
+                .SelectMany(x => x.IncomingTransactions.Select(z => z.OutGlobalTransaction))
+                .ProjectTo<T>();
+
+            var outgoing = this.db.Addresses
+                .Include(x => x.OutgoingTransactions).ThenInclude(x => x.InGlobalTransaction).ThenInclude(x => x.Block)
+                .Where(x => x.PublicAddress == address)
+                .SelectMany(x => x.OutgoingTransactions.Select(z => z.InGlobalTransaction))
+                .ProjectTo<T>();
+
+            var result = incoming.Union(outgoing).ToPagedList(page, pageSize);
+
+            return result;
+        }
+
+        public IPagedList<T> GetPageTransactions<T>(int page = 1, int pageSize = 10, string blockHash = null)
+        {
+            var query = this.db.Transactions
+                .AsQueryable();
+
+            if (!string.IsNullOrEmpty(blockHash))
+            {
+                query = query.Where(x => x.BlockId == blockHash);
+            }
+
+            return query
+                .OrderByDescending(x => x.Timestamp)
+                .ProjectTo<T>()
+                .ToPagedList(page, pageSize);
+        }
 
         public IEnumerable<ChartStatsViewModel> GetStats(ChartFilterViewModel filter)
         {
             if (filter.StartDate == null)
             {
                 var dbTxLatestTime = this.db.Transactions
-                    .OrderByDescending(x => x.Block.CreatedOn)
+                    .Include(x => x.Block)
+                    .OrderByDescending(x => x.Timestamp)
                     .Select(x => x.Block.CreatedOn)
                     .FirstOrDefault();
 
                 filter.StartDate = dbTxLatestTime;
             }
 
-            var query = this.db.Transactions.AsQueryable();
+            var query = this.db.Transactions.Include(x => x.Block).AsQueryable();
             var result = new List<ChartStatsViewModel>();
 
-            query = query.Where(x => x.Block.Timestamp.ToUnixDate() >= filter.GetEndPeriod());
+            query = query.Where(x => x.Block.CreatedOn >= filter.GetEndPeriod());
 
             if (filter.UnitOfTime == UnitOfTime.Hour)
             {
-                result = query.GroupBy(x => new
+                result = query.ToList().GroupBy(x => new
                 {
-                    x.Block.Timestamp.ToUnixDate().Year,
-                    x.Block.Timestamp.ToUnixDate().Month,
-                    x.Block.Timestamp.ToUnixDate().Day,
-                    x.Block.Timestamp.ToUnixDate().Hour
+                    x.Block.CreatedOn.Year,
+                    x.Block.CreatedOn.Month,
+                    x.Block.CreatedOn.Day,
+                    x.Block.CreatedOn.Hour
                 })
                 .Select(x => new ChartStatsViewModel
                 {
@@ -76,11 +113,11 @@ namespace StateOfNeo.Services.Transaction
             }
             else if (filter.UnitOfTime == UnitOfTime.Day)
             {
-                result = query.GroupBy(x => new
+                result = query.ToList().GroupBy(x => new
                 {
-                    x.Block.Timestamp.ToUnixDate().Year,
-                    x.Block.Timestamp.ToUnixDate().Month,
-                    x.Block.Timestamp.ToUnixDate().Day
+                    x.Block.CreatedOn.Year,
+                    x.Block.CreatedOn.Month,
+                    x.Block.CreatedOn.Day
                 })
                 .Select(x => new ChartStatsViewModel
                 {
@@ -93,10 +130,10 @@ namespace StateOfNeo.Services.Transaction
             }
             else if (filter.UnitOfTime == UnitOfTime.Month)
             {
-                result = query.GroupBy(x => new
+                result = query.ToList().GroupBy(x => new
                 {
-                    x.Block.Timestamp.ToUnixDate().Year,
-                    x.Block.Timestamp.ToUnixDate().Month
+                    x.Block.CreatedOn.Year,
+                    x.Block.CreatedOn.Month
                 })
                 .Select(x => new ChartStatsViewModel
                 {

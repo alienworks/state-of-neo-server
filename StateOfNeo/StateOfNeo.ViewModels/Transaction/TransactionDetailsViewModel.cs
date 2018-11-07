@@ -1,4 +1,5 @@
 ﻿using Neo.Network.P2P.Payloads;
+using StateOfNeo.Common.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -15,7 +16,7 @@ namespace StateOfNeo.ViewModels.Transaction
 
         public long Timestamp { get; set; }
 
-        public DateTime FinalizedAt { get; set; }
+        public DateTime FinalizedAt => this.Timestamp.ToUnixDate();
 
         public decimal NetworkFee { get; set; }
 
@@ -26,6 +27,10 @@ namespace StateOfNeo.ViewModels.Transaction
         public string BlockHash { get; set; }
 
         public int BlockHeight { get; set; }
+
+        public IEnumerable<TransactedAssetViewModel> GlobalIncomingAssets { get; set; }
+
+        public IEnumerable<TransactedAssetViewModel> GlobalOutgoingAssets { get; set; }
 
         public IEnumerable<TransactedAssetViewModel> Assets { get; set; }
 

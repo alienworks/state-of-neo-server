@@ -1,4 +1,7 @@
-﻿namespace StateOfNeo.ViewModels.Block
+﻿using StateOfNeo.Common.Extensions;
+using System;
+
+namespace StateOfNeo.ViewModels.Block
 {
     public class BlockDetailsViewModel : BaseBlockViewModel
     {
@@ -14,6 +17,8 @@
 
         public string PreviousBlockHash { get; set; }
 
-        public long SecondsFromPreviousBlock { get; set; }
+        public double SecondsFromPreviousBlock { get; set; }
+
+        public DateTime FinalizedAt => this.Timestamp.ToUnixDate();
     }
 }

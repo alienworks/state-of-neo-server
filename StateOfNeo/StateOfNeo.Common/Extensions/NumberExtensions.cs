@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Neo;
+using Neo.Cryptography;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -11,5 +13,13 @@ namespace StateOfNeo.Common.Extensions
 
         public static DateTime ToUnixDate(this uint timestamp) =>
             new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).AddSeconds(timestamp).ToLocalTime();
+        
+        //public static string ToAddress(this UInt160 scriptHash)
+        //{
+        //    byte[] data = new byte[21];
+        //    //data[0] = Settings.Default.AddressVersion;
+        //    Buffer.BlockCopy(scriptHash.ToArray(), 0, data, 1, 20);
+        //    return data.Base58CheckEncode();
+        //}
     }
 }

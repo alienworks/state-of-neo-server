@@ -3,15 +3,17 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using StateOfNeo.Data;
 
 namespace StateOfNeo.Data.Migrations
 {
     [DbContext(typeof(StateOfNeoContext))]
-    partial class StateOfNeoContextModelSnapshot : ModelSnapshot
+    [Migration("20181106122037_AddDecimalPrecision1")]
+    partial class AddDecimalPrecision1
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -48,7 +50,7 @@ namespace StateOfNeo.Data.Migrations
                     b.Property<int>("AssetId");
 
                     b.Property<decimal>("Balance")
-                        .HasColumnType("decimal(20, 9)");
+                        .HasColumnType("decimal(18, 9)");
 
                     b.Property<DateTime>("CreatedOn");
 
@@ -110,7 +112,8 @@ namespace StateOfNeo.Data.Migrations
 
                     b.Property<int>("Size");
 
-                    b.Property<double>("TimeInSeconds");
+                    b.Property<decimal>("TimeInSeconds")
+                        .HasColumnType("decimal(18, 9)");
 
                     b.Property<long>("Timestamp");
 
@@ -120,11 +123,7 @@ namespace StateOfNeo.Data.Migrations
 
                     b.HasKey("Hash");
 
-                    b.HasIndex("Height");
-
                     b.HasIndex("PreviousBlockHash");
-
-                    b.HasIndex("Timestamp");
 
                     b.ToTable("Blocks");
                 });
@@ -248,7 +247,7 @@ namespace StateOfNeo.Data.Migrations
                     b.Property<DateTime>("CreatedOn");
 
                     b.Property<decimal>("Gas")
-                        .HasColumnType("decimal(20, 9)");
+                        .HasColumnType("decimal(18, 9)");
 
                     b.Property<string>("ScriptAsHexString");
 
@@ -318,7 +317,7 @@ namespace StateOfNeo.Data.Migrations
                     b.Property<string>("AdminAddress");
 
                     b.Property<decimal>("Amount")
-                        .HasColumnType("decimal(20, 9)");
+                        .HasColumnType("decimal(18, 9)");
 
                     b.Property<byte>("AssetType");
 
@@ -384,7 +383,7 @@ namespace StateOfNeo.Data.Migrations
                         .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
                     b.Property<decimal>("Amount")
-                        .HasColumnType("decimal(20, 9)");
+                        .HasColumnType("decimal(18, 9)");
 
                     b.Property<int>("AssetId");
 
@@ -435,7 +434,7 @@ namespace StateOfNeo.Data.Migrations
                     b.Property<int?>("MinerTransactionId");
 
                     b.Property<decimal>("NetworkFee")
-                        .HasColumnType("decimal(20, 9)");
+                        .HasColumnType("decimal(18, 9)");
 
                     b.Property<int?>("PublishTransactionId");
 
@@ -446,9 +445,7 @@ namespace StateOfNeo.Data.Migrations
                     b.Property<int?>("StateTransactionId");
 
                     b.Property<decimal>("SystemFee")
-                        .HasColumnType("decimal(20, 9)");
-
-                    b.Property<long>("Timestamp");
+                        .HasColumnType("decimal(18, 9)");
 
                     b.Property<byte>("Type");
 
@@ -481,8 +478,6 @@ namespace StateOfNeo.Data.Migrations
                     b.HasIndex("StateTransactionId")
                         .IsUnique()
                         .HasFilter("[StateTransactionId] IS NOT NULL");
-
-                    b.HasIndex("Timestamp");
 
                     b.ToTable("Transactions");
                 });

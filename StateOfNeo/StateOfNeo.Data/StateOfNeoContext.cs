@@ -2,6 +2,7 @@
 using StateOfNeo.Data.Models;
 using StateOfNeo.Data.Models.Transactions;
 using System;
+using System.Linq;
 
 namespace StateOfNeo.Data
 {
@@ -30,5 +31,25 @@ namespace StateOfNeo.Data
         public DbSet<RegisterTransaction> RegisterTransactions { get; set; }
         public DbSet<StateTransaction> StateTransactions { get; set; }
         public DbSet<StateDescriptor> StateDescriptors { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<Address>().HasIndex(x => x.LastTransactionOn);
+
+            modelBuilder.Entity<Block>().HasIndex(x => x.Timestamp);
+            modelBuilder.Entity<Block>().HasIndex(x => x.Height);
+
+            modelBuilder.Entity<Transaction>().HasIndex(x => x.Timestamp);
+
+            var decimalProps = modelBuilder.Model
+                .GetEntityTypes()
+                .SelectMany(t => t.GetProperties())
+                .Where(p => p.ClrType == typeof(decimal));
+
+            foreach (var property in decimalProps)
+            {
+                property.Relational().ColumnType = "decimal(20, 9)";
+            }
+        }
     }
 }

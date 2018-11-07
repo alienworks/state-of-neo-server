@@ -3,15 +3,17 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using StateOfNeo.Data;
 
 namespace StateOfNeo.Data.Migrations
 {
     [DbContext(typeof(StateOfNeoContext))]
-    partial class StateOfNeoContextModelSnapshot : ModelSnapshot
+    [Migration("20181105232205_FixTransactionForeignKey")]
+    partial class FixTransactionForeignKey
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -47,8 +49,7 @@ namespace StateOfNeo.Data.Migrations
 
                     b.Property<int>("AssetId");
 
-                    b.Property<decimal>("Balance")
-                        .HasColumnType("decimal(20, 9)");
+                    b.Property<decimal>("Balance");
 
                     b.Property<DateTime>("CreatedOn");
 
@@ -110,7 +111,7 @@ namespace StateOfNeo.Data.Migrations
 
                     b.Property<int>("Size");
 
-                    b.Property<double>("TimeInSeconds");
+                    b.Property<decimal>("TimeInSeconds");
 
                     b.Property<long>("Timestamp");
 
@@ -120,11 +121,7 @@ namespace StateOfNeo.Data.Migrations
 
                     b.HasKey("Hash");
 
-                    b.HasIndex("Height");
-
                     b.HasIndex("PreviousBlockHash");
-
-                    b.HasIndex("Timestamp");
 
                     b.ToTable("Blocks");
                 });
@@ -247,8 +244,7 @@ namespace StateOfNeo.Data.Migrations
 
                     b.Property<DateTime>("CreatedOn");
 
-                    b.Property<decimal>("Gas")
-                        .HasColumnType("decimal(20, 9)");
+                    b.Property<decimal>("Gas");
 
                     b.Property<string>("ScriptAsHexString");
 
@@ -317,8 +313,7 @@ namespace StateOfNeo.Data.Migrations
 
                     b.Property<string>("AdminAddress");
 
-                    b.Property<decimal>("Amount")
-                        .HasColumnType("decimal(20, 9)");
+                    b.Property<decimal>("Amount");
 
                     b.Property<byte>("AssetType");
 
@@ -383,8 +378,7 @@ namespace StateOfNeo.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
-                    b.Property<decimal>("Amount")
-                        .HasColumnType("decimal(20, 9)");
+                    b.Property<decimal>("Amount");
 
                     b.Property<int>("AssetId");
 
@@ -393,10 +387,6 @@ namespace StateOfNeo.Data.Migrations
                     b.Property<DateTime>("CreatedOn");
 
                     b.Property<string>("FromAddressPublicAddress");
-
-                    b.Property<string>("InGlobalTransactionScriptHash");
-
-                    b.Property<string>("OutGlobalTransactionScriptHash");
 
                     b.Property<string>("ToAddressPublicAddress");
 
@@ -407,10 +397,6 @@ namespace StateOfNeo.Data.Migrations
                     b.HasIndex("AssetId");
 
                     b.HasIndex("FromAddressPublicAddress");
-
-                    b.HasIndex("InGlobalTransactionScriptHash");
-
-                    b.HasIndex("OutGlobalTransactionScriptHash");
 
                     b.HasIndex("ToAddressPublicAddress");
 
@@ -434,8 +420,7 @@ namespace StateOfNeo.Data.Migrations
 
                     b.Property<int?>("MinerTransactionId");
 
-                    b.Property<decimal>("NetworkFee")
-                        .HasColumnType("decimal(20, 9)");
+                    b.Property<decimal>("NetworkFee");
 
                     b.Property<int?>("PublishTransactionId");
 
@@ -445,10 +430,7 @@ namespace StateOfNeo.Data.Migrations
 
                     b.Property<int?>("StateTransactionId");
 
-                    b.Property<decimal>("SystemFee")
-                        .HasColumnType("decimal(20, 9)");
-
-                    b.Property<long>("Timestamp");
+                    b.Property<decimal>("SystemFee");
 
                     b.Property<byte>("Type");
 
@@ -481,8 +463,6 @@ namespace StateOfNeo.Data.Migrations
                     b.HasIndex("StateTransactionId")
                         .IsUnique()
                         .HasFilter("[StateTransactionId] IS NOT NULL");
-
-                    b.HasIndex("Timestamp");
 
                     b.ToTable("Transactions");
                 });
@@ -592,14 +572,6 @@ namespace StateOfNeo.Data.Migrations
                     b.HasOne("StateOfNeo.Data.Models.Address", "FromAddress")
                         .WithMany("OutgoingTransactions")
                         .HasForeignKey("FromAddressPublicAddress");
-
-                    b.HasOne("StateOfNeo.Data.Models.Transactions.Transaction", "InGlobalTransaction")
-                        .WithMany("GlobalIncomingAssets")
-                        .HasForeignKey("InGlobalTransactionScriptHash");
-
-                    b.HasOne("StateOfNeo.Data.Models.Transactions.Transaction", "OutGlobalTransaction")
-                        .WithMany("GlobalOutgoingAssets")
-                        .HasForeignKey("OutGlobalTransactionScriptHash");
 
                     b.HasOne("StateOfNeo.Data.Models.Address", "ToAddress")
                         .WithMany("IncomingTransactions")
