@@ -80,26 +80,27 @@ namespace StateOfNeo.Services.Transaction
             if (filter.StartDate == null)
             {
                 var dbTxLatestTime = this.db.Transactions
-                    .OrderByDescending(x => x.Block.CreatedOn)
+                    .Include(x => x.Block)
+                    .OrderByDescending(x => x.Timestamp)
                     .Select(x => x.Block.CreatedOn)
                     .FirstOrDefault();
 
                 filter.StartDate = dbTxLatestTime;
             }
 
-            var query = this.db.Transactions.AsQueryable();
+            var query = this.db.Transactions.Include(x => x.Block).AsQueryable();
             var result = new List<ChartStatsViewModel>();
 
-            query = query.Where(x => x.Block.Timestamp.ToUnixDate() >= filter.GetEndPeriod());
+            query = query.Where(x => x.Block.CreatedOn >= filter.GetEndPeriod());
 
             if (filter.UnitOfTime == UnitOfTime.Hour)
             {
-                result = query.GroupBy(x => new
+                result = query.ToList().GroupBy(x => new
                 {
-                    x.Block.Timestamp.ToUnixDate().Year,
-                    x.Block.Timestamp.ToUnixDate().Month,
-                    x.Block.Timestamp.ToUnixDate().Day,
-                    x.Block.Timestamp.ToUnixDate().Hour
+                    x.Block.CreatedOn.Year,
+                    x.Block.CreatedOn.Month,
+                    x.Block.CreatedOn.Day,
+                    x.Block.CreatedOn.Hour
                 })
                 .Select(x => new ChartStatsViewModel
                 {
@@ -112,11 +113,11 @@ namespace StateOfNeo.Services.Transaction
             }
             else if (filter.UnitOfTime == UnitOfTime.Day)
             {
-                result = query.GroupBy(x => new
+                result = query.ToList().GroupBy(x => new
                 {
-                    x.Block.Timestamp.ToUnixDate().Year,
-                    x.Block.Timestamp.ToUnixDate().Month,
-                    x.Block.Timestamp.ToUnixDate().Day
+                    x.Block.CreatedOn.Year,
+                    x.Block.CreatedOn.Month,
+                    x.Block.CreatedOn.Day
                 })
                 .Select(x => new ChartStatsViewModel
                 {
@@ -129,10 +130,10 @@ namespace StateOfNeo.Services.Transaction
             }
             else if (filter.UnitOfTime == UnitOfTime.Month)
             {
-                result = query.GroupBy(x => new
+                result = query.ToList().GroupBy(x => new
                 {
-                    x.Block.Timestamp.ToUnixDate().Year,
-                    x.Block.Timestamp.ToUnixDate().Month
+                    x.Block.CreatedOn.Year,
+                    x.Block.CreatedOn.Month
                 })
                 .Select(x => new ChartStatsViewModel
                 {

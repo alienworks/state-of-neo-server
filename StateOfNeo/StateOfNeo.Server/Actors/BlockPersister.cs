@@ -85,7 +85,7 @@ namespace StateOfNeo.Server.Actors
                     block = Blockchain.Singleton.GetBlock(hash);
                     persisted = this.PersistBlock(block, db);
                     currentHeight++;
-                    if (currentHeight % 1000 == 0)
+                    if (currentHeight % 500 == 0)
                     {
                         this.SaveEmitAndClear(db, persisted, block.Transactions.Length);
                     }
@@ -119,8 +119,9 @@ namespace StateOfNeo.Server.Actors
             {
                 var hash = Blockchain.Singleton.GetBlockHash((uint)block.Height - 1);
                 var previousBlock = Blockchain.Singleton.GetBlock(hash);
+                var previousBlockTime = previousBlock.Timestamp.ToUnixDate();
 
-                timeInSeconds = (block.CreatedOn - previousBlock.Timestamp.ToUnixDate()).TotalSeconds;
+                timeInSeconds = (block.CreatedOn - previousBlockTime).TotalSeconds;
             }
 
             block.TimeInSeconds = timeInSeconds;
