@@ -41,7 +41,7 @@ namespace StateOfNeo.Server.Controllers
         {
             if (!string.IsNullOrEmpty(address))
             {
-                var res = this.transactions.TransactionsForAddress<TransactionListViewModel>(address, page, pageSize);
+                var res = this.transactions.TransactionsForAddress(address, page, pageSize);
                 return this.Ok(res.ToListResult());
             }
 

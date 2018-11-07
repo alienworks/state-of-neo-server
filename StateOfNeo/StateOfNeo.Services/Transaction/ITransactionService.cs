@@ -1,4 +1,5 @@
 ﻿using StateOfNeo.ViewModels.Chart;
+using StateOfNeo.ViewModels.Transaction;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -14,7 +15,7 @@ namespace StateOfNeo.Services.Transaction
 
         IPagedList<T> GetPageTransactions<T>(int page = 1, int pageSize = 10, string blockHash = null);
         
-        IPagedList<T> TransactionsForAddress<T>(string address, int page = 1, int pageSize = 10);
+        IPagedList<TransactionListViewModel> TransactionsForAddress(string address, int page = 1, int pageSize = 10);
 
         IEnumerable<ChartStatsViewModel> GetStats(ChartFilterViewModel filter);
         IEnumerable<ChartStatsViewModel> GetPieStats();
