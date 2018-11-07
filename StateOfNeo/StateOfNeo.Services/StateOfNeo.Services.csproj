@@ -10,7 +10,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\StateOfNeo.Data.Common\StateOfNeo.Data.Common.csproj" />
     <ProjectReference Include="..\StateOfNeo.Data.Models\StateOfNeo.Data.Models.csproj" />
     <ProjectReference Include="..\StateOfNeo.Data\StateOfNeo.Data.csproj" />
     <ProjectReference Include="..\StateOfNeo.ViewModels\StateOfNeo.ViewModels.csproj" />
