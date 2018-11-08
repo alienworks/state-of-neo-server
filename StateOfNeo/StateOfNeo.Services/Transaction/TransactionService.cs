@@ -43,21 +43,25 @@ namespace StateOfNeo.Services.Transaction
 
         public IPagedList<TransactionListViewModel> TransactionsForAddress(string address, int page = 1, int pageSize = 10)
         {
-            var incoming = this.db.Addresses
-                .Include(x => x.IncomingTransactions).ThenInclude(x => x.OutGlobalTransaction).ThenInclude(x => x.Block)
-                .Where(x => x.PublicAddress == address)
-                .SelectMany(x => x.IncomingTransactions.Select(z => z.OutGlobalTransaction))
-                .ProjectTo<TransactionListViewModel>();
+            var globalIncoming = this.db.TransactedAssets
+                .Include(x => x.InGlobalTransaction)
+                .Where(x => (x.ToAddressPublicAddress == address || x.FromAddressPublicAddress == address) && x.InGlobalTransaction != null)
+                .Select(x => x.InGlobalTransaction);
 
-            var outgoing = this.db.Addresses
-                .Include(x => x.OutgoingTransactions).ThenInclude(x => x.InGlobalTransaction).ThenInclude(x => x.Block)
-                .Where(x => x.PublicAddress == address)
-                .SelectMany(x => x.OutgoingTransactions.Select(z => z.InGlobalTransaction))
-                .ProjectTo<TransactionListViewModel>();
+            var globalOutgoing = this.db.TransactedAssets
+                .Include(x => x.OutGlobalTransaction)
+                .Where(x => (x.ToAddressPublicAddress == address || x.FromAddressPublicAddress == address) && x.OutGlobalTransaction != null)
+                .Select(x => x.OutGlobalTransaction);
 
-            var result = incoming
-                .Union(outgoing)
-                .Distinct()
+            var nepTransactions = this.db.TransactedAssets
+                .Include(x => x.Transaction)
+                .Where(x => (x.ToAddressPublicAddress == address || x.FromAddressPublicAddress == address) && x.Transaction != null)
+                .Select(x => x.Transaction);
+
+            var result = globalIncoming
+                .Union(globalOutgoing)
+                .Union(nepTransactions)
+                .ProjectTo<TransactionListViewModel>()
                 .OrderByDescending(x => x.Timestamp)
                 .ToPagedList(page, pageSize);
 

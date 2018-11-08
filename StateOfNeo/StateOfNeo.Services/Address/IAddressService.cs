@@ -4,12 +4,15 @@ using StateOfNeo.ViewModels.Chart;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using X.PagedList;
 
 namespace StateOfNeo.Services.Address
 {
     public interface IAddressService
     {
         T Find<T>(string address);
+
+        IPagedList<AddressListViewModel> GetPage(int page = 1, int pageSize = 10);
 
         int ActiveAddressesInThePastThreeMonths();
 

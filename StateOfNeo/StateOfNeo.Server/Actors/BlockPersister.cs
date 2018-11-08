@@ -407,6 +407,7 @@ namespace StateOfNeo.Server.Actors
                         TransactionScriptHash = transaction.Hash.ToString()
                     };
 
+                    
                     db.TransactedAssets.Add(ta);
 
                     var fromBalance = this.GetBalance(db, asset.Hash, from, asset.Id);

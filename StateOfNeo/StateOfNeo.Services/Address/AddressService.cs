@@ -10,6 +10,7 @@ using StateOfNeo.Common.Extensions;
 using StateOfNeo.Data;
 using StateOfNeo.ViewModels.Address;
 using StateOfNeo.ViewModels.Chart;
+using X.PagedList;
 
 namespace StateOfNeo.Services.Address
 {
@@ -60,6 +61,19 @@ namespace StateOfNeo.Services.Address
                 .Where(x => x.PublicAddress == address)
                 .ProjectTo<T>()
                 .FirstOrDefault();
+
+        public IPagedList<AddressListViewModel> GetPage(int page = 1, int pageSize = 10)
+        {
+            var query = this.db.Addresses
+                .Include(x => x.OutgoingTransactions)
+                .Include(x => x.IncomingTransactions)
+                .AsQueryable();
+
+            return query
+                .OrderByDescending(x => x.LastTransactionOn)
+                .ProjectTo<AddressListViewModel>()
+                .ToPagedList(page, pageSize);
+        }
 
         public IEnumerable<ChartStatsViewModel> GetTransactionStats(string address)
         {
