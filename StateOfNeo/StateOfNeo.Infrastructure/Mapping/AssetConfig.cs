@@ -13,11 +13,11 @@ namespace StateOfNeo.Infrastructure.Mapping
         internal static void InitMap(IMapperConfigurationExpression cfg)
         {
             cfg.CreateMap<Asset, AssetListViewModel>()
-                .ForMember(x => x.TotalSupply, opt => opt.MapFrom(x => (decimal)x.MaxSupply))
+                .ForMember(x => x.TotalSupply, opt => opt.MapFrom(x => x.MaxSupply))
                 .ReverseMap();
 
             cfg.CreateMap<Asset, AssetDetailsViewModel>()
-                .ForMember(x => x.TotalSupply, opt => opt.MapFrom(x => (decimal)x.MaxSupply))
+                .ForMember(x => x.TotalSupply, opt => opt.MapFrom(x => x.MaxSupply))
                 .ForMember(x => x.TransactionsCount, opt => opt.MapFrom(x => x.TransactedAssets.Count))
                 .ForMember(x => x.AddressesCount, opt => opt.MapFrom(x => x.TransactedAssets.Select(ta => ta.FromAddressPublicAddress).Union(x.TransactedAssets.Select(ta => ta.ToAddressPublicAddress)).Distinct().Count()))
                 .ReverseMap();

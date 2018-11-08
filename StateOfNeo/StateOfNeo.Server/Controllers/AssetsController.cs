@@ -35,9 +35,13 @@ namespace StateOfNeo.Server.Controllers
         }
 
         [HttpGet("[action]")]
-        public async Task<IActionResult> List(int page = 1, int pageSize = 10)
+        public async Task<IActionResult> List(int page = 1, int pageSize = 10, bool global = true)
         {
-            var result = await this.paginating.GetPage<Asset, AssetListViewModel>(page, pageSize);
+            var result = await this.paginating.GetPage<Asset, AssetListViewModel>(
+                page, 
+                pageSize,
+                null,
+                x => global == true ? x.GlobalType != null : x.GlobalType == null);
 
             return this.Ok(result.ToListResult());
         }
