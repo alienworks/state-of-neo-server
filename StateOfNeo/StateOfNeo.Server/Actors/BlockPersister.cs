@@ -61,7 +61,6 @@ namespace StateOfNeo.Server.Actors
         {
             if (message is PersistCompleted m)
             {
-                return;
                 var optionsBuilder = new DbContextOptionsBuilder<StateOfNeoContext>();
                 optionsBuilder.UseSqlServer(this.connectionString, opts => opts.CommandTimeout((int)TimeSpan.FromMinutes(10).TotalSeconds));
                 var db = new StateOfNeoContext(optionsBuilder.Options);
