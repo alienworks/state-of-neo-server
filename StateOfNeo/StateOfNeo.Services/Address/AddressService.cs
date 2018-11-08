@@ -59,7 +59,28 @@ namespace StateOfNeo.Services.Address
             this.db.Addresses
                 .Where(x => x.PublicAddress == address)
                 .ProjectTo<T>()
-                .FirstOrDefault();        
+                .FirstOrDefault();
+
+        public IEnumerable<ChartStatsViewModel> GetTransactionStats(string address)
+        {
+            return this.db.Transactions
+                .Include(x => x.GlobalOutgoingAssets)
+                .Include(x => x.GlobalIncomingAssets)
+                .Include(x => x.Assets)
+                .Where(x => 
+                    x.GlobalIncomingAssets.Any(a => a.FromAddressPublicAddress == address || a.ToAddressPublicAddress == address)
+                    || x.GlobalOutgoingAssets.Any(a => a.FromAddressPublicAddress == address || a.ToAddressPublicAddress == address)
+                    || x.Assets.Any(a => a.FromAddressPublicAddress == address || a.ToAddressPublicAddress == address)
+                )
+                .Select(x => x.Type)
+                .GroupBy(x => x)
+                .Select(x => new ChartStatsViewModel
+                {
+                    Label = x.Key.ToString(),
+                    Value = x.Count()
+                })
+                .ToList();
+        }
 
         public IEnumerable<ChartStatsViewModel> GetStats(ChartFilterViewModel filter)
         {

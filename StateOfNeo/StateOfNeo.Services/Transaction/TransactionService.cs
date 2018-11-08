@@ -55,7 +55,11 @@ namespace StateOfNeo.Services.Transaction
                 .SelectMany(x => x.OutgoingTransactions.Select(z => z.InGlobalTransaction))
                 .ProjectTo<TransactionListViewModel>();
 
-            var result = incoming.Union(outgoing).OrderByDescending(x => x.Timestamp).ToPagedList(page, pageSize);
+            var result = incoming
+                .Union(outgoing)
+                .Distinct()
+                .OrderByDescending(x => x.Timestamp)
+                .ToPagedList(page, pageSize);
 
             return result;
         }

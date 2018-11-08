@@ -6,7 +6,7 @@ using System.Text;
 
 namespace StateOfNeo.ViewModels.Transaction
 {
-    public class TransactionListViewModel
+    public class TransactionListViewModel : IComparable<TransactionListViewModel>, IEquatable<TransactionListViewModel>
     {
         public string Hash { get; set; }
 
@@ -17,5 +17,20 @@ namespace StateOfNeo.ViewModels.Transaction
         public long Timestamp { get; set; }
 
         public DateTime FinalizedAt => this.Timestamp.ToUnixDate();
+
+        public int CompareTo(TransactionListViewModel other)
+        {
+            return this.Hash.CompareTo(other.Hash);
+        }
+
+        public bool Equals(TransactionListViewModel other)
+        {
+            return this.Hash.Equals(other.Hash);
+        }
+
+        public override int GetHashCode()
+        {
+            return this.Hash.GetHashCode();
+        }
     }
 }

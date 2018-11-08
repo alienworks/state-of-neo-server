@@ -18,6 +18,7 @@ namespace StateOfNeo.Services.Address
         int CreatedAddressesCount();
 
         IEnumerable<ChartStatsViewModel> GetStats(ChartFilterViewModel filter);
+        IEnumerable<ChartStatsViewModel> GetTransactionStats(string address);
 
         IEnumerable<AddressListViewModel> TopOneHundredNeo();
 

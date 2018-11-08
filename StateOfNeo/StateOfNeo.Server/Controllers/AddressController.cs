@@ -83,9 +83,15 @@ namespace StateOfNeo.Server.Controllers
         
         [HttpPost("[action]")]
         public IActionResult Chart([FromBody]ChartFilterViewModel filter)
-
         {
             var result = this.addresses.GetStats(filter);
+            return this.Ok(result);
+        }
+        
+        [HttpGet("[action]/{address}")]
+        public IActionResult TransactionsChart(string address)
+        {
+            IEnumerable<ChartStatsViewModel> result = this.addresses.GetTransactionStats(address);
             return this.Ok(result);
         }
     }
