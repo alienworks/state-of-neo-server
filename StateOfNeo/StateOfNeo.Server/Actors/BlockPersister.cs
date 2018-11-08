@@ -6,6 +6,7 @@ using AutoMapper;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Neo;
+using Neo.IO.Json;
 using Neo.Ledger;
 using Neo.SmartContract;
 using Neo.VM;
@@ -188,6 +189,12 @@ namespace StateOfNeo.Server.Actors
                     };
 
                     transaction.RegisterTransaction = registerTransaction;
+
+                    if (unboxed.Name.Length > 2)
+                    {
+                        var test = JObject.Parse(unboxed.Name.Substring(1, unboxed.Name.Length - 2));
+                        var nameTest = test["name"]?.AsString();
+                    }
 
                     var asset = new Asset
                     {
