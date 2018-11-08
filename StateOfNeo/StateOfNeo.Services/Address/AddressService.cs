@@ -98,18 +98,16 @@ namespace StateOfNeo.Services.Address
 
         public IEnumerable<ChartStatsViewModel> GetStats(ChartFilterViewModel filter)
         {
+            if (filter.StartDate == null)
+            {
+                filter.StartDate = this.db.Addresses
+                    .OrderByDescending(x => x.FirstTransactionOn)
+                    .Select(x => x.FirstTransactionOn)
+                    .FirstOrDefault();
+            }
             var query = this.db.Addresses.AsQueryable();
             var result = new List<ChartStatsViewModel>();
-
-            if (filter.StartDate != null)
-            {
-                query = query.Where(x => x.FirstTransactionOn >= filter.StartDate);
-            }
-
-            if (filter.EndDate != null)
-            {
-                query = query.Where(x => x.FirstTransactionOn <= filter.EndDate);
-            }
+                query = query.Where(x => x.FirstTransactionOn >= filter.GetEndPeriod());
 
             if (filter.UnitOfTime == UnitOfTime.Hour)
             {
