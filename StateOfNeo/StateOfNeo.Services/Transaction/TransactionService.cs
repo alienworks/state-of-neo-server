@@ -16,14 +16,9 @@ using StateOfNeo.ViewModels.Transaction;
 
 namespace StateOfNeo.Services.Transaction
 {
-    public class TransactionService : ITransactionService
+    public class TransactionService : FilterService, ITransactionService
     {
-        private readonly StateOfNeoContext db;
-
-        public TransactionService(StateOfNeoContext db)
-        {
-            this.db = db;
-        }
+        public TransactionService(StateOfNeoContext db) : base(db) { }
 
         public T Find<T>(string hash) =>
             this.db.Transactions
@@ -78,75 +73,9 @@ namespace StateOfNeo.Services.Transaction
 
         public IEnumerable<ChartStatsViewModel> GetStats(ChartFilterViewModel filter)
         {
-            if (filter.StartDate == null)
-            {
-                var dbTxLatestTime = this.db.Transactions
-                    .Include(x => x.Block)
-                    .OrderByDescending(x => x.Timestamp)
-                    .Select(x => x.Block.CreatedOn)
-                    .FirstOrDefault();
+            return this.Filter<Data.Models.Transactions.Transaction>(filter);
 
-                filter.StartDate = dbTxLatestTime;
-            }
 
-            var query = this.db.Transactions.Include(x => x.Block).AsQueryable();
-            var result = new List<ChartStatsViewModel>();
-
-            query = query.Where(x => x.Block.CreatedOn >= filter.GetEndPeriod());
-
-            if (filter.UnitOfTime == UnitOfTime.Hour)
-            {
-                result = query.ToList().GroupBy(x => new
-                {
-                    x.Block.CreatedOn.Year,
-                    x.Block.CreatedOn.Month,
-                    x.Block.CreatedOn.Day,
-                    x.Block.CreatedOn.Hour
-                })
-                .Select(x => new ChartStatsViewModel
-                {
-                    StartDate = new DateTime(x.Key.Year, x.Key.Month, x.Key.Day, x.Key.Hour, 0, 0),
-                    UnitOfTime = UnitOfTime.Hour,
-                    Value = x.Count()
-                })
-                .OrderBy(x => x.StartDate)
-                .ToList();
-            }
-            else if (filter.UnitOfTime == UnitOfTime.Day)
-            {
-                result = query.ToList().GroupBy(x => new
-                {
-                    x.Block.CreatedOn.Year,
-                    x.Block.CreatedOn.Month,
-                    x.Block.CreatedOn.Day
-                })
-                .Select(x => new ChartStatsViewModel
-                {
-                    StartDate = new DateTime(x.Key.Year, x.Key.Month, x.Key.Day),
-                    UnitOfTime = UnitOfTime.Day,
-                    Value = x.Count()
-                })
-                .OrderBy(x => x.StartDate)
-                .ToList();
-            }
-            else if (filter.UnitOfTime == UnitOfTime.Month)
-            {
-                result = query.ToList().GroupBy(x => new
-                {
-                    x.Block.CreatedOn.Year,
-                    x.Block.CreatedOn.Month
-                })
-                .Select(x => new ChartStatsViewModel
-                {
-                    StartDate = new DateTime(x.Key.Year, x.Key.Month, 1),
-                    UnitOfTime = UnitOfTime.Month,
-                    Value = x.Count()
-                })
-                .OrderBy(x => x.StartDate)
-                .ToList();
-            }
-
-            return result;
         }
 
         public IEnumerable<ChartStatsViewModel> GetPieStats()

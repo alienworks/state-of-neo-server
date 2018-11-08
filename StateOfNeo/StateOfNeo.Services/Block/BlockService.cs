@@ -1,27 +1,23 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using AutoMapper.QueryableExtensions;
+﻿using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
 using StateOfNeo.Common.Enums;
 using StateOfNeo.Common.Extensions;
+using StateOfNeo.Common.Helpers.Filters;
+using StateOfNeo.Common.Helpers.Models;
 using StateOfNeo.Data;
 using StateOfNeo.Data.Models;
 using StateOfNeo.ViewModels.Chart;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
 using X.PagedList;
 
 namespace StateOfNeo.Services.Block
 {
-    public class BlockService : IBlockService
+    public class BlockService : FilterService, IBlockService
     {
-        private readonly StateOfNeoContext db;
-
-        public BlockService(StateOfNeoContext db)
-        {
-            this.db = db;
-        }
+        public BlockService(StateOfNeoContext db) : base(db) { }
 
         public T Find<T>(string hash) =>
             this.db.Blocks
@@ -80,140 +76,24 @@ namespace StateOfNeo.Services.Block
 
         public IEnumerable<ChartStatsViewModel> GetBlockSizeStats(ChartFilterViewModel filter)
         {
-            ConfirmStartDateValue(filter);
-            var query = this.db.Blocks.AsQueryable();
-            var result = new List<ChartStatsViewModel>();
-
-            query = query.Where(x => x.Timestamp.ToUnixDate() >= filter.GetEndPeriod());
-            if (filter.UnitOfTime == UnitOfTime.Hour)
-            {
-                result = query.ToList().GroupBy(x => new
+            return this.Filter<Data.Models.Block>(filter,
+                x => new ValueExtractionModel
                 {
-                    x.Timestamp.ToUnixDate().Year,
-                    x.Timestamp.ToUnixDate().Month,
-                    x.Timestamp.ToUnixDate().Day,
-                    x.Timestamp.ToUnixDate().Hour
-                })
-                .Select(x => new ChartStatsViewModel
-                {
-                    StartDate = new DateTime(x.Key.Year, x.Key.Month, x.Key.Day, x.Key.Hour, 0, 0),
-                    UnitOfTime = UnitOfTime.Hour,
-                    Value = x.Sum(z => z.Size) / x.Count()
-                })
-                .OrderBy(x => x.StartDate)
-                .ToList();
-            }
-            else if (filter.UnitOfTime == UnitOfTime.Day)
-            {
-                result = query.ToList().GroupBy(x => new
-                {
-                    x.Timestamp.ToUnixDate().Year,
-                    x.Timestamp.ToUnixDate().Month,
-                    x.Timestamp.ToUnixDate().Day
-                })
-                .Select(x => new ChartStatsViewModel
-                {
-                    StartDate = new DateTime(x.Key.Year, x.Key.Month, x.Key.Day),
-                    UnitOfTime = UnitOfTime.Day,
-                    Value = x.Sum(z => z.Size) / x.Count()
-                })
-                .OrderBy(x => x.StartDate)
-                .ToList();
-            }
-            else if (filter.UnitOfTime == UnitOfTime.Month)
-            {
-                result = query.ToList().GroupBy(x => new
-                {
-                    x.Timestamp.ToUnixDate().Year,
-                    x.Timestamp.ToUnixDate().Month
-                })
-                .Select(x => new ChartStatsViewModel
-                {
-                    StartDate = new DateTime(x.Key.Year, x.Key.Month, 1),
-                    UnitOfTime = UnitOfTime.Month,
-                    Value = x.Sum(z => z.Size) / x.Count()
-                })
-                .OrderBy(x => x.StartDate)
-                .ToList();
-            }
-
-            return result;
+                    Size = x.Size,
+                    Timestamp = x.Timestamp
+                });
         }
 
         public IEnumerable<ChartStatsViewModel> GetBlockTimeStats(ChartFilterViewModel filter)
         {
-            ConfirmStartDateValue(filter);
-            var query = this.db.Blocks.Include(x => x.PreviousBlock).AsQueryable();
-            var result = new List<ChartStatsViewModel>();
-
-            query = query.Where(x => x.Timestamp.ToUnixDate() >= filter.GetEndPeriod());
-            query = query.Where(x => x.PreviousBlock != null);
-            if (filter.UnitOfTime == UnitOfTime.Hour)
-            {
-                result = query.ToList().GroupBy(x => new
+            return this.Filter<Data.Models.Block>(filter,
+                x => new ValueExtractionModel
                 {
-                    x.Timestamp.ToUnixDate().Year,
-                    x.Timestamp.ToUnixDate().Month,
-                    x.Timestamp.ToUnixDate().Day,
-                    x.Timestamp.ToUnixDate().Hour
-                })
-                .Select(x => new ChartStatsViewModel
-                {
-                    StartDate = new DateTime(x.Key.Year, x.Key.Month, x.Key.Day, x.Key.Hour, 0, 0),
-                    UnitOfTime = UnitOfTime.Hour,
-                    Value = x.Where(z => z.PreviousBlock != null).Sum(z => (decimal)(z.Timestamp.ToUnixDate() - z.PreviousBlock.Timestamp.ToUnixDate()).TotalSeconds) / x.Count()
-                })
-                .OrderBy(x => x.StartDate)
-                .ToList();
-            }
-            else if (filter.UnitOfTime == UnitOfTime.Day)
-            {
-                result = query.ToList().GroupBy(x => new
-                {
-                    x.Timestamp.ToUnixDate().Year,
-                    x.Timestamp.ToUnixDate().Month,
-                    x.Timestamp.ToUnixDate().Day
-                })
-                .Select(x => new ChartStatsViewModel
-                {
-                    StartDate = new DateTime(x.Key.Year, x.Key.Month, x.Key.Day),
-                    UnitOfTime = UnitOfTime.Day,
-                    Value = x.Where(z => z.PreviousBlock != null).Sum(z => (decimal)(z.Timestamp.ToUnixDate() - z.PreviousBlock.Timestamp.ToUnixDate()).TotalSeconds) / x.Count()
-                })
-                .OrderBy(x => x.StartDate)
-                .ToList();
-            }
-            else if (filter.UnitOfTime == UnitOfTime.Month)
-            {
-                result = query.ToList().GroupBy(x => new
-                {
-                    x.Timestamp.ToUnixDate().Year,
-                    x.Timestamp.ToUnixDate().Month
-                })
-                .Select(x => new ChartStatsViewModel
-                {
-                    StartDate = new DateTime(x.Key.Year, x.Key.Month, 1),
-                    UnitOfTime = UnitOfTime.Month,
-                    Value = x.Where(z => z.PreviousBlock != null).Sum(z => (decimal)(z.Timestamp.ToUnixDate() - z.PreviousBlock.Timestamp.ToUnixDate()).TotalSeconds) / x.Count()
-                })
-                .OrderBy(x => x.StartDate)
-                .ToList();
-            }
-
-            return result;
+                    Size = (decimal)(x.Timestamp.ToUnixDate() - x.PreviousBlock.Timestamp.ToUnixDate()).TotalSeconds,
+                    Timestamp = x.Timestamp
+                },
+                x => x.PreviousBlock != null);
         }
 
-        private void ConfirmStartDateValue(ChartFilterViewModel filter)
-        {
-            if (filter.StartDate == null)
-            {
-                var latestDbBlockTime = this.db.Blocks
-                    .OrderByDescending(x => x.CreatedOn)
-                    .Select(x => x.CreatedOn)
-                    .FirstOrDefault();
-
-                filter.StartDate = latestDbBlockTime;
-            }
-        }
     }
 }
