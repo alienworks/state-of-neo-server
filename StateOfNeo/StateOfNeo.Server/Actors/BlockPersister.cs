@@ -392,19 +392,9 @@ namespace StateOfNeo.Server.Actors
                     var notification = item.GetNotification<TransferNotification>();
                     var from = new UInt160(notification.From).ToAddress();
                     var to = new UInt160(notification.To).ToAddress();
-
                     var fromAddress = this.GetAddress(db, from, DateTime.UtcNow);
-                    if (fromAddress == null)
-                    {
-
-                    }
 
                     var toAddress = this.GetAddress(db, to, DateTime.UtcNow);
-                    if (toAddress == null)
-                    {
-
-                    }
-
                     var ta = new Data.Models.Transactions.TransactedAsset
                     {
                         Amount = (decimal)notification.Amount,
@@ -419,32 +409,13 @@ namespace StateOfNeo.Server.Actors
                     db.TransactedAssets.Add(ta);
 
                     var fromBalance = this.GetBalance(db, asset.Hash, from, asset.Id);
-                    if (fromBalance == null)
-                    {
-
-                    }
-
                     fromBalance.Balance -= ta.Amount;
                     if (fromBalance.Balance < 0)
                     {
-
+                        fromBalance.Balance = -1;
                     }
 
                     var toBalance = this.GetBalance(db, asset.Hash, to, asset.Id);
-                    if (toBalance == null)
-                    {
-                        toBalance = new AddressAssetBalance
-                        {
-                            AddressPublicAddress = toAddress.PublicAddress,
-                            Asset = asset,
-                            Balance = 0,
-                            CreatedOn = DateTime.UtcNow
-                        };
-
-                        db.AddressBalances.Add(toBalance);
-                        this.pendingBalances.Add(toBalance);
-                    }
-
                     toBalance.Balance += ta.Amount;
                 }
             }            

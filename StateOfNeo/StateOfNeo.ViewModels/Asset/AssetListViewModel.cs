@@ -10,6 +10,6 @@ namespace StateOfNeo.ViewModels.Asset
 
         public string Hash { get; set; }
 
-        public decimal TotalSupply { get; set; }
+        public long TotalSupply { get; set; }
     }
 }
