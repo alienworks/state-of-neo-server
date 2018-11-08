@@ -12,6 +12,7 @@ using StateOfNeo.ViewModels.Chart;
 using StateOfNeo.Common.Enums;
 using StateOfNeo.Common.Extensions;
 using X.PagedList;
+using StateOfNeo.ViewModels.Transaction;
 
 namespace StateOfNeo.Services.Transaction
 {
@@ -40,21 +41,21 @@ namespace StateOfNeo.Services.Transaction
                 .Sum(x => x.Amount)
             : 0;
 
-        public IPagedList<T> TransactionsForAddress<T>(string address, int page = 1, int pageSize = 10)
+        public IPagedList<TransactionListViewModel> TransactionsForAddress(string address, int page = 1, int pageSize = 10)
         {
             var incoming = this.db.Addresses
                 .Include(x => x.IncomingTransactions).ThenInclude(x => x.OutGlobalTransaction).ThenInclude(x => x.Block)
                 .Where(x => x.PublicAddress == address)
                 .SelectMany(x => x.IncomingTransactions.Select(z => z.OutGlobalTransaction))
-                .ProjectTo<T>();
+                .ProjectTo<TransactionListViewModel>();
 
             var outgoing = this.db.Addresses
                 .Include(x => x.OutgoingTransactions).ThenInclude(x => x.InGlobalTransaction).ThenInclude(x => x.Block)
                 .Where(x => x.PublicAddress == address)
                 .SelectMany(x => x.OutgoingTransactions.Select(z => z.InGlobalTransaction))
-                .ProjectTo<T>();
+                .ProjectTo<TransactionListViewModel>();
 
-            var result = incoming.Union(outgoing).ToPagedList(page, pageSize);
+            var result = incoming.Union(outgoing).OrderByDescending(x => x.Timestamp).ToPagedList(page, pageSize);
 
             return result;
         }
@@ -62,6 +63,7 @@ namespace StateOfNeo.Services.Transaction
         public IPagedList<T> GetPageTransactions<T>(int page = 1, int pageSize = 10, string blockHash = null)
         {
             var query = this.db.Transactions
+                .OrderByDescending(x => x.Timestamp)
                 .AsQueryable();
 
             if (!string.IsNullOrEmpty(blockHash))
@@ -70,7 +72,6 @@ namespace StateOfNeo.Services.Transaction
             }
 
             return query
-                .OrderByDescending(x => x.Timestamp)
                 .ProjectTo<T>()
                 .ToPagedList(page, pageSize);
         }
