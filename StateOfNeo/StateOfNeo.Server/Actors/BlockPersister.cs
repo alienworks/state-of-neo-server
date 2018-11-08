@@ -227,7 +227,7 @@ namespace StateOfNeo.Server.Actors
                         ScriptAsHexString = unboxed.Script.ToHexString()
                     };
 
-                    this.TrackInvocationTransaction(unboxed, db);
+                    this.TrackInvocationTransaction(unboxed, db, block.Timestamp.ToUnixDate());
 
                     transaction.InvocationTransaction = invocationTransaction;
                 }
@@ -332,7 +332,7 @@ namespace StateOfNeo.Server.Actors
             return block;
         }
 
-        private void TrackInvocationTransaction(Neo.Network.P2P.Payloads.InvocationTransaction transaction, StateOfNeoContext db)
+        private void TrackInvocationTransaction(Neo.Network.P2P.Payloads.InvocationTransaction transaction, StateOfNeoContext db, DateTime blockTime)
         {
             AppExecutionResult result = null;
             using (ApplicationEngine engine = new ApplicationEngine(TriggerType.Application, transaction, Blockchain.Singleton.GetSnapshot().Clone(), transaction.Gas))
@@ -392,9 +392,9 @@ namespace StateOfNeo.Server.Actors
                     var notification = item.GetNotification<TransferNotification>();
                     var from = new UInt160(notification.From).ToAddress();
                     var to = new UInt160(notification.To).ToAddress();
-                    var fromAddress = this.GetAddress(db, from, DateTime.UtcNow);
+                    var fromAddress = this.GetAddress(db, from, blockTime);
 
-                    var toAddress = this.GetAddress(db, to, DateTime.UtcNow);
+                    var toAddress = this.GetAddress(db, to, blockTime);
                     var ta = new Data.Models.Transactions.TransactedAsset
                     {
                         Amount = (decimal)notification.Amount,
