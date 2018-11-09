@@ -25,9 +25,42 @@ namespace StateOfNeo.Services.Address
 
         public int CreatedAddressesCount() => this.db.Addresses.Count();
 
+        public int CreatedAddressesCountForLast(UnitOfTime unit = UnitOfTime.Day)
+        {
+            // Skipping this date untill fully synced with blockchain
+            //var date = DateTime.UtcNow;
+            var date = this.db.Addresses
+                .OrderByDescending(x => x.FirstTransactionOn)
+                .Select(x => x.FirstTransactionOn)
+                .First();
+
+            var query = this.db.Addresses.AsQueryable();
+
+            if (unit == UnitOfTime.Second)
+            {
+                query = query.Where(x => x.FirstTransactionOn > date.AddSeconds(-1));
+            }
+            if (unit == UnitOfTime.Hour)
+            {
+                query = query.Where(x => x.FirstTransactionOn > date.AddHours(-1));
+            }
+            if (unit == UnitOfTime.Day)
+            {
+                query = query.Where(x => x.FirstTransactionOn > date.AddDays(-1));
+            }
+            if (unit == UnitOfTime.Month)
+            {
+                query = query.Where(x => x.FirstTransactionOn > date.AddMonths(-1));
+            }
+
+            return query.Count();
+        }
+
         public int ActiveAddressesInThePastThreeMonths() =>
             this.db.Addresses
-                .Include(x => x.OutgoingTransactions).ThenInclude(tr => tr.Transaction).ThenInclude(x => x.Block)
+                .Include(x => x.OutgoingTransactions)
+                .ThenInclude(tr => tr.Transaction)
+                .ThenInclude(x => x.Block)
                 .Where(x => x.OutgoingTransactions.Any(tr => tr.Transaction.Block.Timestamp.ToUnixDate() > DateTime.UtcNow.AddMonths(-3)))
                 .Count();
 
@@ -56,7 +89,7 @@ namespace StateOfNeo.Services.Address
             return result;
         }
 
-        public T Find<T>(string address) => 
+        public T Find<T>(string address) =>
             this.db.Addresses
                 .Where(x => x.PublicAddress == address)
                 .ProjectTo<T>()
@@ -81,7 +114,7 @@ namespace StateOfNeo.Services.Address
                 .Include(x => x.GlobalOutgoingAssets)
                 .Include(x => x.GlobalIncomingAssets)
                 .Include(x => x.Assets)
-                .Where(x => 
+                .Where(x =>
                     x.GlobalIncomingAssets.Any(a => a.FromAddressPublicAddress == address || a.ToAddressPublicAddress == address)
                     || x.GlobalOutgoingAssets.Any(a => a.FromAddressPublicAddress == address || a.ToAddressPublicAddress == address)
                     || x.Assets.Any(a => a.FromAddressPublicAddress == address || a.ToAddressPublicAddress == address)
@@ -107,7 +140,7 @@ namespace StateOfNeo.Services.Address
             }
             var query = this.db.Addresses.AsQueryable();
             var result = new List<ChartStatsViewModel>();
-                query = query.Where(x => x.FirstTransactionOn >= filter.GetEndPeriod());
+            query = query.Where(x => x.FirstTransactionOn >= filter.GetEndPeriod());
 
             if (filter.UnitOfTime == UnitOfTime.Hour)
             {

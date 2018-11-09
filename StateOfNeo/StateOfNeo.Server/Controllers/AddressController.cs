@@ -77,7 +77,14 @@ namespace StateOfNeo.Server.Controllers
             var result = this.addresses.CreatedAddressesCount();
             return this.Ok(result);
         }
-        
+
+        [HttpGet("[action]")]
+        public IActionResult CreatedLast([FromQuery]UnitOfTime unit)
+        {
+            int result = this.addresses.CreatedAddressesCountForLast(unit);
+            return this.Ok(result);
+        }
+
         [HttpPost("[action]")]
         public IActionResult Chart([FromBody]ChartFilterViewModel filter)
         {

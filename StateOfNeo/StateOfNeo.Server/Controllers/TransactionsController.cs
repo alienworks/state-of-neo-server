@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 using StateOfNeo.Common.Extensions;
 using StateOfNeo.Data.Models.Transactions;
 using StateOfNeo.ViewModels.Chart;
+using StateOfNeo.Common.Enums;
 
 namespace StateOfNeo.Server.Controllers
 {
@@ -23,7 +24,7 @@ namespace StateOfNeo.Server.Controllers
             this.paginating = paginating;
             this.transactions = transactions;
         }
-               
+
         [HttpGet("[action]/{hash}")]
         public IActionResult Get(string hash)
         {
@@ -50,13 +51,6 @@ namespace StateOfNeo.Server.Controllers
             return this.Ok(result.ToListResult());
         }
 
-        [HttpGet("[action]")]
-        public IActionResult TotalClaimed()
-        {
-            var result = this.transactions.TotalClaimed();
-            return this.Ok(result);
-        }
-
         [HttpPost("[action]")]
         public IActionResult Chart([FromBody]ChartFilterViewModel filter)
         {
@@ -68,6 +62,25 @@ namespace StateOfNeo.Server.Controllers
         public IActionResult PieChart()
         {
             IEnumerable<ChartStatsViewModel> result = this.transactions.GetPieStats();
+            return this.Ok(result);
+        }
+
+        [HttpGet("[action]")]
+        public IActionResult AveragePer([FromQuery]UnitOfTime unit = UnitOfTime.Day)
+        {
+            return this.Ok(this.transactions.AveragePer(unit));
+        }
+
+        [HttpGet("[action]")]
+        public IActionResult Total()
+        {
+            return this.Ok(this.transactions.Total());
+        }
+
+        [HttpGet("[action]")]
+        public IActionResult TotalClaimed()
+        {
+            var result = this.transactions.TotalClaimed();
             return this.Ok(result);
         }
     }

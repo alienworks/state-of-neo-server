@@ -19,6 +19,7 @@ namespace StateOfNeo.Services.Address
         int CreatedAddressesPer(UnitOfTime timePeriod);
 
         int CreatedAddressesCount();
+        int CreatedAddressesCountForLast(UnitOfTime unit = UnitOfTime.Day);
 
         IEnumerable<ChartStatsViewModel> GetStats(ChartFilterViewModel filter);
         IEnumerable<ChartStatsViewModel> GetTransactionStats(string address);

@@ -95,5 +95,24 @@ namespace StateOfNeo.Services.Block
                 x => x.PreviousBlock != null);
         }
 
+        public decimal GetAvgTxPerBlock()
+        {
+            var txs = this.db.Transactions.Count();
+            var blocks = this.db.Blocks.Count();
+
+            return txs / blocks;
+        }
+
+        public double GetAvgBlockTime()
+        {
+            var result = this.db.Blocks.Average(x => x.TimeInSeconds);
+            return result;
+        }
+
+        public double GetAvgBlockSize()
+        {
+            var result = this.db.Blocks.Average(x => x.Size);
+            return result;
+        }
     }
 }
