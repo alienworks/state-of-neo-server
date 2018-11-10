@@ -128,7 +128,7 @@ namespace StateOfNeo.Services.Transaction
             ? this.db.Transactions
                 .Include(x => x.GlobalOutgoingAssets).ThenInclude(x => x.Asset)
                 .Where(x => x.Type == TransactionType.ClaimTransaction)
-                .SelectMany(x => x.GlobalOutgoingAssets.Where(a => a.AssetType == Data.Models.Enums.AssetType.GAS))
+                .SelectMany(x => x.GlobalOutgoingAssets.Where(a => a.AssetType == Common.Enums.AssetType.GAS))
                 .Sum(x => x.Amount)
             : 0;
     }

@@ -1,4 +1,4 @@
-﻿using StateOfNeo.Data.Models.Enums;
+﻿using StateOfNeo.Common.Enums;
 using StateOfNeo.Data.Models.Transactions;
 using System.Collections.Generic;
 

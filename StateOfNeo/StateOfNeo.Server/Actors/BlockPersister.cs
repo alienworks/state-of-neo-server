@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using Akka.Actor;
+﻿using Akka.Actor;
 using AutoMapper;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
@@ -13,14 +10,17 @@ using Neo.VM;
 using Neo.Wallets;
 using StateOfNeo.Common;
 using StateOfNeo.Common.Constants;
+using StateOfNeo.Common.Enums;
 using StateOfNeo.Common.Extensions;
 using StateOfNeo.Data;
 using StateOfNeo.Data.Models;
-using StateOfNeo.Data.Models.Enums;
 using StateOfNeo.Data.Models.Transactions;
 using StateOfNeo.Server.Actors.Notifications;
 using StateOfNeo.Server.Hubs;
 using StateOfNeo.ViewModels;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using static Neo.Ledger.Blockchain;
 
 namespace StateOfNeo.Server.Actors
@@ -379,7 +379,7 @@ namespace StateOfNeo.Server.Actors
                             Hash = assetHash,
                             Name = name,
                             MaxSupply = totalSupply,
-                            Type = Data.Models.Enums.AssetType.NEP5,
+                            Type = AssetType.NEP5,
                             Decimals = decimals,
                             CurrentSupply = totalSupply,
                             Symbol = symbol
@@ -401,7 +401,7 @@ namespace StateOfNeo.Server.Actors
                         Asset = asset,
                         FromAddressPublicAddress = from,
                         ToAddressPublicAddress = to,
-                        AssetType = Data.Models.Enums.AssetType.NEP5,
+                        AssetType = AssetType.NEP5,
                         CreatedOn = DateTime.UtcNow,
                         TransactionScriptHash = transaction.Hash.ToString()
                     };
