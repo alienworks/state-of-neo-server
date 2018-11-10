@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
+using StateOfNeo.Common.Enums;
 using StateOfNeo.Common.Extensions;
 using StateOfNeo.Data.Models;
 using StateOfNeo.Services;
@@ -44,6 +45,20 @@ namespace StateOfNeo.Server.Controllers
                 x => global == true ? x.GlobalType != null : x.GlobalType == null);
 
             return this.Ok(result.ToListResult());
+        }
+        
+        [HttpPost("[action]")]
+        public IActionResult Count(AssetType[] types)
+        {
+            int result = this.assets.Count(types);
+            return this.Ok(result);
+        }
+
+        [HttpPost("[action]")]
+        public IActionResult TxCount(AssetType[] types)
+        {
+            int result = this.assets.TxCount(types);
+            return this.Ok(result);
         }
     }
 }
