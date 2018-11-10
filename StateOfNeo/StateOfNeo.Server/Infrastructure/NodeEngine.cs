@@ -1,14 +1,12 @@
-﻿using Neo.Network;
-using StateOfNeo.ViewModels;
+﻿using Neo.Network.P2P;
 using StateOfNeo.Common;
+using StateOfNeo.ViewModels;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
-using Neo.Network.P2P;
 
 namespace StateOfNeo.Server.Infrastructure
 {
-    public static class NodeEngine
+    public class NodeEngine
     {
         private static void BFSNodes(RemoteNode node, ref List<NodeViewModel> nodeViewModels)
         {

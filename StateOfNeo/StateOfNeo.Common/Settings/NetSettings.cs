@@ -1,19 +1,35 @@
-﻿namespace StateOfNeo.Common
+﻿using System.Collections.Generic;
+
+namespace StateOfNeo.Common
 {
     public class NetSettings
     {
         public string Net { get; set; }
-        public int[] MainNetPorts { get; set; }
-        public int[] TestNetPorts { get; set; }
+        public List<PortWithType> MainNetPorts { get; set; }
+        public List<PortWithType> TestNetPorts { get; set; }
+        public List<PortWithType> CommonPorts { get; set; }
 
-        public int[] GetPorts()
+        public List<PortWithType> GetPorts()
         {
+            var result = this.TestNetPorts;
             if (this.Net == NetConstants.MAIN_NET)
             {
-                return MainNetPorts;
+                result = this.MainNetPorts;
             }
 
-            return TestNetPorts;
+            result.AddRange(this.CommonPorts);
+            return result;
+        }
+    }
+
+    public class PortWithType
+    {
+        public string Type { get; set; }
+        public int Port { get; set; }
+
+        public string GetFullUrl(string urlOrIp)
+        {
+            return $@"{this.Type}:/{urlOrIp}:{this.Port}";
         }
     }
 }
