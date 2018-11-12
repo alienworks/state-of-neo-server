@@ -38,11 +38,17 @@ namespace StateOfNeo.Server.Controllers
         }
 
         [HttpGet("[action]")]
-        public async Task<IActionResult> List(int page = 1, int pageSize = 10, string blockHash = null, string address = null)
+        public async Task<IActionResult> List(int page = 1, int pageSize = 10, string blockHash = null, string address = null, string asset = null)
         {
             if (!string.IsNullOrEmpty(address))
             {
                 var res = this.transactions.TransactionsForAddress(address, page, pageSize);
+                return this.Ok(res.ToListResult());
+            }
+
+            if (!string.IsNullOrEmpty(asset))
+            {
+                var res = this.transactions.TransactionsForAsset(asset, page, pageSize);
                 return this.Ok(res.ToListResult());
             }
 
