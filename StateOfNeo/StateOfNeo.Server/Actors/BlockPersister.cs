@@ -70,7 +70,7 @@ namespace StateOfNeo.Server.Actors
                     return;
                 }
 
-                if (m.Block.Index == 1)
+                if (!db.Blocks.Any(x => x.Hash == this.hashesByNet["genesisBlock-" + this.net]))
                 {
                     this.SeedGenesisBlock(db);
                 }
@@ -289,7 +289,7 @@ namespace StateOfNeo.Server.Actors
                         AssetType = assetHash == AssetConstants.NeoAssetId ? AssetType.NEO : AssetType.GAS,
                         CreatedOn = DateTime.UtcNow,
                         AssetId = asset.Id,
-                        FromAddressPublicAddress = fromPublicAddress                        
+                        FromAddressPublicAddress = fromPublicAddress
                     };
 
                     fromAddress.LastTransactionOn = blockTime;
@@ -298,7 +298,7 @@ namespace StateOfNeo.Server.Actors
 
                     transaction.GlobalIncomingAssets.Add(ta);
                 }
-                
+
                 for (int i = 0; i < item.Outputs.Length; i++)
                 {
                     var output = item.Outputs[i];
@@ -353,7 +353,7 @@ namespace StateOfNeo.Server.Actors
                     Notifications = engine.Service.Notifications.ToArray()
                 };
             }
-            
+
             foreach (var item in result.Notifications)
             {
                 var type = item.GetNotificationType();
@@ -406,7 +406,7 @@ namespace StateOfNeo.Server.Actors
                         TransactionScriptHash = transaction.Hash.ToString()
                     };
 
-                    
+
                     db.TransactedAssets.Add(ta);
 
                     var fromBalance = this.GetBalance(db, asset.Hash, from, asset.Id);
@@ -419,7 +419,7 @@ namespace StateOfNeo.Server.Actors
                     var toBalance = this.GetBalance(db, asset.Hash, to, asset.Id);
                     toBalance.Balance += ta.Amount;
                 }
-            }            
+            }
         }
 
         private string TestInvoke(StateOfNeoContext db, UInt160 contractHash, string operation, params object[] args)
@@ -612,7 +612,7 @@ namespace StateOfNeo.Server.Actors
                 MaxSupply = 100_000_000,
                 Type = AssetType.GAS,
                 GlobalType = Neo.Network.P2P.Payloads.AssetType.UtilityToken,
-                Decimals = 8                
+                Decimals = 8
             };
 
             var neoAssetIssueTransaction = new Transaction
@@ -648,7 +648,7 @@ namespace StateOfNeo.Server.Actors
                 CreatedOn = DateTime.UtcNow,
                 Address = toAddress,
                 Asset = neo,
-                Balance = transactedAsset.Amount                
+                Balance = transactedAsset.Amount
             };
 
             db.AddressBalances.Add(balance);
