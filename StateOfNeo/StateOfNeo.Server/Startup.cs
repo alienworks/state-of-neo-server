@@ -71,7 +71,6 @@ namespace StateOfNeo.Server
                 .AddEntityFrameworkSqlServer();
 
             services.AddTransient<StateOfNeoSeedData>();
-            services.AddTransient<NotificationEngine>();
 
             services.AddCors();
             services.AddSignalR();
@@ -90,7 +89,6 @@ namespace StateOfNeo.Server
             StateOfNeoSeedData seeder,
             StateOfNeoContext ctx,
             IServiceProvider services,
-            NotificationEngine notificationEngine,
             IOptions<NetSettings> netSettings,
             IHubContext<BlockHub> blockHub)
         {
@@ -133,7 +131,6 @@ namespace StateOfNeo.Server
             });
 
             seeder.Init();
-            notificationEngine.Init();
 
             app.UseMvc();
         }
