@@ -67,10 +67,10 @@ namespace StateOfNeo.Server.Actors
                                     Hash = item.ScriptHash.ToString(),
                                     Name = name,
                                     MaxSupply = totalSupply,
-                                    Type = Data.Models.Enums.AssetType.NEP5,
+                                    Type = StateOfNeo.Common.Enums.AssetType.NEP5,
                                     Decimals = decimals,
                                     CurrentSupply = totalSupply,
-                                    Symbol = symbol                                    
+                                    Symbol = symbol
                                 };
 
                                 db.Assets.Add(asset);
@@ -108,9 +108,9 @@ namespace StateOfNeo.Server.Actors
                                 Asset = asset,
                                 FromAddressPublicAddress = from,
                                 ToAddressPublicAddress = to,
-                                AssetType = Data.Models.Enums.AssetType.NEP5,
+                                AssetType = StateOfNeo.Common.Enums.AssetType.NEP5,
                                 CreatedOn = DateTime.UtcNow,
-                                TransactionScriptHash = transaction.Hash.ToString()                                
+                                TransactionScriptHash = transaction.Hash.ToString()
                             };
 
                             db.TransactedAssets.Add(ta);

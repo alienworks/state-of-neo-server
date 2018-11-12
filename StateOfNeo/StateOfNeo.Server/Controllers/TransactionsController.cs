@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 using StateOfNeo.Common.Extensions;
 using StateOfNeo.Data.Models.Transactions;
 using StateOfNeo.ViewModels.Chart;
+using StateOfNeo.Common.Enums;
 
 namespace StateOfNeo.Server.Controllers
 {
@@ -23,7 +24,7 @@ namespace StateOfNeo.Server.Controllers
             this.paginating = paginating;
             this.transactions = transactions;
         }
-               
+
         [HttpGet("[action]/{hash}")]
         public IActionResult Get(string hash)
         {
@@ -41,20 +42,13 @@ namespace StateOfNeo.Server.Controllers
         {
             if (!string.IsNullOrEmpty(address))
             {
-                var res = this.transactions.TransactionsForAddress<TransactionListViewModel>(address, page, pageSize);
+                var res = this.transactions.TransactionsForAddress(address, page, pageSize);
                 return this.Ok(res.ToListResult());
             }
 
             var result = this.transactions.GetPageTransactions<TransactionListViewModel>(page, pageSize, blockHash);
 
             return this.Ok(result.ToListResult());
-        }
-
-        [HttpGet("[action]")]
-        public IActionResult TotalClaimed()
-        {
-            var result = this.transactions.TotalClaimed();
-            return this.Ok(result);
         }
 
         [HttpPost("[action]")]
@@ -68,6 +62,25 @@ namespace StateOfNeo.Server.Controllers
         public IActionResult PieChart()
         {
             IEnumerable<ChartStatsViewModel> result = this.transactions.GetPieStats();
+            return this.Ok(result);
+        }
+
+        [HttpGet("[action]")]
+        public IActionResult AveragePer([FromQuery]UnitOfTime unit = UnitOfTime.Day)
+        {
+            return this.Ok(this.transactions.AveragePer(unit));
+        }
+
+        [HttpGet("[action]")]
+        public IActionResult Total()
+        {
+            return this.Ok(this.transactions.Total());
+        }
+
+        [HttpGet("[action]")]
+        public IActionResult TotalClaimed()
+        {
+            var result = this.transactions.TotalClaimed();
             return this.Ok(result);
         }
     }

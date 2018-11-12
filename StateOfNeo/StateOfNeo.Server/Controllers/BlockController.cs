@@ -83,5 +83,23 @@ namespace StateOfNeo.Server.Controllers
         {
             await blockHub.Clients.All.SendAsync(Blockchain.Singleton.Height.ToString());
         }
+
+        [HttpGet("[action]")]
+        public IActionResult AverageTxCount()
+        {
+            return Ok(this.blocks.GetAvgTxPerBlock());
+        }
+
+        [HttpGet("[action]")]
+        public IActionResult AverageTime()
+        {
+            return Ok(this.blocks.GetAvgBlockTime());
+        }
+
+        [HttpGet("[action]")]
+        public IActionResult AverageSize()
+        {
+            return Ok(this.blocks.GetAvgBlockSize());
+        }
     }
 }

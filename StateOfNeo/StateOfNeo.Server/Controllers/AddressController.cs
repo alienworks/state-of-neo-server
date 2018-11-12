@@ -36,12 +36,9 @@ namespace StateOfNeo.Server.Controllers
         }
 
         [HttpGet("[action]")]
-        public async Task<IActionResult> List(int page = 1, int pageSize = 10)
+        public IActionResult List(int page = 1, int pageSize = 10)
         {
-            var result = await this.paginating.GetPage<Data.Models.Address, AddressListViewModel>(
-                page, 
-                pageSize, 
-                x => x.LastTransactionOn);
+            var result = this.addresses.GetPage(page, pageSize);
 
             return this.Ok(result.ToListResult());
         }
@@ -80,12 +77,25 @@ namespace StateOfNeo.Server.Controllers
             var result = this.addresses.CreatedAddressesCount();
             return this.Ok(result);
         }
-        
+
+        [HttpGet("[action]")]
+        public IActionResult CreatedLast([FromQuery]UnitOfTime unit)
+        {
+            int result = this.addresses.CreatedAddressesCountForLast(unit);
+            return this.Ok(result);
+        }
+
         [HttpPost("[action]")]
         public IActionResult Chart([FromBody]ChartFilterViewModel filter)
-
         {
             var result = this.addresses.GetStats(filter);
+            return this.Ok(result);
+        }
+        
+        [HttpGet("[action]/{address}")]
+        public IActionResult TransactionsChart(string address)
+        {
+            IEnumerable<ChartStatsViewModel> result = this.addresses.GetTransactionStats(address);
             return this.Ok(result);
         }
     }

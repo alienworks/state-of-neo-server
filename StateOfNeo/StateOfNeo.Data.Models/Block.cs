@@ -6,7 +6,7 @@ using StateOfNeo.Data.Models.Transactions;
 
 namespace StateOfNeo.Data.Models
 {
-    public class Block : BaseEntity
+    public class Block : StampedEntity
     {
         public Block()
         {
@@ -18,8 +18,6 @@ namespace StateOfNeo.Data.Models
         public string Hash { get; set; }
 
         public int Height { get; set; }
-
-        public long Timestamp { get; set; }
 
         public int Size { get; set; }
 

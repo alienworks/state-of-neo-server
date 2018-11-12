@@ -1,10 +1,5 @@
 ﻿using StateOfNeo.ViewModels.Chart;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using X.PagedList;
 
 namespace StateOfNeo.Services.Block
 {
@@ -15,5 +10,8 @@ namespace StateOfNeo.Services.Block
 
         IEnumerable<ChartStatsViewModel> GetBlockSizeStats(ChartFilterViewModel filter);
         IEnumerable<ChartStatsViewModel> GetBlockTimeStats(ChartFilterViewModel filter);
+        decimal GetAvgTxPerBlock();
+        double GetAvgBlockTime();
+        double GetAvgBlockSize();
     }
 }

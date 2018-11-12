@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace StateOfNeo.Data.Models.Transactions
 {
-    public class Transaction : BaseEntity
+    public class Transaction : StampedEntity
     {
         public Transaction()
         {
@@ -27,8 +27,6 @@ namespace StateOfNeo.Data.Models.Transactions
         public int Size { get; set; }
 
         public int Version { get; set; }
-
-        public long Timestamp { get; set; }
 
         public string BlockId { get; set; }
 

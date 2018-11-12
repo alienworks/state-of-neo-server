@@ -27,6 +27,7 @@ namespace StateOfNeo.Infrastructure.Mapping
                 .ReverseMap();
 
             cfg.CreateMap<TransactionWitness, TransactionWitnessViewModel>()
+                
                 .ReverseMap();
 
         }

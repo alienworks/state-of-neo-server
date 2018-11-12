@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
+using StateOfNeo.Common.Enums;
 using StateOfNeo.Common.Extensions;
 using StateOfNeo.Data.Models;
 using StateOfNeo.Services;
@@ -35,11 +36,29 @@ namespace StateOfNeo.Server.Controllers
         }
 
         [HttpGet("[action]")]
-        public async Task<IActionResult> List(int page = 1, int pageSize = 10)
+        public async Task<IActionResult> List(int page = 1, int pageSize = 10, bool global = true)
         {
-            var result = await this.paginating.GetPage<Asset, AssetListViewModel>(page, pageSize);
+            var result = await this.paginating.GetPage<Asset, AssetListViewModel>(
+                page, 
+                pageSize,
+                null,
+                x => global == true ? x.GlobalType != null : x.GlobalType == null);
 
             return this.Ok(result.ToListResult());
+        }
+        
+        [HttpPost("[action]")]
+        public IActionResult Count(AssetType[] types)
+        {
+            int result = this.assets.Count(types);
+            return this.Ok(result);
+        }
+
+        [HttpPost("[action]")]
+        public IActionResult TxCount(AssetType[] types)
+        {
+            int result = this.assets.TxCount(types);
+            return this.Ok(result);
         }
     }
 }
