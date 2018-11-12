@@ -60,7 +60,7 @@ namespace StateOfNeo.Common.Helpers.Filters
         {
             if (uot == UnitOfTime.Month)
             {
-                return new DateTime(date.Year, date.Month, 0);
+                return new DateTime(date.Year, date.Month, 1);
             }
             if (uot == UnitOfTime.Day)
             {
