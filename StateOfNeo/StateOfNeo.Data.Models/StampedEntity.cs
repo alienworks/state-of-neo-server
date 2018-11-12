@@ -2,6 +2,6 @@
 {
     public abstract class StampedEntity : BaseEntity
     {
-        public uint Timestamp { get; set; }
+        public long Timestamp { get; set; }
     }
 }
