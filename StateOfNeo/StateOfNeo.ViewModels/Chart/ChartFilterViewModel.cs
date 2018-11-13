@@ -13,7 +13,7 @@ namespace StateOfNeo.ViewModels.Chart
         [Range(6, 36)]
         public int EndPeriod { get; set; } = 6;
 
-        public UnitOfTime UnitOfTime { get; set; }
+        public UnitOfTime UnitOfTime { get; set; } = UnitOfTime.Hour;
 
         public DateTime GetEndPeriod()
         {
