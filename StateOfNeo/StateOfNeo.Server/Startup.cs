@@ -83,6 +83,7 @@ namespace StateOfNeo.Server
                 .SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
         }
 
+
         public void Configure(
             IApplicationBuilder app,
             IHostingEnvironment env,
@@ -90,16 +91,22 @@ namespace StateOfNeo.Server
             StateOfNeoContext ctx,
             IServiceProvider services,
             IOptions<NetSettings> netSettings,
-            IHubContext<BlockHub> blockHub)
+            IHubContext<BlockHub> blockHub,
+            RPCNodeCaller nodeCaller)
         {
             var connectionString = this.Configuration.GetConnectionString("DefaultConnection");
             Program.NeoSystem.ActorSystem.ActorOf(BlockPersister.Props(
-                Program.NeoSystem.Blockchain, 
-                connectionString, 
-                blockHub, 
+                Program.NeoSystem.Blockchain,
+                connectionString,
+                blockHub,
                 netSettings.Value.Net));
+            Program.NeoSystem.ActorSystem.ActorOf(NodePersister.Props(
+                Program.NeoSystem.Blockchain,
+                connectionString,
+                netSettings.Value.Net,
+                nodeCaller));
 
-        //    Program.NeoSystem.ActorSystem.ActorOf(NotificationsListener.Props(Program.NeoSystem.Blockchain, connectionString));
+            //    Program.NeoSystem.ActorSystem.ActorOf(NotificationsListener.Props(Program.NeoSystem.Blockchain, connectionString));
 
             if (env.IsDevelopment())
             {

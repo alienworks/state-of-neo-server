@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using StateOfNeo.Common;
+using StateOfNeo.Common.Extensions;
 using StateOfNeo.Common.RPC;
 using StateOfNeo.Data;
 using StateOfNeo.Data.Models;
@@ -25,71 +26,63 @@ namespace StateOfNeo.Server.Infrastructure
     {
         private readonly NetSettings netSettings;
         private readonly IHubContext<NodeHub> nodeHub;
-        private readonly StateOfNeoContext db;
-        private int BlockCount = 0;
+        private uint BlockCount = 0;
 
         public RPCNodeCaller(
-            StateOfNeoContext db,
             IHubContext<NodeHub> nodeHub,
             IOptions<NetSettings> netSettings)
         {
-            this.db = db;
             this.nodeHub = nodeHub;
             this.netSettings = netSettings.Value;
         }
 
-        public async Task Init()
-        {
-            await this.Run();
-            System.Timers.Timer aTimer = new System.Timers.Timer();
-            aTimer.Elapsed += OnTimedEvent;
-            aTimer.Interval = 5 * 60 * 1000;
-            aTimer.Enabled = true;
-        }
+        //public async Task Init()
+        //{
+        //    await this.Run();
+        //}
 
-        // Specify what you want to happen when the Elapsed event is raised.
-        private void OnTimedEvent(object source, ElapsedEventArgs e)
-        {
-            this.Run().Wait();
-        }
+        //// Specify what you want to happen when the Elapsed event is raised.
+        //private void OnTimedEvent(object source, ElapsedEventArgs e)
+        //{
+        //    this.Run().Wait();
+        //}
 
-        private async Task Run()
+        public async Task Run(StateOfNeoContext db, long timestamp, uint blockHeight)
         {
-            var latestBlockCount = this.db.Blocks.Count();
-            if (this.BlockCount != latestBlockCount)
+            if (this.BlockCount != blockHeight)
             {
-                this.BlockCount = latestBlockCount;
-                var nodes = this.db.Nodes.Where(x => x.Net == this.netSettings.Net).Skip(2).ToList();
+                this.BlockCount = blockHeight;
+                var nodes = db.Nodes.Skip(2).ToList();
 
                 foreach (var node in nodes)
                 {
-                    await this.UpdateNodeInfo(node);
+                    await this.UpdateNodeInfo(db, node);
                 }
             }
         }
 
-        public async Task UpdateNodeInfo(int nodeId)
+        public async Task UpdateNodeInfo(StateOfNeoContext db, int nodeId)
         {
-            if (this.db.Nodes.Any(x => x.Id == nodeId))
+            if (db.Nodes.Any(x => x.Id == nodeId))
             {
-                await this.UpdateNodeInfo(this.db.Nodes.First(x => x.Id == nodeId));
+                await this.UpdateNodeInfo(db, db.Nodes.First(x => x.Id == nodeId));
             }
         }
 
-        public async Task UpdateNodeInfo(Node node)
+        public async Task UpdateNodeInfo(StateOfNeoContext db, Node node)
         {
             var stopwatch = Stopwatch.StartNew();
             var height = await this.GetNodeHeight(node);
             stopwatch.Stop();
             var latency = stopwatch.ElapsedMilliseconds;
 
-            if (height != null)
+            if (!height.HasValue)
             {
                 node.Height = height;
             }
 
-            this.db.Nodes.Update(node);
-            await this.db.SaveChangesAsync();
+            db.Nodes.Update(node);
+            await db.SaveChangesAsync();
 
             await this.nodeHub.Clients.All.SendAsync("NodeInfo", node.SuccessUrl);
         }
