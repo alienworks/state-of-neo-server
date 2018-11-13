@@ -20,7 +20,8 @@ namespace StateOfNeo.Data
         public DbSet<Block> Blocks { get; set; }
         public DbSet<Node> Nodes { get; set; }
         public DbSet<NodeAddress> NodeAddresses { get; set; }
-        public DbSet<NodeStatusUpdate> NodeStatusUpdates { get; set; }
+        public DbSet<NodeStatus> NodeStatusUpdates { get; set; }
+        public DbSet<NodeAudit> NodeAudits { get; set; }
         public DbSet<Transaction> Transactions { get; set; }
         public DbSet<TransactionAttribute> TransactionAttributes { get; set; }
         public DbSet<TransactionWitness> TransactionWitnesses { get; set; }
@@ -40,6 +41,17 @@ namespace StateOfNeo.Data
             modelBuilder.Entity<Block>().HasIndex(x => x.Height);
 
             modelBuilder.Entity<Transaction>().HasIndex(x => x.Timestamp);
+
+            modelBuilder.Entity<NodeAudit>().HasIndex(x => x.Timestamp);
+            modelBuilder.Entity<NodeAudit>()
+                .HasOne(x => x.Node)
+                .WithMany(x => x.Audits)
+                .HasForeignKey(x => x.NodeId);
+
+            modelBuilder.Entity<Node>()
+                .HasMany(x => x.Audits)
+                .WithOne(x => x.Node)
+                .HasForeignKey(x => x.NodeId);
 
             var decimalProps = modelBuilder.Model
                 .GetEntityTypes()
