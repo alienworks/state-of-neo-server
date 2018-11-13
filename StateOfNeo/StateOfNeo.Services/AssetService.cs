@@ -15,7 +15,7 @@ namespace StateOfNeo.Services
             this.db = db;
         }
 
-        public T Find<T>(string hash) => 
+        public T Find<T>(string hash) =>
             this.db.Assets
                 .Where(x => x.Hash == hash)
                 .ProjectTo<T>()
@@ -36,10 +36,15 @@ namespace StateOfNeo.Services
         {
             if (types == null || types.Length == 0)
             {
-                return this.db.TransactedAssets.Count();
+                return this.db.Transactions.Count();
             }
 
-            var assets = this.db.TransactedAssets.Where(x => types.Contains(x.AssetType)).Count();
+            var assets = this.db.TransactedAssets
+                .Where(x => types.Contains(x.AssetType))
+                .Select(x => x.AssetType == AssetType.NEP5 ? x.TransactionScriptHash : x.OutGlobalTransactionScriptHash ?? x.InGlobalTransactionScriptHash)
+                .Distinct()
+                .Count();
+
             return assets;
         }
     }
