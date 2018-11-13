@@ -21,8 +21,7 @@ namespace StateOfNeo.Services.Transaction
                 .Where(x => x.ScriptHash == hash)
                 .ProjectTo<T>()
                 .FirstOrDefault();
-
-
+        
         public IPagedList<TransactionListViewModel> TransactionsForAddress(string address, int page = 1, int pageSize = 10)
         {
             var globalIncoming = this.db.TransactedAssets
@@ -38,6 +37,36 @@ namespace StateOfNeo.Services.Transaction
             var nepTransactions = this.db.TransactedAssets
                 .Include(x => x.Transaction)
                 .Where(x => (x.ToAddressPublicAddress == address || x.FromAddressPublicAddress == address) && x.Transaction != null)
+                .Select(x => x.Transaction);
+
+            var result = globalIncoming
+                .Union(globalOutgoing)
+                .Union(nepTransactions)
+                .ProjectTo<TransactionListViewModel>()
+                .OrderByDescending(x => x.Timestamp)
+                .ToPagedList(page, pageSize);
+
+            return result;
+        }
+
+        public IPagedList<TransactionListViewModel> TransactionsForAsset(string asset, int page = 1, int pageSize = 10)
+        {
+            var globalIncoming = this.db.TransactedAssets
+                .Include(x => x.InGlobalTransaction)
+                .Include(x => x.Asset)
+                .Where(x => x.Asset.Hash == asset && x.InGlobalTransaction != null)
+                .Select(x => x.InGlobalTransaction);
+
+            var globalOutgoing = this.db.TransactedAssets
+                .Include(x => x.OutGlobalTransaction)
+                .Include(x => x.Asset)
+                .Where(x => x.Asset.Hash == asset && x.OutGlobalTransaction != null)
+                .Select(x => x.OutGlobalTransaction);
+
+            var nepTransactions = this.db.TransactedAssets
+                .Include(x => x.Transaction)
+                .Include(x => x.Asset)
+                .Where(x => x.Asset.Hash == asset && x.Transaction != null)
                 .Select(x => x.Transaction);
 
             var result = globalIncoming

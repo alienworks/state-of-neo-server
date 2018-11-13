@@ -58,10 +58,7 @@ namespace StateOfNeo.Services.Address
 
         public int ActiveAddressesInThePastThreeMonths() =>
             this.db.Addresses
-                .Include(x => x.OutgoingTransactions)
-                .ThenInclude(tr => tr.Transaction)
-                .ThenInclude(x => x.Block)
-                .Where(x => x.OutgoingTransactions.Any(tr => tr.Transaction.Block.Timestamp.ToUnixDate() > DateTime.UtcNow.AddMonths(-3)))
+                .Where(x => x.LastTransactionOn > DateTime.UtcNow.AddMonths(-3))
                 .Count();
 
         public int CreatedAddressesPer(UnitOfTime timePeriod)
