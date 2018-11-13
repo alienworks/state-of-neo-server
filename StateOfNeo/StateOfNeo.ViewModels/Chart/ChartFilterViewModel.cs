@@ -1,6 +1,7 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
 using StateOfNeo.Common.Enums;
+using StateOfNeo.Common.Extensions;
 
 namespace StateOfNeo.ViewModels.Chart
 {
@@ -22,5 +23,7 @@ namespace StateOfNeo.ViewModels.Chart
             if (this.UnitOfTime == UnitOfTime.Month) return this.StartDate.Value.AddMonths(-this.EndPeriod);
             return this.StartDate.Value.AddDays(-this.EndPeriod);
         }
+
+        public long LatestTimestamp => this.StartDate.HasValue ? this.GetEndPeriod().ToUnixTimestamp() : 0;
     }
 }

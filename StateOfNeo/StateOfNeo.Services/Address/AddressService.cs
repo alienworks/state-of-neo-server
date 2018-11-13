@@ -14,14 +14,10 @@ using X.PagedList;
 
 namespace StateOfNeo.Services.Address
 {
-    public class AddressService : IAddressService
+    public class AddressService : FilterService, IAddressService
     {
-        private readonly StateOfNeoContext db;
-
-        public AddressService(StateOfNeoContext db)
-        {
-            this.db = db;
-        }
+        public AddressService(StateOfNeoContext db) 
+            : base(db) { }
 
         public int CreatedAddressesCount() => this.db.Addresses.Count();
 
@@ -105,7 +101,7 @@ namespace StateOfNeo.Services.Address
                 .ToPagedList(page, pageSize);
         }
 
-        public IEnumerable<ChartStatsViewModel> GetTransactionStats(string address)
+        public IEnumerable<ChartStatsViewModel> GetTransactionsForAddressChart(string address)
         {
             return this.db.Transactions
                 .Include(x => x.GlobalOutgoingAssets)
@@ -126,7 +122,47 @@ namespace StateOfNeo.Services.Address
                 .ToList();
         }
 
-        public IEnumerable<ChartStatsViewModel> GetStats(ChartFilterViewModel filter)
+        public IEnumerable<ChartStatsViewModel> GetAddressesForAssetChart(ChartFilterViewModel filter, string assetHash)
+        {
+            var query = this.db.Addresses.Where(x => x.Balances.Any(b => b.Asset.Hash == assetHash && b.Balance > 0));
+            return this.GetChart(filter, query);
+        }
+
+        public IEnumerable<ChartStatsViewModel> GetCreatedAddressesChart(ChartFilterViewModel filter)
+        {
+            var query = this.db.Addresses.AsQueryable();
+            return this.GetChart(filter, query);
+        }
+
+        public IEnumerable<AddressListViewModel> TopOneHundredNeo()
+        {
+            var result = this.db.AddressBalances
+                .Include(x => x.Address)
+                .Where(x => x.Asset.Hash == AssetConstants.NeoAssetId)
+                .OrderByDescending(x => x.Balance)
+                .Select(x => x.Address)
+                .ProjectTo<AddressListViewModel>()
+                .Take(100)
+                .ToList();
+
+            return result;
+        }
+
+        public IEnumerable<AddressListViewModel> TopOneHundredGas()
+        {
+            var result = this.db.AddressBalances
+                .Include(x => x.Address)
+                .Where(x => x.Asset.Hash == AssetConstants.GasAssetId)
+                .OrderByDescending(x => x.Balance)
+                .Select(x => x.Address)
+                .ProjectTo<AddressListViewModel>()
+                .Take(100)
+                .ToList();
+
+            return result;
+        }
+        
+        private IEnumerable<ChartStatsViewModel> GetChart(ChartFilterViewModel filter, IQueryable<Data.Models.Address> query)
         {
             if (filter.StartDate == null)
             {
@@ -135,7 +171,7 @@ namespace StateOfNeo.Services.Address
                     .Select(x => x.FirstTransactionOn)
                     .FirstOrDefault();
             }
-            var query = this.db.Addresses.AsQueryable();
+
             var result = new List<ChartStatsViewModel>();
             query = query.Where(x => x.FirstTransactionOn >= filter.GetEndPeriod());
 
@@ -190,34 +226,6 @@ namespace StateOfNeo.Services.Address
                 .OrderBy(x => x.StartDate)
                 .ToList();
             }
-
-            return result;
-        }
-
-        public IEnumerable<AddressListViewModel> TopOneHundredNeo()
-        {
-            var result = this.db.AddressBalances
-                .Include(x => x.Address)
-                .Where(x => x.Asset.Hash == AssetConstants.NeoAssetId)
-                .OrderByDescending(x => x.Balance)
-                .Select(x => x.Address)
-                .ProjectTo<AddressListViewModel>()
-                .Take(100)
-                .ToList();
-
-            return result;
-        }
-
-        public IEnumerable<AddressListViewModel> TopOneHundredGas()
-        {
-            var result = this.db.AddressBalances
-                .Include(x => x.Address)
-                .Where(x => x.Asset.Hash == AssetConstants.GasAssetId)
-                .OrderByDescending(x => x.Balance)
-                .Select(x => x.Address)
-                .ProjectTo<AddressListViewModel>()
-                .Take(100)
-                .ToList();
 
             return result;
         }

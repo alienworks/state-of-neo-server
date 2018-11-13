@@ -7,6 +7,7 @@ using StateOfNeo.Data;
 using StateOfNeo.ViewModels.Chart;
 using StateOfNeo.ViewModels.Transaction;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using X.PagedList;
 
@@ -49,35 +50,15 @@ namespace StateOfNeo.Services.Transaction
             return result;
         }
 
-        public IPagedList<TransactionListViewModel> TransactionsForAsset(string asset, int page = 1, int pageSize = 10)
-        {
-            var globalIncoming = this.db.TransactedAssets
-                .Include(x => x.InGlobalTransaction)
-                .Include(x => x.Asset)
-                .Where(x => x.Asset.Hash == asset && x.InGlobalTransaction != null)
-                .Select(x => x.InGlobalTransaction);
-
-            var globalOutgoing = this.db.TransactedAssets
-                .Include(x => x.OutGlobalTransaction)
-                .Include(x => x.Asset)
-                .Where(x => x.Asset.Hash == asset && x.OutGlobalTransaction != null)
-                .Select(x => x.OutGlobalTransaction);
-
-            var nepTransactions = this.db.TransactedAssets
-                .Include(x => x.Transaction)
-                .Include(x => x.Asset)
-                .Where(x => x.Asset.Hash == asset && x.Transaction != null)
-                .Select(x => x.Transaction);
-
-            var result = globalIncoming
-                .Union(globalOutgoing)
-                .Union(nepTransactions)
-                .ProjectTo<TransactionListViewModel>()
+        public IPagedList<TransactionListViewModel> TransactionsForAsset(string asset, int page = 1, int pageSize = 10) =>
+            this.db.Transactions
+                .Where(x => 
+                    x.Assets.Any(a => a.Asset.Hash == asset)
+                    || x.GlobalIncomingAssets.Any(a => a.Asset.Hash == asset)
+                    || x.GlobalIncomingAssets.Any(a => a.Asset.Hash == asset))
                 .OrderByDescending(x => x.Timestamp)
+                .ProjectTo<TransactionListViewModel>()
                 .ToPagedList(page, pageSize);
-
-            return result;
-        }
 
         public IPagedList<T> GetPageTransactions<T>(int page = 1, int pageSize = 10, string blockHash = null)
         {
@@ -95,14 +76,20 @@ namespace StateOfNeo.Services.Transaction
                 .ToPagedList(page, pageSize);
         }
 
-        public IEnumerable<ChartStatsViewModel> GetStats(ChartFilterViewModel filter)
-        {
-            return this.Filter<Data.Models.Transactions.Transaction>(filter);
-        }
+        public IEnumerable<ChartStatsViewModel> GetStats(ChartFilterViewModel filter) => 
+            this.Filter<Data.Models.Transactions.Transaction>(filter);
+        
+        public IEnumerable<ChartStatsViewModel> GetTransactionsOfAssetChart(ChartFilterViewModel filter, string assetHash) =>
+            this.Filter<Data.Models.Transactions.Transaction>(
+                filter,
+                null,
+                x =>
+                    x.Assets.Any(a => a.Asset.Hash == assetHash)
+                    || x.GlobalIncomingAssets.Any(a => a.Asset.Hash == assetHash)
+                    || x.GlobalOutgoingAssets.Any(a => a.Asset.Hash == assetHash));        
 
-        public IEnumerable<ChartStatsViewModel> GetPieStats()
-        {
-            return this.db.Transactions
+        public IEnumerable<ChartStatsViewModel> GetPieStats() =>
+            this.db.Transactions
                  .Select(x => x.Type)
                  .GroupBy(x => x)
                  .Select(x => new ChartStatsViewModel
@@ -111,7 +98,6 @@ namespace StateOfNeo.Services.Transaction
                      Value = x.Count()
                  })
                  .ToList();
-        }
 
         public double AveragePer(UnitOfTime unitOfTime)
         {
@@ -120,23 +106,26 @@ namespace StateOfNeo.Services.Transaction
                 .Where(x => x.Timestamp != 0)
                 .OrderBy(x => x.Timestamp)
                 .Select(x => x.Timestamp)
-                .First().ToUnixDate();
+                .First()
+                .ToUnixDate();
+
             var end = this.db.Transactions
                 .Where(x => x.Timestamp != 0)
                 .OrderByDescending(x => x.Timestamp)
                 .Select(x => x.Timestamp)
-                .First().ToUnixDate();
-            double timeFrames = 1;
+                .First()
+                .ToUnixDate();
 
+            double timeFrames = 1;
             if (unitOfTime == UnitOfTime.Second)
             {
                 timeFrames = (end - since).TotalSeconds;
             }
-            if (unitOfTime == UnitOfTime.Hour)
+            else if (unitOfTime == UnitOfTime.Hour)
             {
                 timeFrames = (end - since).TotalHours;
             }
-            if (unitOfTime == UnitOfTime.Day)
+            else if (unitOfTime == UnitOfTime.Day)
             {
                 timeFrames = (end - since).TotalDays;
             }
@@ -145,12 +134,8 @@ namespace StateOfNeo.Services.Transaction
             return result;
         }
 
-        public long Total()
-        {
-            var total = this.db.Transactions.Count();
-            return total;
-        }
-
+        public long Total() => this.db.Transactions.Count();
+            
         public decimal TotalClaimed() =>
             this.db.Transactions
                 .Any(x => x.Type == TransactionType.ClaimTransaction)

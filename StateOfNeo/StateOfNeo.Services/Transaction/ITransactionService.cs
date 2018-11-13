@@ -16,6 +16,7 @@ namespace StateOfNeo.Services.Transaction
         IPagedList<TransactionListViewModel> TransactionsForAsset(string asset, int page = 1, int pageSize = 10);
 
         IEnumerable<ChartStatsViewModel> GetStats(ChartFilterViewModel filter);
+        IEnumerable<ChartStatsViewModel> GetTransactionsOfAssetChart(ChartFilterViewModel filter, string assetHash);
         IEnumerable<ChartStatsViewModel> GetPieStats();
 
         double AveragePer(UnitOfTime unitOfTime);

@@ -5,14 +5,24 @@ namespace StateOfNeo.ViewModels.Asset
     {
         public string Name { get; set; }
 
+        public string Symbol { get; set; }
+
         public string Hash { get; set; }
 
-        public long TotalSupply { get; set; }
+        public int Decimals { get; set; }
 
-        public string Address { get; set; }
+        public long TotalSupply { get; set; }
 
         public int TransactionsCount { get; set; }
 
         public int AddressesCount { get; set; }
+
+        public int NewAddressesLastMonth { get; set; }
+
+        public int ActiveAddressesLastMonth { get; set; }
+
+        public double AverageTransactedValue { get; set; }
+
+        public double MedianTransactedValue { get; set; }
     }
 }

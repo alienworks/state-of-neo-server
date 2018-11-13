@@ -64,6 +64,13 @@ namespace StateOfNeo.Server.Controllers
             return this.Ok(result);
         }
 
+        [HttpPost("[action]")]
+        public IActionResult AssetChart([FromBody]ChartFilterViewModel filter, string assetHash)
+        {
+            var result = this.transactions.GetTransactionsOfAssetChart(filter, assetHash);
+            return this.Ok(result);
+        } 
+
         [HttpGet("[action]")]
         public IActionResult PieChart()
         {

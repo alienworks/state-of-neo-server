@@ -21,11 +21,11 @@ namespace StateOfNeo.Services.Address
         int CreatedAddressesCount();
         int CreatedAddressesCountForLast(UnitOfTime unit = UnitOfTime.Day);
 
-        IEnumerable<ChartStatsViewModel> GetStats(ChartFilterViewModel filter);
-        IEnumerable<ChartStatsViewModel> GetTransactionStats(string address);
+        IEnumerable<ChartStatsViewModel> GetCreatedAddressesChart(ChartFilterViewModel filter);
+        IEnumerable<ChartStatsViewModel> GetAddressesForAssetChart(ChartFilterViewModel filter, string assetHash);
+        IEnumerable<ChartStatsViewModel> GetTransactionsForAddressChart(string address);
 
         IEnumerable<AddressListViewModel> TopOneHundredNeo();
-
         IEnumerable<AddressListViewModel> TopOneHundredGas();
     }
 }

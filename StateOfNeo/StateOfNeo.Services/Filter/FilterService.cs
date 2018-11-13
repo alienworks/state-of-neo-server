@@ -1,4 +1,5 @@
-﻿using StateOfNeo.Common.Extensions;
+﻿using Microsoft.EntityFrameworkCore;
+using StateOfNeo.Common.Extensions;
 using StateOfNeo.Common.Helpers.Filters;
 using StateOfNeo.Common.Helpers.Models;
 using StateOfNeo.Data;
@@ -20,9 +21,10 @@ namespace StateOfNeo.Services
             this.db = db;
         }
 
-        public IEnumerable<ChartStatsViewModel> FilterCount<T>(ChartFilterViewModel filterModel,
+        public IEnumerable<ChartStatsViewModel> FilterCount<T>(
+            ChartFilterViewModel filterModel,
             Expression<Func<T, bool>> filter = null)
-            where T : StampedEntity
+                where T : StampedEntity
         {
             var result = new List<ChartStatsViewModel>();
 
@@ -49,38 +51,40 @@ namespace StateOfNeo.Services
             return result;
         }
 
-        public IEnumerable<ChartStatsViewModel> Filter<T>(ChartFilterViewModel filterModel,
-            Expression<Func<T, ValueExtractionModel>> value = null,
-            Expression<Func<T, bool>> filter = null)
-            where T : StampedEntity
+        public IEnumerable<ChartStatsViewModel> Filter<T>(
+            ChartFilterViewModel chartFilter,
+            Expression<Func<T, ValueExtractionModel>> projection = null,
+            Expression<Func<T, bool>> queryFilter = null) 
+                where T : StampedEntity
         {
-            var result = new List<ChartStatsViewModel>();
+            this.ConfirmStartDateValue<T>(chartFilter);
 
-            ConfirmStartDateValue<T>(filterModel);
             var query = this.db.Set<T>()
-                .Where(x => x.Timestamp.ToUnixDate() >= filterModel.GetEndPeriod());
+                .Where(x => x.Timestamp >= chartFilter.LatestTimestamp);
 
-            if (filter != null)
+            if (queryFilter != null)
             {
-                query = query.Where(filter);
+                query = query.Where(queryFilter);
             }
 
-            var filteredQuery = query.Select(value ?? (x => new ValueExtractionModel
+            var filteredQuery = query.Select(projection ?? (x => new ValueExtractionModel
             {
                 Size = 1,
                 Timestamp = x.Timestamp
             }));
 
-            result = filteredQuery
-               .GroupBy(x => DateOrderFilter.GetGroupBy(x.Timestamp, filterModel.UnitOfTime))
-               .Select(x => new ChartStatsViewModel
-               {
-                   StartDate = DateOrderFilter.GetDateTime(x.First().Timestamp, filterModel.UnitOfTime),
-                   UnitOfTime = filterModel.UnitOfTime,
-                   Value = value == null ? x.Count() : x.Sum(z => z.Size) / x.Count()
-               })
-               .OrderBy(x => x.StartDate)
-               .ToList();
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            var result = filteredQuery
+                .GroupBy(x => DateOrderFilter.GetGroupBy(x.Timestamp, chartFilter.UnitOfTime))
+                .Select(x => new ChartStatsViewModel
+                {
+                    StartDate = DateOrderFilter.GetDateTime(x.First().Timestamp, chartFilter.UnitOfTime),
+                    UnitOfTime = chartFilter.UnitOfTime,
+                    Value = projection == null ? x.Count() : x.Sum(z => z.Size) / x.Count()
+                })
+                .OrderBy(x => x.StartDate)
+                .ToList();
+            sw.Stop();
 
             return result;
         }
