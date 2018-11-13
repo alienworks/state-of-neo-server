@@ -87,33 +87,38 @@ namespace StateOfNeo.Services.Transaction
         public double AveragePer(UnitOfTime unitOfTime)
         {
             var total = this.Total();
-            var since = this.db.Transactions
-                .Where(x => x.Timestamp != 0)
-                .OrderBy(x => x.Timestamp)
-                .Select(x => x.Timestamp)
-                .First().ToUnixDate();
-            var end = this.db.Transactions
-                .Where(x => x.Timestamp != 0)
-                .OrderByDescending(x => x.Timestamp)
-                .Select(x => x.Timestamp)
-                .First().ToUnixDate();
-            double timeFrames = 1;
+            if (total > 0)
+            {
+                var since = this.db.Transactions
+                    .Where(x => x.Timestamp != 0)
+                    .OrderBy(x => x.Timestamp)
+                    .Select(x => x.Timestamp)
+                    .First().ToUnixDate();
+                var end = this.db.Transactions
+                    .Where(x => x.Timestamp != 0)
+                    .OrderByDescending(x => x.Timestamp)
+                    .Select(x => x.Timestamp)
+                    .First().ToUnixDate();
+                double timeFrames = 1;
 
-            if (unitOfTime == UnitOfTime.Second)
-            {
-                timeFrames = (end - since).TotalSeconds;
-            }
-            if (unitOfTime == UnitOfTime.Hour)
-            {
-                timeFrames = (end - since).TotalHours;
-            }
-            if (unitOfTime == UnitOfTime.Day)
-            {
-                timeFrames = (end - since).TotalDays;
+                if (unitOfTime == UnitOfTime.Second)
+                {
+                    timeFrames = (end - since).TotalSeconds;
+                }
+                if (unitOfTime == UnitOfTime.Hour)
+                {
+                    timeFrames = (end - since).TotalHours;
+                }
+                if (unitOfTime == UnitOfTime.Day)
+                {
+                    timeFrames = (end - since).TotalDays;
+                }
+
+                var result = total / timeFrames;
+                return result;
             }
 
-            var result = total / timeFrames;
-            return result;
+            return 0;
         }
 
         public long Total()
