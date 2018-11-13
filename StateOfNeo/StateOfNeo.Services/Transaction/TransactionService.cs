@@ -79,14 +79,23 @@ namespace StateOfNeo.Services.Transaction
         public IEnumerable<ChartStatsViewModel> GetStats(ChartFilterViewModel filter) => 
             this.Filter<Data.Models.Transactions.Transaction>(filter);
         
-        public IEnumerable<ChartStatsViewModel> GetTransactionsOfAssetChart(ChartFilterViewModel filter, string assetHash) =>
+        public IEnumerable<ChartStatsViewModel> GetTransactionsForAssetChart(ChartFilterViewModel filter, string assetHash) =>
             this.Filter<Data.Models.Transactions.Transaction>(
                 filter,
                 null,
                 x =>
                     x.Assets.Any(a => a.Asset.Hash == assetHash)
                     || x.GlobalIncomingAssets.Any(a => a.Asset.Hash == assetHash)
-                    || x.GlobalOutgoingAssets.Any(a => a.Asset.Hash == assetHash));        
+                    || x.GlobalOutgoingAssets.Any(a => a.Asset.Hash == assetHash));
+
+        public IEnumerable<ChartStatsViewModel> GetTransactionsForAddressChart(ChartFilterViewModel filter, string address) =>
+            this.Filter<Data.Models.Transactions.Transaction>(
+                filter,
+                null,
+                x =>
+                    x.Assets.Any(a => a.FromAddress.PublicAddress == address || a.ToAddress.PublicAddress == address)
+                    || x.GlobalIncomingAssets.Any(a => a.FromAddress.PublicAddress == address || a.ToAddress.PublicAddress == address)
+                    || x.GlobalOutgoingAssets.Any(a => a.FromAddress.PublicAddress == address || a.ToAddress.PublicAddress == address));
 
         public IEnumerable<ChartStatsViewModel> GetPieStats() =>
             this.db.Transactions
@@ -99,7 +108,26 @@ namespace StateOfNeo.Services.Transaction
                  })
                  .ToList();
 
-        public double AveragePer(UnitOfTime unitOfTime)
+        public IEnumerable<ChartStatsViewModel> GetTransactionTypesForAddress(string address) =>
+            this.db.Transactions
+                .Include(x => x.GlobalOutgoingAssets)
+                .Include(x => x.GlobalIncomingAssets)
+                .Include(x => x.Assets)
+                .Where(x =>
+                    x.GlobalIncomingAssets.Any(a => a.FromAddressPublicAddress == address || a.ToAddressPublicAddress == address)
+                    || x.GlobalOutgoingAssets.Any(a => a.FromAddressPublicAddress == address || a.ToAddressPublicAddress == address)
+                    || x.Assets.Any(a => a.FromAddressPublicAddress == address || a.ToAddressPublicAddress == address)
+                )
+                .Select(x => x.Type)
+                .GroupBy(x => x)
+                .Select(x => new ChartStatsViewModel
+                {
+                    Label = x.Key.ToString(),
+                    Value = x.Count()
+                })
+                .ToList();
+
+    public double AveragePer(UnitOfTime unitOfTime)
         {
             var total = this.Total();
             var since = this.db.Transactions

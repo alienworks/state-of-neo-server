@@ -101,27 +101,6 @@ namespace StateOfNeo.Services.Address
                 .ToPagedList(page, pageSize);
         }
 
-        public IEnumerable<ChartStatsViewModel> GetTransactionsForAddressChart(string address)
-        {
-            return this.db.Transactions
-                .Include(x => x.GlobalOutgoingAssets)
-                .Include(x => x.GlobalIncomingAssets)
-                .Include(x => x.Assets)
-                .Where(x =>
-                    x.GlobalIncomingAssets.Any(a => a.FromAddressPublicAddress == address || a.ToAddressPublicAddress == address)
-                    || x.GlobalOutgoingAssets.Any(a => a.FromAddressPublicAddress == address || a.ToAddressPublicAddress == address)
-                    || x.Assets.Any(a => a.FromAddressPublicAddress == address || a.ToAddressPublicAddress == address)
-                )
-                .Select(x => x.Type)
-                .GroupBy(x => x)
-                .Select(x => new ChartStatsViewModel
-                {
-                    Label = x.Key.ToString(),
-                    Value = x.Count()
-                })
-                .ToList();
-        }
-
         public IEnumerable<ChartStatsViewModel> GetAddressesForAssetChart(ChartFilterViewModel filter, string assetHash)
         {
             var query = this.db.Addresses.Where(x => x.Balances.Any(b => b.Asset.Hash == assetHash && b.Balance > 0));
@@ -172,6 +151,74 @@ namespace StateOfNeo.Services.Address
                     .FirstOrDefault();
             }
 
+            var result = new List<ChartStatsViewModel>();
+            query = query.Where(x => x.FirstTransactionOn >= filter.GetEndPeriod());
+
+            if (filter.UnitOfTime == UnitOfTime.Hour)
+            {
+                result = query.ToList().GroupBy(x => new
+                {
+                    x.FirstTransactionOn.Year,
+                    x.FirstTransactionOn.Month,
+                    x.FirstTransactionOn.Day,
+                    x.FirstTransactionOn.Hour
+                })
+                .Select(x => new ChartStatsViewModel
+                {
+                    StartDate = new DateTime(x.Key.Year, x.Key.Month, x.Key.Day, x.Key.Hour, 0, 0),
+                    UnitOfTime = UnitOfTime.Hour,
+                    Value = x.Count()
+                })
+                .OrderBy(x => x.StartDate)
+                .ToList();
+            }
+            else if (filter.UnitOfTime == UnitOfTime.Day)
+            {
+                result = query.ToList().GroupBy(x => new
+                {
+                    x.FirstTransactionOn.Year,
+                    x.FirstTransactionOn.Month,
+                    x.FirstTransactionOn.Day
+                })
+                .Select(x => new ChartStatsViewModel
+                {
+                    StartDate = new DateTime(x.Key.Year, x.Key.Month, x.Key.Day),
+                    UnitOfTime = UnitOfTime.Day,
+                    Value = x.Count()
+                })
+                .OrderBy(x => x.StartDate)
+                .ToList();
+            }
+            else if (filter.UnitOfTime == UnitOfTime.Month)
+            {
+                result = query.ToList().GroupBy(x => new
+                {
+                    x.FirstTransactionOn.Year,
+                    x.FirstTransactionOn.Month
+                })
+                .Select(x => new ChartStatsViewModel
+                {
+                    StartDate = new DateTime(x.Key.Year, x.Key.Month, 1),
+                    UnitOfTime = UnitOfTime.Month,
+                    Value = x.Count()
+                })
+                .OrderBy(x => x.StartDate)
+                .ToList();
+            }
+
+            return result;
+        }
+
+        public IEnumerable<ChartStatsViewModel> GetTransactionTypesForAddress(ChartFilterViewModel filter, string address)
+        {
+            if (filter.StartDate == null)
+            {
+                filter.StartDate = this.db.Addresses
+                    .OrderByDescending(x => x.FirstTransactionOn)
+                    .Select(x => x.FirstTransactionOn)
+                    .FirstOrDefault();
+            }
+            var query = this.db.Addresses.AsQueryable();
             var result = new List<ChartStatsViewModel>();
             query = query.Where(x => x.FirstTransactionOn >= filter.GetEndPeriod());
 

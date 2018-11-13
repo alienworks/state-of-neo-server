@@ -16,8 +16,10 @@ namespace StateOfNeo.Services.Transaction
         IPagedList<TransactionListViewModel> TransactionsForAsset(string asset, int page = 1, int pageSize = 10);
 
         IEnumerable<ChartStatsViewModel> GetStats(ChartFilterViewModel filter);
-        IEnumerable<ChartStatsViewModel> GetTransactionsOfAssetChart(ChartFilterViewModel filter, string assetHash);
+        IEnumerable<ChartStatsViewModel> GetTransactionsForAssetChart(ChartFilterViewModel filter, string assetHash);
+        IEnumerable<ChartStatsViewModel> GetTransactionsForAddressChart(ChartFilterViewModel filter, string address);
         IEnumerable<ChartStatsViewModel> GetPieStats();
+        IEnumerable<ChartStatsViewModel> GetTransactionTypesForAddress(string address);
 
         double AveragePer(UnitOfTime unitOfTime);
         long Total();
