@@ -11,6 +11,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using StateOfNeo.Services;
+using StateOfNeo.ViewModels.Chart;
 
 namespace StateOfNeo.Server.Controllers
 {
@@ -23,7 +24,7 @@ namespace StateOfNeo.Server.Controllers
 
         public NodeController(IHubContext<NodeHub> nodeHub,
             NodeCache nodeCache,
-            NodeSynchronizer nodeSynchronizer, 
+            NodeSynchronizer nodeSynchronizer,
             INodeService nodeService)
         {
             this.nodeHub = nodeHub;
@@ -65,7 +66,7 @@ namespace StateOfNeo.Server.Controllers
         {
             try
             {
-                var node = this.nodeSynchronizer.GetCachedNodesAs<NodeViewModel>().ToList().FirstOrDefault(x => x.Id == id);
+                var node = this.nodeSynchronizer.GetCachedNodesAs<NodeDetailsViewModel>().ToList().FirstOrDefault(x => x.Id == id);
                 return Ok(node);
             }
             catch (System.Exception ex)
@@ -89,7 +90,7 @@ namespace StateOfNeo.Server.Controllers
         }
 
         [HttpGet("[action]")]
-        [ResponseCache(Duration = 60 * 60)]
+        [ResponseCache(Duration = 3600)]
         public async Task<IActionResult> Consensus()
         {
             try
@@ -100,7 +101,7 @@ namespace StateOfNeo.Server.Controllers
                 {
                     var method = HttpMethod.Get;
                     var req = new HttpRequestMessage(method, $"https://neo.org/consensus/getvalidators");
-                    
+
                     response = await http.SendAsync(req);
                 }
 
@@ -119,6 +120,20 @@ namespace StateOfNeo.Server.Controllers
             {
                 return BadRequest(ex.Message);
             }
+        }
+
+        [HttpPost("[action]/{nodeId}")]
+        public IActionResult LatencyChart([FromBody]ChartFilterViewModel filter, int nodeId)
+        {
+            var result = this.nodeService.LatencyChart(filter, nodeId);
+            return Ok(result);
+        }
+
+        [HttpPost("[action]/{nodeId}")]
+        public IActionResult PeersChart([FromBody]ChartFilterViewModel filter, int nodeId)
+        {
+            var result = this.nodeService.PeersChart(filter, nodeId);
+            return Ok(result);
         }
     }
 }

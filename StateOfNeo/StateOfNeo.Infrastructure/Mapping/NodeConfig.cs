@@ -12,12 +12,13 @@ namespace StateOfNeo.Infrastructure.Mapping
             cfg.CreateMap<Node, NodeViewModel>()
                 .ForMember(x => x.Ip,
                     y => y.MapFrom(
-                        z => z.NodeAddresses.Any() 
-                            ? z.NodeAddresses.Select(na => na.Ip).First() 
+                        z => z.NodeAddresses.Any()
+                            ? z.NodeAddresses.Select(na => na.Ip).First()
                             : ""));
 
-            cfg.CreateMap<NodeViewModel, Node>(); 
-            cfg.CreateMap<Node, NodeListViewModel>().ReverseMap(); 
+            cfg.CreateMap<Node, NodeDetailsViewModel>();
+            cfg.CreateMap<Node, NodeViewModel>();
+            cfg.CreateMap<Node, NodeListViewModel>().ReverseMap();
         }
     }
 }
