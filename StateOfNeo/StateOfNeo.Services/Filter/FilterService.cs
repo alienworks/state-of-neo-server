@@ -57,8 +57,8 @@ namespace StateOfNeo.Services
             var result = new List<ChartStatsViewModel>();
 
             ConfirmStartDateValue<T>(filterModel);
-            var query = this.db.Set<T>()
-                .Where(x => x.Timestamp.ToUnixDate() >= filterModel.GetEndPeriod());
+            var query = this.db.Set<T>().AsQueryable();
+                //.Where(x => x.Timestamp.ToUnixDate() >= filterModel.GetEndPeriod());
 
             if (filter != null)
             {
@@ -80,6 +80,7 @@ namespace StateOfNeo.Services
                    Value = value == null ? x.Count() : x.Sum(z => z.Size) / x.Count()
                })
                .OrderBy(x => x.StartDate)
+               .Take(filterModel.EndPeriod)
                .ToList();
 
             return result;
