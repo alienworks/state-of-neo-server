@@ -127,38 +127,45 @@ namespace StateOfNeo.Server.Infrastructure
 
         private async Task<T> MakeRPCCall<T>(Node node, string method = "getblockcount")
         {
-            HttpResponseMessage response = null;
-            var rpcRequest = new RPCRequestBody(method);
+            try
+            {
+                HttpResponseMessage response = null;
+                var rpcRequest = new RPCRequestBody(method);
 
-            if (!string.IsNullOrEmpty(node.SuccessUrl))
-            {
-                response = await RpcCaller.SendRPCCall(HttpMethod.Post, $"{node.SuccessUrl}", rpcRequest);
-            }
-            else
-            {
-                foreach (var portWithType in this.netSettings.GetPorts())
+                if (!string.IsNullOrEmpty(node.SuccessUrl))
                 {
-                    if (!string.IsNullOrEmpty(node.Url))
+                    response = await RpcCaller.SendRPCCall(HttpMethod.Post, $"{node.SuccessUrl}", rpcRequest);
+                }
+                else
+                {
+                    foreach (var portWithType in this.netSettings.GetPorts())
                     {
-                        response = await RpcCaller.SendRPCCall(HttpMethod.Post, portWithType.GetFullUrl(node.Url), rpcRequest);
-                    }
-                    else
-                    {
-                        response = await RpcCaller.SendRPCCall(HttpMethod.Post, portWithType.GetFullUrl(node.NodeAddresses.FirstOrDefault().Ip), rpcRequest);
-                    }
+                        if (!string.IsNullOrEmpty(node.Url))
+                        {
+                            response = await RpcCaller.SendRPCCall(HttpMethod.Post, portWithType.GetFullUrl(node.Url), rpcRequest);
+                        }
+                        else
+                        {
+                            response = await RpcCaller.SendRPCCall(HttpMethod.Post, portWithType.GetFullUrl(node.NodeAddresses.FirstOrDefault().Ip), rpcRequest);
+                        }
 
-                    if (response != null && response.IsSuccessStatusCode)
-                        break;
+                        if (response != null && response.IsSuccessStatusCode)
+                            break;
+                    }
+                }
+
+                if (response != null && response.IsSuccessStatusCode)
+                {
+                    var result = await response.Content.ReadAsStringAsync();
+                    var serializedResult = JsonConvert.DeserializeObject<T>(result);
+                    return serializedResult;
                 }
             }
-
-            if (response != null && response.IsSuccessStatusCode)
+            catch (Exception e)
             {
-                var result = await response.Content.ReadAsStringAsync();
-                var serializedResult = JsonConvert.DeserializeObject<T>(result);
-                return serializedResult;
-            }
 
+            }
+            
             return default(T);
         }
     }
