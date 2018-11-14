@@ -63,6 +63,27 @@ namespace StateOfNeo.Server.Controllers
             var result = this.transactions.GetStats(filter);
             return this.Ok(result);
         }
+        
+        [HttpPost("[action]")]
+        public IActionResult AddressChart([FromBody]ChartFilterViewModel filter, string address)
+        {
+            var result = this.transactions.GetTransactionsForAddressChart(filter, address);
+            return this.Ok(result);
+        }
+
+        [HttpPost("[action]")]
+        public IActionResult AssetChart([FromBody]ChartFilterViewModel filter, string assetHash)
+        {
+            var result = this.transactions.GetTransactionsForAssetChart(filter, assetHash);
+            return this.Ok(result);
+        } 
+
+        [HttpGet("[action]")]
+        public IActionResult TransactionTypesForAddress(string address)
+        {
+            var result = this.transactions.GetTransactionTypesForAddress(address);
+            return this.Ok(result);
+        }
 
         [HttpGet("[action]")]
         public IActionResult PieChart()

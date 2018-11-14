@@ -14,14 +14,10 @@ using X.PagedList;
 
 namespace StateOfNeo.Services.Address
 {
-    public class AddressService : IAddressService
+    public class AddressService : FilterService, IAddressService
     {
-        private readonly StateOfNeoContext db;
-
-        public AddressService(StateOfNeoContext db)
-        {
-            this.db = db;
-        }
+        public AddressService(StateOfNeoContext db) 
+            : base(db) { }
 
         public int CreatedAddressesCount() => this.db.Addresses.Count();
 
@@ -105,28 +101,115 @@ namespace StateOfNeo.Services.Address
                 .ToPagedList(page, pageSize);
         }
 
-        public IEnumerable<ChartStatsViewModel> GetTransactionStats(string address)
+        public IEnumerable<ChartStatsViewModel> GetAddressesForAssetChart(ChartFilterViewModel filter, string assetHash)
         {
-            return this.db.Transactions
-                .Include(x => x.GlobalOutgoingAssets)
-                .Include(x => x.GlobalIncomingAssets)
-                .Include(x => x.Assets)
-                .Where(x =>
-                    x.GlobalIncomingAssets.Any(a => a.FromAddressPublicAddress == address || a.ToAddressPublicAddress == address)
-                    || x.GlobalOutgoingAssets.Any(a => a.FromAddressPublicAddress == address || a.ToAddressPublicAddress == address)
-                    || x.Assets.Any(a => a.FromAddressPublicAddress == address || a.ToAddressPublicAddress == address)
-                )
-                .Select(x => x.Type)
-                .GroupBy(x => x)
-                .Select(x => new ChartStatsViewModel
-                {
-                    Label = x.Key.ToString(),
-                    Value = x.Count()
-                })
-                .ToList();
+            var query = this.db.Addresses.Where(x => x.Balances.Any(b => b.Asset.Hash == assetHash && b.Balance > 0));
+            return this.GetChart(filter, query);
         }
 
-        public IEnumerable<ChartStatsViewModel> GetStats(ChartFilterViewModel filter)
+        public IEnumerable<ChartStatsViewModel> GetCreatedAddressesChart(ChartFilterViewModel filter)
+        {
+            var query = this.db.Addresses.AsQueryable();
+            return this.GetChart(filter, query);
+        }
+
+        public IEnumerable<AddressListViewModel> TopOneHundredNeo()
+        {
+            var result = this.db.AddressBalances
+                .Include(x => x.Address)
+                .Where(x => x.Asset.Hash == AssetConstants.NeoAssetId)
+                .OrderByDescending(x => x.Balance)
+                .Select(x => x.Address)
+                .ProjectTo<AddressListViewModel>()
+                .Take(100)
+                .ToList();
+
+            return result;
+        }
+
+        public IEnumerable<AddressListViewModel> TopOneHundredGas()
+        {
+            var result = this.db.AddressBalances
+                .Include(x => x.Address)
+                .Where(x => x.Asset.Hash == AssetConstants.GasAssetId)
+                .OrderByDescending(x => x.Balance)
+                .Select(x => x.Address)
+                .ProjectTo<AddressListViewModel>()
+                .Take(100)
+                .ToList();
+
+            return result;
+        }
+        
+        private IEnumerable<ChartStatsViewModel> GetChart(ChartFilterViewModel filter, IQueryable<Data.Models.Address> query)
+        {
+            if (filter.StartDate == null)
+            {
+                filter.StartDate = this.db.Addresses
+                    .OrderByDescending(x => x.FirstTransactionOn)
+                    .Select(x => x.FirstTransactionOn)
+                    .FirstOrDefault();
+            }
+
+            var result = new List<ChartStatsViewModel>();
+            query = query.Where(x => x.FirstTransactionOn >= filter.GetEndPeriod());
+
+            if (filter.UnitOfTime == UnitOfTime.Hour)
+            {
+                result = query.ToList().GroupBy(x => new
+                {
+                    x.FirstTransactionOn.Year,
+                    x.FirstTransactionOn.Month,
+                    x.FirstTransactionOn.Day,
+                    x.FirstTransactionOn.Hour
+                })
+                .Select(x => new ChartStatsViewModel
+                {
+                    StartDate = new DateTime(x.Key.Year, x.Key.Month, x.Key.Day, x.Key.Hour, 0, 0),
+                    UnitOfTime = UnitOfTime.Hour,
+                    Value = x.Count()
+                })
+                .OrderBy(x => x.StartDate)
+                .ToList();
+            }
+            else if (filter.UnitOfTime == UnitOfTime.Day)
+            {
+                result = query.ToList().GroupBy(x => new
+                {
+                    x.FirstTransactionOn.Year,
+                    x.FirstTransactionOn.Month,
+                    x.FirstTransactionOn.Day
+                })
+                .Select(x => new ChartStatsViewModel
+                {
+                    StartDate = new DateTime(x.Key.Year, x.Key.Month, x.Key.Day),
+                    UnitOfTime = UnitOfTime.Day,
+                    Value = x.Count()
+                })
+                .OrderBy(x => x.StartDate)
+                .ToList();
+            }
+            else if (filter.UnitOfTime == UnitOfTime.Month)
+            {
+                result = query.ToList().GroupBy(x => new
+                {
+                    x.FirstTransactionOn.Year,
+                    x.FirstTransactionOn.Month
+                })
+                .Select(x => new ChartStatsViewModel
+                {
+                    StartDate = new DateTime(x.Key.Year, x.Key.Month, 1),
+                    UnitOfTime = UnitOfTime.Month,
+                    Value = x.Count()
+                })
+                .OrderBy(x => x.StartDate)
+                .ToList();
+            }
+
+            return result;
+        }
+
+        public IEnumerable<ChartStatsViewModel> GetTransactionTypesForAddress(ChartFilterViewModel filter, string address)
         {
             if (filter.StartDate == null)
             {
@@ -190,34 +273,6 @@ namespace StateOfNeo.Services.Address
                 .OrderBy(x => x.StartDate)
                 .ToList();
             }
-
-            return result;
-        }
-
-        public IEnumerable<AddressListViewModel> TopOneHundredNeo()
-        {
-            var result = this.db.AddressBalances
-                .Include(x => x.Address)
-                .Where(x => x.Asset.Hash == AssetConstants.NeoAssetId)
-                .OrderByDescending(x => x.Balance)
-                .Select(x => x.Address)
-                .ProjectTo<AddressListViewModel>()
-                .Take(100)
-                .ToList();
-
-            return result;
-        }
-
-        public IEnumerable<AddressListViewModel> TopOneHundredGas()
-        {
-            var result = this.db.AddressBalances
-                .Include(x => x.Address)
-                .Where(x => x.Asset.Hash == AssetConstants.GasAssetId)
-                .OrderByDescending(x => x.Balance)
-                .Select(x => x.Address)
-                .ProjectTo<AddressListViewModel>()
-                .Take(100)
-                .ToList();
 
             return result;
         }
