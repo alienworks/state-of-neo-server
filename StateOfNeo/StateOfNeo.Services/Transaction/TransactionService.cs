@@ -160,7 +160,10 @@ namespace StateOfNeo.Services.Transaction
                 var result = total / timeFrames;
                 return result;
             }
+
+            return 0;
         }
+
         public long Total() => this.db.Transactions.Count();
             
         public decimal TotalClaimed() =>
