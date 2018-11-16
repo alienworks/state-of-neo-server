@@ -13,9 +13,13 @@ namespace StateOfNeo.Services.Transaction
         IPagedList<T> GetPageTransactions<T>(int page = 1, int pageSize = 10, string blockHash = null);
         
         IPagedList<TransactionListViewModel> TransactionsForAddress(string address, int page = 1, int pageSize = 10);
+        IPagedList<TransactionListViewModel> TransactionsForAsset(string asset, int page = 1, int pageSize = 10);
 
         IEnumerable<ChartStatsViewModel> GetStats(ChartFilterViewModel filter);
+        IEnumerable<ChartStatsViewModel> GetTransactionsForAssetChart(ChartFilterViewModel filter, string assetHash);
+        IEnumerable<ChartStatsViewModel> GetTransactionsForAddressChart(ChartFilterViewModel filter, string address);
         IEnumerable<ChartStatsViewModel> GetPieStats();
+        IEnumerable<ChartStatsViewModel> GetTransactionTypesForAddress(string address);
 
         double AveragePer(UnitOfTime unitOfTime);
         long Total();

@@ -37,12 +37,32 @@ namespace StateOfNeo.Server.Controllers
             return this.Ok(transaction);
         }
 
+        [HttpGet("[action]/{hash}")]
+        public IActionResult GetAssets(string hash)
+        {
+            var transaction = this.transactions.Find<TransactionAssetsViewModel>(hash);
+            if (transaction == null)
+            {
+                return this.BadRequest("Invalid block hash");
+            }
+
+            return this.Ok(transaction);
+        }
+
         [HttpGet("[action]")]
-        public async Task<IActionResult> List(int page = 1, int pageSize = 10, string blockHash = null, string address = null)
+        public async Task<IActionResult> List(int page = 1, int pageSize = 10, string blockHash = null, string address = null, string asset = null)
         {
             if (!string.IsNullOrEmpty(address))
             {
                 var res = this.transactions.TransactionsForAddress(address, page, pageSize);
+                return this.Ok(res.ToListResult());
+            }
+
+            if (!string.IsNullOrEmpty(asset))
+            {
+                var sw = System.Diagnostics.Stopwatch.StartNew();
+                var res = this.transactions.TransactionsForAsset(asset, page, pageSize);
+                sw.Stop();
                 return this.Ok(res.ToListResult());
             }
 
@@ -55,6 +75,27 @@ namespace StateOfNeo.Server.Controllers
         public IActionResult Chart([FromBody]ChartFilterViewModel filter)
         {
             var result = this.transactions.GetStats(filter);
+            return this.Ok(result);
+        }
+        
+        [HttpPost("[action]")]
+        public IActionResult AddressChart([FromBody]ChartFilterViewModel filter, string address)
+        {
+            var result = this.transactions.GetTransactionsForAddressChart(filter, address);
+            return this.Ok(result);
+        }
+
+        [HttpPost("[action]")]
+        public IActionResult AssetChart([FromBody]ChartFilterViewModel filter, string assetHash)
+        {
+            var result = this.transactions.GetTransactionsForAssetChart(filter, assetHash);
+            return this.Ok(result);
+        } 
+
+        [HttpGet("[action]")]
+        public IActionResult TransactionTypesForAddress(string address)
+        {
+            var result = this.transactions.GetTransactionTypesForAddress(address);
             return this.Ok(result);
         }
 

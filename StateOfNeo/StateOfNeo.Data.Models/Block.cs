@@ -11,7 +11,7 @@ namespace StateOfNeo.Data.Models
         public Block()
         {
             this.Transactions = new HashSet<Transaction>();
-            this.NodeStatusUpdates = new HashSet<NodeStatusUpdate>();
+            this.NodeStatusUpdates = new HashSet<NodeStatus>();
         }
 
         [Key]
@@ -39,6 +39,6 @@ namespace StateOfNeo.Data.Models
 
         public virtual ICollection<Transaction> Transactions { get; set; }
 
-        public virtual ICollection<NodeStatusUpdate> NodeStatusUpdates { get; set; }
+        public virtual ICollection<NodeStatus> NodeStatusUpdates { get; set; }
     }
 }

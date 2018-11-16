@@ -3,15 +3,17 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using StateOfNeo.Data;
 
 namespace StateOfNeo.Data.Migrations
 {
     [DbContext(typeof(StateOfNeoContext))]
-    partial class StateOfNeoContextModelSnapshot : ModelSnapshot
+    [Migration("20181113095123_NodeTimesAddedInNode_NodeAuditAdd_NodeStatusRenamed")]
+    partial class NodeTimesAddedInNode_NodeAuditAdd_NodeStatusRenamed
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -30,8 +32,6 @@ namespace StateOfNeo.Data.Migrations
 
                     b.Property<DateTime>("LastTransactionOn");
 
-                    b.Property<int>("TransactionsCount");
-
                     b.HasKey("PublicAddress");
 
                     b.HasIndex("LastTransactionOn");
@@ -47,82 +47,27 @@ namespace StateOfNeo.Data.Migrations
 
                     b.Property<string>("AddressPublicAddress");
 
-                    b.Property<string>("AssetHash");
+                    b.Property<int>("AssetId");
 
                     b.Property<decimal>("Balance")
                         .HasColumnType("decimal(26, 9)");
 
                     b.Property<DateTime>("CreatedOn");
 
-                    b.Property<int>("TransactionsCount");
-
                     b.HasKey("Id");
 
                     b.HasIndex("AddressPublicAddress");
 
-                    b.HasIndex("AssetHash");
+                    b.HasIndex("AssetId");
 
                     b.ToTable("AddressBalances");
                 });
 
-            modelBuilder.Entity("StateOfNeo.Data.Models.AddressInAssetTransaction", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
-
-                    b.Property<string>("AddressPublicAddress");
-
-                    b.Property<decimal>("Amount")
-                        .HasColumnType("decimal(26, 9)");
-
-                    b.Property<int>("AssetInTransactionId");
-
-                    b.Property<DateTime>("CreatedOn");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AddressPublicAddress");
-
-                    b.HasIndex("AssetInTransactionId");
-
-                    b.ToTable("AddressesInAssetTransactions");
-                });
-
-            modelBuilder.Entity("StateOfNeo.Data.Models.AddressInTransaction", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
-
-                    b.Property<string>("AddressPublicAddress");
-
-                    b.Property<decimal>("Amount")
-                        .HasColumnType("decimal(26, 9)");
-
-                    b.Property<string>("AssetHash");
-
-                    b.Property<DateTime>("CreatedOn");
-
-                    b.Property<long>("Timestamp");
-
-                    b.Property<string>("TransactionHash");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AddressPublicAddress");
-
-                    b.HasIndex("AssetHash");
-
-                    b.HasIndex("TransactionHash");
-
-                    b.ToTable("AddressesInTransactions");
-                });
-
             modelBuilder.Entity("StateOfNeo.Data.Models.Asset", b =>
                 {
-                    b.Property<string>("Hash")
-                        .ValueGeneratedOnAdd();
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
                     b.Property<DateTime>("CreatedOn");
 
@@ -132,40 +77,19 @@ namespace StateOfNeo.Data.Migrations
 
                     b.Property<byte?>("GlobalType");
 
+                    b.Property<string>("Hash");
+
                     b.Property<long>("MaxSupply");
 
                     b.Property<string>("Name");
 
                     b.Property<string>("Symbol");
 
-                    b.Property<int>("TransactionsCount");
-
                     b.Property<int>("Type");
-
-                    b.HasKey("Hash");
-
-                    b.ToTable("Assets");
-                });
-
-            modelBuilder.Entity("StateOfNeo.Data.Models.AssetInTransaction", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
-
-                    b.Property<string>("AssetHash");
-
-                    b.Property<DateTime>("CreatedOn");
-
-                    b.Property<string>("TransactionHash");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AssetHash");
-
-                    b.HasIndex("TransactionHash");
-
-                    b.ToTable("AssetsInTransactions");
+                    b.ToTable("Assets");
                 });
 
             modelBuilder.Entity("StateOfNeo.Data.Models.Block", b =>
@@ -498,7 +422,7 @@ namespace StateOfNeo.Data.Migrations
                     b.Property<decimal>("Amount")
                         .HasColumnType("decimal(26, 9)");
 
-                    b.Property<string>("AssetHash");
+                    b.Property<int>("AssetId");
 
                     b.Property<int>("AssetType");
 
@@ -506,34 +430,34 @@ namespace StateOfNeo.Data.Migrations
 
                     b.Property<string>("FromAddressPublicAddress");
 
-                    b.Property<string>("InGlobalTransactionHash");
+                    b.Property<string>("InGlobalTransactionScriptHash");
 
-                    b.Property<string>("OutGlobalTransactionHash");
+                    b.Property<string>("OutGlobalTransactionScriptHash");
 
                     b.Property<string>("ToAddressPublicAddress");
 
-                    b.Property<string>("TransactionHash");
+                    b.Property<string>("TransactionScriptHash");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AssetHash");
+                    b.HasIndex("AssetId");
 
                     b.HasIndex("FromAddressPublicAddress");
 
-                    b.HasIndex("InGlobalTransactionHash");
+                    b.HasIndex("InGlobalTransactionScriptHash");
 
-                    b.HasIndex("OutGlobalTransactionHash");
+                    b.HasIndex("OutGlobalTransactionScriptHash");
 
                     b.HasIndex("ToAddressPublicAddress");
 
-                    b.HasIndex("TransactionHash");
+                    b.HasIndex("TransactionScriptHash");
 
                     b.ToTable("TransactedAssets");
                 });
 
             modelBuilder.Entity("StateOfNeo.Data.Models.Transactions.Transaction", b =>
                 {
-                    b.Property<string>("Hash")
+                    b.Property<string>("ScriptHash")
                         .ValueGeneratedOnAdd();
 
                     b.Property<string>("BlockId");
@@ -566,7 +490,7 @@ namespace StateOfNeo.Data.Migrations
 
                     b.Property<int>("Version");
 
-                    b.HasKey("Hash");
+                    b.HasKey("ScriptHash");
 
                     b.HasIndex("BlockId");
 
@@ -609,15 +533,15 @@ namespace StateOfNeo.Data.Migrations
 
                     b.Property<string>("DataAsHexString");
 
-                    b.Property<string>("TransactionHash");
-
                     b.Property<int>("TransactionId");
+
+                    b.Property<string>("TransactionScriptHash");
 
                     b.Property<int>("Usage");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TransactionHash");
+                    b.HasIndex("TransactionScriptHash");
 
                     b.ToTable("TransactionAttributes");
                 });
@@ -634,15 +558,15 @@ namespace StateOfNeo.Data.Migrations
 
                     b.Property<string>("InvocationScriptAsHexString");
 
-                    b.Property<string>("TransactionHash");
-
                     b.Property<int>("TransactionId");
+
+                    b.Property<string>("TransactionScriptHash");
 
                     b.Property<string>("VerificationScriptAsHexString");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TransactionHash");
+                    b.HasIndex("TransactionScriptHash");
 
                     b.ToTable("TransactionWitnesses");
                 });
@@ -655,45 +579,8 @@ namespace StateOfNeo.Data.Migrations
 
                     b.HasOne("StateOfNeo.Data.Models.Asset", "Asset")
                         .WithMany("Balances")
-                        .HasForeignKey("AssetHash");
-                });
-
-            modelBuilder.Entity("StateOfNeo.Data.Models.AddressInAssetTransaction", b =>
-                {
-                    b.HasOne("StateOfNeo.Data.Models.Address", "Address")
-                        .WithMany("AddressesInAssetTransactions")
-                        .HasForeignKey("AddressPublicAddress");
-
-                    b.HasOne("StateOfNeo.Data.Models.AssetInTransaction", "AssetInTransaction")
-                        .WithMany("AddressesInAssetTransactions")
-                        .HasForeignKey("AssetInTransactionId")
+                        .HasForeignKey("AssetId")
                         .OnDelete(DeleteBehavior.Cascade);
-                });
-
-            modelBuilder.Entity("StateOfNeo.Data.Models.AddressInTransaction", b =>
-                {
-                    b.HasOne("StateOfNeo.Data.Models.Address", "Address")
-                        .WithMany("AddressesInTransaction")
-                        .HasForeignKey("AddressPublicAddress");
-
-                    b.HasOne("StateOfNeo.Data.Models.Asset", "Asset")
-                        .WithMany("AddressesInTransactions")
-                        .HasForeignKey("AssetHash");
-
-                    b.HasOne("StateOfNeo.Data.Models.Transactions.Transaction", "Transaction")
-                        .WithMany("AddressesInTransactions")
-                        .HasForeignKey("TransactionHash");
-                });
-
-            modelBuilder.Entity("StateOfNeo.Data.Models.AssetInTransaction", b =>
-                {
-                    b.HasOne("StateOfNeo.Data.Models.Asset", "Asset")
-                        .WithMany("AssetsInTransactions")
-                        .HasForeignKey("AssetHash");
-
-                    b.HasOne("StateOfNeo.Data.Models.Transactions.Transaction", "Transaction")
-                        .WithMany("AssetsInTransactions")
-                        .HasForeignKey("TransactionHash");
                 });
 
             modelBuilder.Entity("StateOfNeo.Data.Models.Block", b =>
@@ -743,7 +630,8 @@ namespace StateOfNeo.Data.Migrations
                 {
                     b.HasOne("StateOfNeo.Data.Models.Asset", "Asset")
                         .WithMany("TransactedAssets")
-                        .HasForeignKey("AssetHash");
+                        .HasForeignKey("AssetId")
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.HasOne("StateOfNeo.Data.Models.Address", "FromAddress")
                         .WithMany("OutgoingTransactions")
@@ -751,11 +639,11 @@ namespace StateOfNeo.Data.Migrations
 
                     b.HasOne("StateOfNeo.Data.Models.Transactions.Transaction", "InGlobalTransaction")
                         .WithMany("GlobalIncomingAssets")
-                        .HasForeignKey("InGlobalTransactionHash");
+                        .HasForeignKey("InGlobalTransactionScriptHash");
 
                     b.HasOne("StateOfNeo.Data.Models.Transactions.Transaction", "OutGlobalTransaction")
                         .WithMany("GlobalOutgoingAssets")
-                        .HasForeignKey("OutGlobalTransactionHash");
+                        .HasForeignKey("OutGlobalTransactionScriptHash");
 
                     b.HasOne("StateOfNeo.Data.Models.Address", "ToAddress")
                         .WithMany("IncomingTransactions")
@@ -763,7 +651,7 @@ namespace StateOfNeo.Data.Migrations
 
                     b.HasOne("StateOfNeo.Data.Models.Transactions.Transaction", "Transaction")
                         .WithMany("Assets")
-                        .HasForeignKey("TransactionHash");
+                        .HasForeignKey("TransactionScriptHash");
                 });
 
             modelBuilder.Entity("StateOfNeo.Data.Models.Transactions.Transaction", b =>
@@ -801,14 +689,14 @@ namespace StateOfNeo.Data.Migrations
                 {
                     b.HasOne("StateOfNeo.Data.Models.Transactions.Transaction", "Transaction")
                         .WithMany("Attributes")
-                        .HasForeignKey("TransactionHash");
+                        .HasForeignKey("TransactionScriptHash");
                 });
 
             modelBuilder.Entity("StateOfNeo.Data.Models.Transactions.TransactionWitness", b =>
                 {
                     b.HasOne("StateOfNeo.Data.Models.Transactions.Transaction", "Transaction")
                         .WithMany("Witnesses")
-                        .HasForeignKey("TransactionHash");
+                        .HasForeignKey("TransactionScriptHash");
                 });
 #pragma warning restore 612, 618
         }

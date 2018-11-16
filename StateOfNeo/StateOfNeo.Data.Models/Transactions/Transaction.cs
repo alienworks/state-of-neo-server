@@ -8,6 +8,8 @@ namespace StateOfNeo.Data.Models.Transactions
     {
         public Transaction()
         {
+            this.AddressesInTransactions = new HashSet<AddressInTransaction>();
+            this.AssetsInTransactions = new HashSet<AssetInTransaction>();
             this.Assets = new HashSet<TransactedAsset>();
             this.Attributes = new HashSet<TransactionAttribute>();
             this.GlobalIncomingAssets = new HashSet<TransactedAsset>();
@@ -16,7 +18,7 @@ namespace StateOfNeo.Data.Models.Transactions
         }
 
         [Key]
-        public string ScriptHash { get; set; }
+        public string Hash { get; set; }
 
         public Neo.Network.P2P.Payloads.TransactionType Type { get; set; }
 
@@ -44,6 +46,10 @@ namespace StateOfNeo.Data.Models.Transactions
         public virtual ICollection<TransactionAttribute> Attributes { get; set; }
 
         public virtual ICollection<TransactionWitness> Witnesses { get; set; }
+
+        public virtual ICollection<AddressInTransaction> AddressesInTransactions { get; set; }
+
+        public virtual ICollection<AssetInTransaction> AssetsInTransactions { get; set; }
 
         public int? EnrollmentTransactionId { get; set; }
 

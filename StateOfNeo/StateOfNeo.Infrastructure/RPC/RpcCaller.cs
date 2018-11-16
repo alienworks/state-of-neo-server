@@ -10,6 +10,8 @@ namespace StateOfNeo.Infrastructure.RPC
 {
     public class RpcCaller
     {
+        private static readonly HttpClient Http = new HttpClient();
+
         public static async Task<T> MakeRPCCall<T>(string endpoint, string method = "getblockcount")
         {
             var rpcRequest = new RPCRequestBody
@@ -33,19 +35,16 @@ namespace StateOfNeo.Infrastructure.RPC
             HttpResponseMessage response;
             try
             {
-                using (var http = new HttpClient())
+                var req = new HttpRequestMessage(httpMethod, $"{endpoint}");
+                var data = JsonConvert.SerializeObject(rpcData, new JsonSerializerSettings
                 {
-                    var req = new HttpRequestMessage(httpMethod, $"{endpoint}");
-                    var data = JsonConvert.SerializeObject(rpcData, new JsonSerializerSettings
-                    {
-                        NullValueHandling = NullValueHandling.Ignore,
-                        DefaultValueHandling = DefaultValueHandling.Ignore
-                    });
+                    NullValueHandling = NullValueHandling.Ignore,
+                    DefaultValueHandling = DefaultValueHandling.Ignore
+                });
 
-                    //http.Timeout = TimeSpan.FromSeconds(3);
-                    req.Content = new StringContent(data, Encoding.Default, "application/json");
-                    response = await http.SendAsync(req);
-                }
+                //http.Timeout = TimeSpan.FromSeconds(3);
+                req.Content = new StringContent(data, Encoding.Default, "application/json");
+                response = await Http.SendAsync(req);
             }
             catch (Exception e)
             {

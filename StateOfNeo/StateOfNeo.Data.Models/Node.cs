@@ -10,7 +10,8 @@ namespace StateOfNeo.Data.Models
         public Node()
         {
             this.NodeAddresses = new HashSet<NodeAddress>();
-            this.NodeStatusUpdates = new HashSet<NodeStatusUpdate>();
+            this.NodeStatusUpdates = new HashSet<NodeStatus>();
+            this.Audits = new HashSet<NodeAudit>();
         }
 
         [Key]
@@ -20,24 +21,29 @@ namespace StateOfNeo.Data.Models
 
         public string Protocol { get; set; }
         public string Url { get; set; }
+        public string SuccessUrl { get; set; }
+        public string Net { get; set; }
 
         public int? Height { get; set; }
         public int? Peers { get; set; }
         public int? MemoryPool { get; set; }
         public string Version { get; set; }
         public NodeAddressType Type { get; set; }
-        
         public string Locale { get; set; }
         public string Location { get; set; }
         public double? Longitude { get; set; }
         public double? Latitude { get; set; }
         public string FlagUrl { get; set; }
 
-        public string SuccessUrl { get; set; }
-        public string Net { get; set; }
+        public long? FirstRuntime { get; set; }
+        public long? LatestRuntime { get; set; }
+        public long SecondsOnline { get; set; }
+        public long? LastAudit { get; set; }
 
         public virtual ICollection<NodeAddress> NodeAddresses { get; set; }
 
-        public virtual ICollection<NodeStatusUpdate> NodeStatusUpdates { get; set; }
+        public virtual ICollection<NodeStatus> NodeStatusUpdates { get; set; }
+
+        public virtual ICollection<NodeAudit> Audits { get; private set; }
     }
 }

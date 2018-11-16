@@ -18,7 +18,6 @@ namespace StateOfNeo.Common.Helpers.Filters
 
         public static object GetGroupBy(DateTime date, UnitOfTime uot)
         {
-
             if (uot == UnitOfTime.Month)
             {
                 return new
@@ -60,7 +59,7 @@ namespace StateOfNeo.Common.Helpers.Filters
         {
             if (uot == UnitOfTime.Month)
             {
-                return new DateTime(date.Year, date.Month, 0);
+                return new DateTime(date.Year, date.Month, 1);
             }
             if (uot == UnitOfTime.Day)
             {

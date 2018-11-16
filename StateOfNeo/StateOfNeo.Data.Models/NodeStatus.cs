@@ -4,7 +4,7 @@ using System.Text;
 
 namespace StateOfNeo.Data.Models
 {
-    public class NodeStatusUpdate : BaseEntity
+    public class NodeStatus : BaseEntity
     {
         public int Id { get; set; }
 
