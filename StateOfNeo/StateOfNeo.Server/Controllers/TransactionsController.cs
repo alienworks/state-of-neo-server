@@ -37,6 +37,18 @@ namespace StateOfNeo.Server.Controllers
             return this.Ok(transaction);
         }
 
+        [HttpGet("[action]/{hash}")]
+        public IActionResult GetAssets(string hash)
+        {
+            var transaction = this.transactions.Find<TransactionAssetsViewModel>(hash);
+            if (transaction == null)
+            {
+                return this.BadRequest("Invalid block hash");
+            }
+
+            return this.Ok(transaction);
+        }
+
         [HttpGet("[action]")]
         public async Task<IActionResult> List(int page = 1, int pageSize = 10, string blockHash = null, string address = null, string asset = null)
         {
