@@ -6,7 +6,7 @@ using System.Text;
 
 namespace StateOfNeo.ViewModels.Transaction
 {
-    public class TransactionDetailsViewModel
+    public class TransactionDetailsViewModel : TransactionAssetsViewModel
     {
         public string Hash { get; set; }
 
@@ -27,12 +27,6 @@ namespace StateOfNeo.ViewModels.Transaction
         public string BlockHash { get; set; }
 
         public int BlockHeight { get; set; }
-
-        public IEnumerable<TransactedAssetViewModel> GlobalIncomingAssets { get; set; }
-
-        public IEnumerable<TransactedAssetViewModel> GlobalOutgoingAssets { get; set; }
-
-        public IEnumerable<TransactedAssetViewModel> Assets { get; set; }
 
         public IEnumerable<TransactionAttributeViewModel> Attributes { get; set; }
 

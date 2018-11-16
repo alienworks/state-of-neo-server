@@ -18,6 +18,9 @@ namespace StateOfNeo.Infrastructure.Mapping
                 .ForMember(x => x.BlockHeight, opt => opt.MapFrom(x => x.Block.Height))
                 .ReverseMap();
 
+            cfg.CreateMap<Transaction, TransactionAssetsViewModel>()
+                .ReverseMap();
+
             cfg.CreateMap<TransactedAsset, TransactedAssetViewModel>()
                 .ForMember(x => x.FromAddress, opt => opt.MapFrom(x => x.FromAddressPublicAddress))
                 .ForMember(x => x.ToAddress, opt => opt.MapFrom(x => x.ToAddressPublicAddress))
@@ -27,9 +30,7 @@ namespace StateOfNeo.Infrastructure.Mapping
                 .ReverseMap();
 
             cfg.CreateMap<TransactionWitness, TransactionWitnessViewModel>()
-                
                 .ReverseMap();
-
         }
     }
 }
