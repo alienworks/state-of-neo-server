@@ -18,19 +18,19 @@ namespace StateOfNeo.Data.Models.Transactions
 
         public virtual Address ToAddress { get; set; }
 
-        public string TransactionScriptHash { get; set; }
+        public string TransactionHash { get; set; }
 
         public virtual Transaction Transaction { get; set; }
 
-        public string InGlobalTransactionScriptHash { get; set; }
+        public string InGlobalTransactionHash { get; set; }
 
         public virtual Transaction InGlobalTransaction { get; set; }
 
-        public string OutGlobalTransactionScriptHash { get; set; }
+        public string OutGlobalTransactionHash { get; set; }
 
         public virtual Transaction OutGlobalTransaction { get; set; }
 
-        public int AssetId { get; set; }
+        public string AssetHash { get; set; }
 
         public virtual Asset Asset { get; set; }
     }

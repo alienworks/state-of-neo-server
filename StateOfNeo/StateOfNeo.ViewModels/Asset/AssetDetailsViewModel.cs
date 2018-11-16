@@ -14,6 +14,9 @@ namespace StateOfNeo.ViewModels.Asset
         public long TotalSupply { get; set; }
 
         public int TransactionsCount { get; set; }
+        public int TransactionsCount1 { get; set; }
+        public int TransactionsCount2 { get; set; }
+        public int TransactionsCount3 { get; set; }
 
         public int AddressesCount { get; set; }
 

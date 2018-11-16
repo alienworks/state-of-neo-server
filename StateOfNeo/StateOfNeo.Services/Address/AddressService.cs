@@ -103,7 +103,7 @@ namespace StateOfNeo.Services.Address
 
         public IEnumerable<ChartStatsViewModel> GetAddressesForAssetChart(ChartFilterViewModel filter, string assetHash)
         {
-            var query = this.db.Addresses.Where(x => x.Balances.Any(b => b.Asset.Hash == assetHash && b.Balance > 0));
+            var query = this.db.Addresses.Where(x => x.Balances.Any(b => b.AssetHash == assetHash && b.Balance > 0));
             return this.GetChart(filter, query);
         }
 
@@ -117,7 +117,7 @@ namespace StateOfNeo.Services.Address
         {
             var result = this.db.AddressBalances
                 .Include(x => x.Address)
-                .Where(x => x.Asset.Hash == AssetConstants.NeoAssetId)
+                .Where(x => x.AssetHash == AssetConstants.NeoAssetId)
                 .OrderByDescending(x => x.Balance)
                 .Select(x => x.Address)
                 .ProjectTo<AddressListViewModel>()
@@ -130,8 +130,7 @@ namespace StateOfNeo.Services.Address
         public IEnumerable<AddressListViewModel> TopOneHundredGas()
         {
             var result = this.db.AddressBalances
-                .Include(x => x.Address)
-                .Where(x => x.Asset.Hash == AssetConstants.GasAssetId)
+                .Where(x => x.AssetHash == AssetConstants.GasAssetId)
                 .OrderByDescending(x => x.Balance)
                 .Select(x => x.Address)
                 .ProjectTo<AddressListViewModel>()

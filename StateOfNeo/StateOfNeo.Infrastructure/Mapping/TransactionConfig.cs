@@ -10,11 +10,11 @@ namespace StateOfNeo.Infrastructure.Mapping
         internal static void InitMap(IMapperConfigurationExpression cfg)
         {
             cfg.CreateMap<Transaction, TransactionListViewModel>()
-                .ForMember(x => x.Hash, opt => opt.MapFrom(x => x.ScriptHash))
+                .ForMember(x => x.Hash, opt => opt.MapFrom(x => x.Hash))
                 .ReverseMap();
 
             cfg.CreateMap<Transaction, TransactionDetailsViewModel>()
-                .ForMember(x => x.Hash, opt => opt.MapFrom(x => x.ScriptHash))
+                .ForMember(x => x.Hash, opt => opt.MapFrom(x => x.Hash))
                 .ForMember(x => x.BlockHeight, opt => opt.MapFrom(x => x.Block.Height))
                 .ReverseMap();
 

@@ -100,11 +100,11 @@ namespace StateOfNeo.Server
                 connectionString,
                 blockHub,
                 netSettings.Value.Net));
-            Program.NeoSystem.ActorSystem.ActorOf(NodePersister.Props(
-                Program.NeoSystem.Blockchain,
-                connectionString,
-                netSettings.Value.Net,
-                nodeCaller));
+            //Program.NeoSystem.ActorSystem.ActorOf(NodePersister.Props(
+            //    Program.NeoSystem.Blockchain,
+            //    connectionString,
+            //    netSettings.Value.Net,
+            //    nodeCaller));
 
             //    Program.NeoSystem.ActorSystem.ActorOf(NotificationsListener.Props(Program.NeoSystem.Blockchain, connectionString));
 

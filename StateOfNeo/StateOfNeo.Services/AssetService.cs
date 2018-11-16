@@ -41,7 +41,7 @@ namespace StateOfNeo.Services
 
             var assets = this.db.TransactedAssets
                 .Where(x => types.Contains(x.AssetType))
-                .Select(x => x.AssetType == AssetType.NEP5 ? x.TransactionScriptHash : x.OutGlobalTransactionScriptHash ?? x.InGlobalTransactionScriptHash)
+                .Select(x => x.AssetType == AssetType.NEP5 ? x.TransactionHash : x.OutGlobalTransactionHash ?? x.InGlobalTransactionHash)
                 .Distinct()
                 .Count();
 

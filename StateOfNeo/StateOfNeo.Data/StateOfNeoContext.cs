@@ -16,7 +16,10 @@ namespace StateOfNeo.Data
 
         public DbSet<Address> Addresses { get; set; }
         public DbSet<AddressAssetBalance> AddressBalances { get; set; }
+        public DbSet<AddressInTransaction> AddressesInTransactions { get; set; }
+        public DbSet<AddressInAssetTransaction> AddressesInAssetTransactions { get; set; }
         public DbSet<Asset> Assets { get; set; }
+        public DbSet<AssetInTransaction> AssetsInTransactions { get; set; }
         public DbSet<Block> Blocks { get; set; }
         public DbSet<Node> Nodes { get; set; }
         public DbSet<NodeAddress> NodeAddresses { get; set; }

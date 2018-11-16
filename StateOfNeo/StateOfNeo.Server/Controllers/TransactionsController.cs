@@ -48,7 +48,9 @@ namespace StateOfNeo.Server.Controllers
 
             if (!string.IsNullOrEmpty(asset))
             {
+                var sw = System.Diagnostics.Stopwatch.StartNew();
                 var res = this.transactions.TransactionsForAsset(asset, page, pageSize);
+                sw.Stop();
                 return this.Ok(res.ToListResult());
             }
 
