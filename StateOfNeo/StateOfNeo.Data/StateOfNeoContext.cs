@@ -44,6 +44,14 @@ namespace StateOfNeo.Data
             return new StateOfNeoContext(optionsBuilder.Options);
         }
 
+        public override int SaveChanges()
+        {
+            this.ApplyAuditInfoRules();
+            this.ApplyStampedEntityRules();
+
+            return base.SaveChanges();
+        }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<Address>().HasIndex(x => x.LastTransactionOn);
@@ -72,6 +80,45 @@ namespace StateOfNeo.Data
             foreach (var property in decimalProps)
             {
                 property.Relational().ColumnType = "decimal(26, 9)";
+            }
+        }
+
+        private void ApplyAuditInfoRules()
+        {
+            var addedBaseEntities = this.ChangeTracker
+                .Entries()
+                .Where(e => e.Entity is BaseEntity && e.State == EntityState.Added);
+
+            foreach (var entry in addedBaseEntities)
+            {
+                var entity = (BaseEntity)entry.Entity;
+                if (entry.State == EntityState.Added && entity.CreatedOn == default(DateTime))
+                {
+                    entity.CreatedOn = DateTime.UtcNow;
+                }
+            }
+        }
+
+        private void ApplyStampedEntityRules()
+        {
+            var addedStampedEntities = this.ChangeTracker
+                .Entries()
+                .Where(e => e.Entity is StampedEntity && e.State == EntityState.Added);
+
+            foreach (var entry in addedStampedEntities)
+            {
+                var entity = (StampedEntity)entry.Entity;
+                if (entry.State == EntityState.Added)
+                {
+                    var date = entity.Timestamp.ToUnixDate();
+                    var hourStamp = new DateTime(date.Year, date.Month, date.Day, date.Hour, 0, 0).ToUnixTimestamp();
+                    var dayStamp = new DateTime(date.Year, date.Month, date.Day).ToUnixTimestamp();
+                    var monthStamp = new DateTime(date.Year, date.Month, 1).ToUnixTimestamp();
+
+                    entity.HourlyStamp = hourStamp;
+                    entity.DailyStamp = dayStamp;
+                    entity.MonthlyStamp = monthStamp;
+                }
             }
         }
     }
