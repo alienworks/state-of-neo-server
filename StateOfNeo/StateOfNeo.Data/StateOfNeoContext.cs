@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using StateOfNeo.Common.Extensions;
 using StateOfNeo.Data.Models;
 using StateOfNeo.Data.Models.Transactions;
 using System;
@@ -35,6 +36,13 @@ namespace StateOfNeo.Data
         public DbSet<RegisterTransaction> RegisterTransactions { get; set; }
         public DbSet<StateTransaction> StateTransactions { get; set; }
         public DbSet<StateDescriptor> StateDescriptors { get; set; }
+
+        public static StateOfNeoContext Create(string connectionString)
+        {
+            var optionsBuilder = new DbContextOptionsBuilder<StateOfNeoContext>();
+            optionsBuilder.UseSqlServer(connectionString, opts => opts.CommandTimeout((int)TimeSpan.FromMinutes(10).TotalSeconds));
+            return new StateOfNeoContext(optionsBuilder.Options);
+        }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
