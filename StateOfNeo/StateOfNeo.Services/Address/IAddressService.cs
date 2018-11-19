@@ -16,8 +16,6 @@ namespace StateOfNeo.Services.Address
 
         int ActiveAddressesInThePastThreeMonths();
 
-        int CreatedAddressesPer(UnitOfTime timePeriod);
-
         int CreatedAddressesCount();
         int CreatedAddressesCountForLast(UnitOfTime unit = UnitOfTime.Day);
 

@@ -21,36 +21,6 @@ namespace StateOfNeo.Services
             this.db = db;
         }
 
-        public IEnumerable<ChartStatsViewModel> FilterCount<T>(
-            ChartFilterViewModel filterModel,
-            Expression<Func<T, bool>> filter = null)
-                where T : StampedEntity
-        {
-            var result = new List<ChartStatsViewModel>();
-
-            ConfirmStartDateValue<T>(filterModel);
-            var query = this.db.Set<T>()
-                .Where(x => x.Timestamp.ToUnixDate() >= filterModel.GetEndPeriod());
-
-            if (filter != null)
-            {
-                query = query.Where(filter);
-            }
-
-            result = query
-               .GroupBy(x => DateOrderFilter.GetGroupBy(x.Timestamp, filterModel.UnitOfTime))
-               .Select(x => new ChartStatsViewModel
-               {
-                   StartDate = DateOrderFilter.GetDateTime(x.First().Timestamp, filterModel.UnitOfTime),
-                   UnitOfTime = filterModel.UnitOfTime,
-                   Value = x.Count()
-               })
-               .OrderBy(x => x.StartDate)
-               .ToList();
-
-            return result;
-        }
-
         public IEnumerable<ChartStatsViewModel> Filter<T>(
             ChartFilterViewModel chartFilter,
             Expression<Func<T, ValueExtractionModel>> projection = null,
@@ -58,7 +28,7 @@ namespace StateOfNeo.Services
                 where T : StampedEntity
         {
             this.ConfirmStartDateValue<T>(chartFilter);
-            
+
             var query = this.db.Set<T>().AsQueryable();
 
             if (queryFilter != null)
@@ -71,7 +41,7 @@ namespace StateOfNeo.Services
                 Size = 1,
                 Timestamp = x.Timestamp
             }));
-            
+
             var result = filteredQuery
                 .GroupBy(x => DateOrderFilter.GetGroupBy(x.Timestamp, chartFilter.UnitOfTime))
                 .Select(x => new ChartStatsViewModel

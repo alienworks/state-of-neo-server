@@ -56,32 +56,7 @@ namespace StateOfNeo.Services.Address
             this.db.Addresses
                 .Where(x => x.LastTransactionOn > DateTime.UtcNow.AddMonths(-3))
                 .Count();
-
-        public int CreatedAddressesPer(UnitOfTime timePeriod)
-        {
-            var result = 0;
-            if (timePeriod == UnitOfTime.Hour)
-            {
-                result = this.db.Addresses.Count() / this.db.Addresses
-                    .GroupBy(x => new { x.FirstTransactionOn.Year, x.FirstTransactionOn.Month, x.FirstTransactionOn.Day, x.FirstTransactionOn.Hour })
-                    .Count();
-            }
-            else if (timePeriod == UnitOfTime.Day)
-            {
-                result = this.db.Addresses.Count() / this.db.Addresses
-                    .GroupBy(x => new { x.FirstTransactionOn.Year, x.FirstTransactionOn.Month, x.FirstTransactionOn.Day })
-                    .Count();
-            }
-            else if (timePeriod == UnitOfTime.Month)
-            {
-                result = this.db.Addresses.Count() / this.db.Addresses
-                    .GroupBy(x => new { x.FirstTransactionOn.Year, x.FirstTransactionOn.Month })
-                    .Count();
-            }
-
-            return result;
-        }
-
+        
         public T Find<T>(string address) =>
             this.db.Addresses
                 .Where(x => x.PublicAddress == address)
