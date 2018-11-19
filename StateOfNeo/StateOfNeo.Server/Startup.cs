@@ -10,6 +10,7 @@ using Microsoft.Extensions.Options;
 using Neo;
 using Neo.Network.P2P;
 using Neo.Persistence.LevelDB;
+using Serilog;
 using StateOfNeo.Common;
 using StateOfNeo.Data;
 using StateOfNeo.Data.Seed;
@@ -43,6 +44,11 @@ namespace StateOfNeo.Server
 
         public void ConfigureServices(IServiceCollection services)
         {
+            Log.Logger = new LoggerConfiguration()
+                .WriteTo.Console()
+                .WriteTo.File("log.txt")
+                .CreateLogger();
+
             AutoMapperConfig.Init();
 
             services.AddResponseCaching();
