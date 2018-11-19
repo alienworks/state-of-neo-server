@@ -1,14 +1,10 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Neo.Ledger;
-using Neo.Network.P2P;
 using StateOfNeo.Common;
 using StateOfNeo.Data;
 using StateOfNeo.Server.Infrastructure;
-using System.Linq;
-using System.Net;
 using System.Threading.Tasks;
-using static Akka.IO.Tcp;
 
 namespace StateOfNeo.Server.Controllers
 {

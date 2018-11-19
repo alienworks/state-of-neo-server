@@ -12,9 +12,12 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using StateOfNeo.Services;
 using StateOfNeo.ViewModels.Chart;
+using Serilog;
+using StateOfNeo.Common.Constants;
 
 namespace StateOfNeo.Server.Controllers
 {
+    [ResponseCache(Duration = CachingConstants.Hour)]
     public class NodeController : BaseApiController
     {
         private readonly IHubContext<NodeHub> nodeHub;
@@ -62,6 +65,7 @@ namespace StateOfNeo.Server.Controllers
         }
 
         [HttpGet("[action]/{id}")]
+        [ResponseCache(Duration = CachingConstants.Second)]
         public async Task<IActionResult> Get(int id)
         {
             try
@@ -76,6 +80,7 @@ namespace StateOfNeo.Server.Controllers
         }
 
         [HttpGet("[action]")]
+        [ResponseCache(Duration = CachingConstants.Second)]
         public async Task<IActionResult> Page(int page = 1, int pageSize = 10)
         {
             try
@@ -90,11 +95,11 @@ namespace StateOfNeo.Server.Controllers
         }
 
         [HttpGet("[action]")]
-        [ResponseCache(Duration = 3600)]
         public async Task<IActionResult> Consensus()
         {
             try
             {
+                Log.Information("Getting Consensus data");
                 HttpResponseMessage response;
 
                 using (var http = new HttpClient())
@@ -113,11 +118,13 @@ namespace StateOfNeo.Server.Controllers
                 }
                 else
                 {
+                    Log.Error("Couldn't load consensus list neo.org bad request");
                     return BadRequest();
                 }
             }
             catch (System.Exception ex)
             {
+                Log.Error("Couldn't load consensus list {@ex}", ex);
                 return BadRequest(ex.Message);
             }
         }
