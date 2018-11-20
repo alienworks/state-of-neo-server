@@ -69,10 +69,7 @@ namespace StateOfNeo.Server.Actors
         {
             if (message is PersistCompleted m)
             {
-                var optionsBuilder = new DbContextOptionsBuilder<StateOfNeoContext>();
-                optionsBuilder.UseSqlServer(this.connectionString, opts => opts.CommandTimeout((int)TimeSpan.FromMinutes(10).TotalSeconds));
-                var db = new StateOfNeoContext(optionsBuilder.Options);
-
+                var db = StateOfNeoContext.Create(this.connectionString);                
                 if (db.Blocks.Any(x => x.Hash == m.Block.Hash.ToString()))
                 {
                     return;
@@ -91,13 +88,21 @@ namespace StateOfNeo.Server.Actors
                 Neo.Network.P2P.Payloads.Block block = null;
                 while (currentHeight < m.Block.Index)
                 {
+                    var sw1 = System.Diagnostics.Stopwatch.StartNew();
                     var hash = Blockchain.Singleton.GetBlockHash((uint)currentHeight + 1);
                     block = Blockchain.Singleton.GetBlock(hash);
                     persisted = this.PersistBlock(block, db);
                     currentHeight++;
-                    if (currentHeight % 100 == 0)
+                    if (db.ChangeTracker.Entries().Count() > 10_000)
                     {
+                        sw1.Stop();
+                        var sw2 = System.Diagnostics.Stopwatch.StartNew();
                         this.SaveEmitAndClear(db, persisted, block.Transactions.Length);
+                        sw2.Stop();
+
+                        var totalTime = sw1.ElapsedMilliseconds + sw2.ElapsedMilliseconds;
+
+                        db = StateOfNeoContext.Create(this.connectionString);
                     }
                 }
 
@@ -618,9 +623,6 @@ namespace StateOfNeo.Server.Actors
         private void SaveEmitAndClear(StateOfNeoContext db, Block block, int transactions)
         {
             db.SaveChanges();
-            this.pendingAddresses.Clear();
-            this.pendingBalances.Clear();
-            this.pendingAssets.Clear();
 
             HeaderStats = Mapper.Map<HeaderStatsViewModel>(block);
             HeaderStats.TransactionCount = transactions;
