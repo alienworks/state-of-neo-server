@@ -23,7 +23,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StateOfNeo.Infrastructure",
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StateOfNeo.Data.Common", "StateOfNeo.Data.Common\StateOfNeo.Data.Common.csproj", "{325FB6DE-BFA8-4B31-AAAF-4884EDECE878}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StateOfNeo.Services", "StateOfNeo.Services\StateOfNeo.Services.csproj", "{364C77B9-6904-4231-A6C6-6F3A29B40DF6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StateOfNeo.Services", "StateOfNeo.Services\StateOfNeo.Services.csproj", "{364C77B9-6904-4231-A6C6-6F3A29B40DF6}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "utils", "utils", "{C1F504D2-DCA2-448E-98DA-29C48E08397D}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MissingStampsFiller", "MissingStampsFiller\MissingStampsFiller.csproj", "{323DA6BE-DD14-4037-9897-0C6294C32B51}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -131,6 +135,18 @@ Global
 		{364C77B9-6904-4231-A6C6-6F3A29B40DF6}.Release|x64.Build.0 = Release|Any CPU
 		{364C77B9-6904-4231-A6C6-6F3A29B40DF6}.Release|x86.ActiveCfg = Release|Any CPU
 		{364C77B9-6904-4231-A6C6-6F3A29B40DF6}.Release|x86.Build.0 = Release|Any CPU
+		{323DA6BE-DD14-4037-9897-0C6294C32B51}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{323DA6BE-DD14-4037-9897-0C6294C32B51}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{323DA6BE-DD14-4037-9897-0C6294C32B51}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{323DA6BE-DD14-4037-9897-0C6294C32B51}.Debug|x64.Build.0 = Debug|Any CPU
+		{323DA6BE-DD14-4037-9897-0C6294C32B51}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{323DA6BE-DD14-4037-9897-0C6294C32B51}.Debug|x86.Build.0 = Debug|Any CPU
+		{323DA6BE-DD14-4037-9897-0C6294C32B51}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{323DA6BE-DD14-4037-9897-0C6294C32B51}.Release|Any CPU.Build.0 = Release|Any CPU
+		{323DA6BE-DD14-4037-9897-0C6294C32B51}.Release|x64.ActiveCfg = Release|Any CPU
+		{323DA6BE-DD14-4037-9897-0C6294C32B51}.Release|x64.Build.0 = Release|Any CPU
+		{323DA6BE-DD14-4037-9897-0C6294C32B51}.Release|x86.ActiveCfg = Release|Any CPU
+		{323DA6BE-DD14-4037-9897-0C6294C32B51}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -144,6 +160,7 @@ Global
 		{BDC05DA2-6835-4D9C-A958-7B112D608846} = {CD261440-6435-45B6-84A5-60FD1D9E656A}
 		{325FB6DE-BFA8-4B31-AAAF-4884EDECE878} = {CD261440-6435-45B6-84A5-60FD1D9E656A}
 		{364C77B9-6904-4231-A6C6-6F3A29B40DF6} = {143227BD-B2A8-4010-BA38-7FE5ECB46880}
+		{323DA6BE-DD14-4037-9897-0C6294C32B51} = {C1F504D2-DCA2-448E-98DA-29C48E08397D}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {FC6B077E-E745-4166-B951-9C4A5DD98263}
