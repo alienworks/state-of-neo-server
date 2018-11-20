@@ -2,7 +2,7 @@
 
 namespace StateOfNeo.ViewModels
 {
-    public class BlockHubViewModel
+    public class HeaderStatsViewModel
     {
         public string Hash { get; set; }
         public int Height { get; set; }

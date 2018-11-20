@@ -10,7 +10,7 @@ namespace StateOfNeo.Infrastructure.Mapping
     {
         internal static void InitMap(IMapperConfigurationExpression cfg)
         {
-            cfg.CreateMap<Block, BlockHubViewModel>()
+            cfg.CreateMap<Block, HeaderStatsViewModel>()
                 .ForMember(x => x.TransactionCount, y => y.MapFrom(z => z.Transactions.Count))
                 .ReverseMap();
 
