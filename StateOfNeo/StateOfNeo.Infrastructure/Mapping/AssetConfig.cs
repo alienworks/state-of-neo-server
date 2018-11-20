@@ -20,18 +20,7 @@ namespace StateOfNeo.Infrastructure.Mapping
             //        || x.GlobalIncomingAssets.Any(a => a.AssetHash == asset)
             //        || x.GlobalIncomingAssets.Any(a => a.AssetHash == asset))
             cfg.CreateMap<Asset, AssetDetailsViewModel>()
-                .ForMember(x => x.TotalSupply, opt => opt.MapFrom(x => x.MaxSupply))
-                .ForMember(x => x.TransactionsCount1, opt => opt.MapFrom(x => x.TransactionsCount))
-                .ForMember(x => x.TransactionsCount2, opt => opt.MapFrom(x => x.AddressesInTransactions.Count))
-                .ForMember(x => x.TransactionsCount3, opt => opt.MapFrom(x =>
-                    x.TransactedAssets
-                        .Where(ta => ta.Transaction != null)
-                        .Select(ta => ta.TransactionHash)
-                        .Union(x.TransactedAssets.Where(ta => ta.InGlobalTransactionHash != null).Select(ta => ta.InGlobalTransactionHash))
-                        .Union(x.TransactedAssets.Where(ta => ta.OutGlobalTransaction != null).Select(ta => ta.OutGlobalTransactionHash))
-                        .Distinct()
-                        .Count()))
-
+                .ForMember(x => x.TotalSupply, opt => opt.MapFrom(x => x.MaxSupply))         
                 .ForMember(x => x.AddressesCount, opt => opt.MapFrom(x => x.Balances.Count()))
                 .ForMember(x => x.NewAddressesLastMonth, opt => opt.MapFrom(
                     x => x.Balances.Count(b => b.Address.FirstTransactionOn >= DateTime.UtcNow.AddMonths(-1))))
