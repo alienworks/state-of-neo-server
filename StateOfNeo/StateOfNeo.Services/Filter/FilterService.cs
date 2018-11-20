@@ -57,7 +57,7 @@ namespace StateOfNeo.Services
             return result;
         }
 
-        private void ConfirmStartDateValue<T>(ChartFilterViewModel filter)
+        protected void ConfirmStartDateValue<T>(ChartFilterViewModel filter)
             where T : StampedEntity
         {
             if (filter.StartDate == null)
