@@ -97,14 +97,14 @@ namespace StateOfNeo.Server
             StateOfNeoContext ctx,
             IServiceProvider services,
             IOptions<NetSettings> netSettings,
-            IHubContext<BlockHub> blockHub,
+            IHubContext<StatsHub> statsHub,
             RPCNodeCaller nodeCaller)
         {
             var connectionString = this.Configuration.GetConnectionString("DefaultConnection");
             Program.NeoSystem.ActorSystem.ActorOf(BlockPersister.Props(
                 Program.NeoSystem.Blockchain,
                 connectionString,
-                blockHub,
+                statsHub,
                 netSettings.Value.Net));
             Program.NeoSystem.ActorSystem.ActorOf(NodePersister.Props(
                 Program.NeoSystem.Blockchain,
@@ -136,10 +136,9 @@ namespace StateOfNeo.Server
 
             app.UseSignalR(routes =>
             {
+                routes.MapHub<StatsHub>("/hubs/stats");
                 routes.MapHub<BlockHub>("/hubs/block");
                 routes.MapHub<NodeHub>("/hubs/node");
-                routes.MapHub<TransactionCountHub>("/hubs/trans-count");
-                routes.MapHub<TransactionAverageCountHub>("/hubs/trans-average-count"); 
                 routes.MapHub<FailedP2PHub>("/hubs/fail-p2p"); 
             });
 
