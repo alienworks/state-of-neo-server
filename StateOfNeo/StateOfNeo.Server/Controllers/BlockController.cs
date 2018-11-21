@@ -1,14 +1,13 @@
-﻿using AutoMapper;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Neo.Ledger;
+using StateOfNeo.Common.Constants;
 using StateOfNeo.Common.Extensions;
 using StateOfNeo.Server.Hubs;
 using StateOfNeo.Services;
 using StateOfNeo.Services.Block;
 using StateOfNeo.ViewModels.Block;
 using StateOfNeo.ViewModels.Chart;
-using System;
 using System.Threading.Tasks;
 
 namespace StateOfNeo.Server.Controllers
@@ -27,6 +26,7 @@ namespace StateOfNeo.Server.Controllers
         }
 
         [HttpGet("[action]/{hash}")]
+        [ResponseCache(Duration = CachingConstants.TenYears)]
         public IActionResult ByHash(string hash)
         {
             var block = this.blocks.Find<BlockDetailsViewModel>(hash);
@@ -39,6 +39,7 @@ namespace StateOfNeo.Server.Controllers
         }
 
         [HttpGet("[action]/{height}")]
+        [ResponseCache(Duration = CachingConstants.TenYears)]
         public IActionResult ByHeight(int height)
         {
             var block = this.blocks.Find<BlockDetailsViewModel>(height);
@@ -59,6 +60,7 @@ namespace StateOfNeo.Server.Controllers
         }
 
         [HttpPost("[action]")]
+        [ResponseCache(Duration = CachingConstants.Hour)]
         public IActionResult BlockSizeChart([FromBody]ChartFilterViewModel filter)
         {
             var result = this.blocks.GetBlockSizeStats(filter);
@@ -66,6 +68,7 @@ namespace StateOfNeo.Server.Controllers
         }
 
         [HttpPost("[action]")]
+        [ResponseCache(Duration = CachingConstants.Hour)]
         public IActionResult BlockTimeChart([FromBody]ChartFilterViewModel filter)
         {
             var result = this.blocks.GetBlockTimeStats(filter);
@@ -85,18 +88,21 @@ namespace StateOfNeo.Server.Controllers
         }
 
         [HttpGet("[action]")]
+        [ResponseCache(Duration = CachingConstants.Day)]
         public IActionResult AverageTxCount()
         {
             return Ok(this.blocks.GetAvgTxPerBlock());
         }
 
         [HttpGet("[action]")]
+        [ResponseCache(Duration = CachingConstants.Day)]
         public IActionResult AverageTime()
         {
             return Ok(this.blocks.GetAvgBlockTime());
         }
 
         [HttpGet("[action]")]
+        [ResponseCache(Duration = CachingConstants.Day)]
         public IActionResult AverageSize()
         {
             return Ok(this.blocks.GetAvgBlockSize());

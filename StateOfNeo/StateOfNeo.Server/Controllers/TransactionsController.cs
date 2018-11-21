@@ -1,16 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using StateOfNeo.Services.Transaction;
-using StateOfNeo.Services;
-using StateOfNeo.ViewModels.Transaction;
-using AutoMapper;
-using Microsoft.AspNetCore.Mvc;
-using StateOfNeo.Common.Extensions;
-using StateOfNeo.Data.Models.Transactions;
-using StateOfNeo.ViewModels.Chart;
+﻿using Microsoft.AspNetCore.Mvc;
+using StateOfNeo.Common.Constants;
 using StateOfNeo.Common.Enums;
+using StateOfNeo.Common.Extensions;
+using StateOfNeo.Services;
+using StateOfNeo.Services.Transaction;
+using StateOfNeo.ViewModels.Chart;
+using StateOfNeo.ViewModels.Transaction;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace StateOfNeo.Server.Controllers
 {
@@ -26,6 +23,7 @@ namespace StateOfNeo.Server.Controllers
         }
 
         [HttpGet("[action]/{hash}")]
+        [ResponseCache(Duration = CachingConstants.TenYears)]
         public IActionResult Get(string hash)
         {
             var transaction = this.transactions.Find<TransactionDetailsViewModel>(hash);
@@ -38,6 +36,7 @@ namespace StateOfNeo.Server.Controllers
         }
 
         [HttpGet("[action]/{hash}")]
+        [ResponseCache(Duration = CachingConstants.TenYears)]
         public IActionResult GetAssets(string hash)
         {
             var transaction = this.transactions.Find<TransactionAssetsViewModel>(hash);
@@ -72,6 +71,7 @@ namespace StateOfNeo.Server.Controllers
         }
 
         [HttpPost("[action]")]
+        [ResponseCache(Duration = CachingConstants.Hour)]
         public IActionResult Chart([FromBody]ChartFilterViewModel filter)
         {
             var result = this.transactions.GetStats(filter);
@@ -79,6 +79,7 @@ namespace StateOfNeo.Server.Controllers
         }
         
         [HttpPost("[action]")]
+        [ResponseCache(Duration = CachingConstants.Hour)]
         public IActionResult AddressChart([FromBody]ChartFilterViewModel filter, string address)
         {
             var result = this.transactions.GetTransactionsForAddressChart(filter, address);
@@ -86,6 +87,7 @@ namespace StateOfNeo.Server.Controllers
         }
 
         [HttpPost("[action]")]
+        [ResponseCache(Duration = CachingConstants.Hour)]
         public IActionResult AssetChart([FromBody]ChartFilterViewModel filter, string assetHash)
         {
             var result = this.transactions.GetTransactionsForAssetChart(filter, assetHash);
@@ -100,6 +102,7 @@ namespace StateOfNeo.Server.Controllers
         }
 
         [HttpGet("[action]")]
+        [ResponseCache(Duration = CachingConstants.Hour)]
         public IActionResult PieChart()
         {
             IEnumerable<ChartStatsViewModel> result = this.transactions.GetPieStats();
@@ -107,6 +110,7 @@ namespace StateOfNeo.Server.Controllers
         }
 
         [HttpGet("[action]")]
+        [ResponseCache(Duration = CachingConstants.Hour)]
         public IActionResult AveragePer([FromQuery]UnitOfTime unit = UnitOfTime.Day)
         {
             return this.Ok(this.transactions.AveragePer(unit));

@@ -16,7 +16,7 @@ namespace StateOfNeo.Services.Address
 {
     public class AddressService : FilterService, IAddressService
     {
-        public AddressService(StateOfNeoContext db) 
+        public AddressService(StateOfNeoContext db)
             : base(db) { }
 
         public int CreatedAddressesCount() => this.db.Addresses.Count();
@@ -52,34 +52,16 @@ namespace StateOfNeo.Services.Address
             return query.Count();
         }
 
-        public int ActiveAddressesInThePastThreeMonths() =>
-            this.db.Addresses
-                .Where(x => x.LastTransactionOn > DateTime.UtcNow.AddMonths(-3))
-                .Count();
-
-        public int CreatedAddressesPer(UnitOfTime timePeriod)
+        public int ActiveAddressesInThePastThreeMonths()
         {
-            var result = 0;
-            if (timePeriod == UnitOfTime.Hour)
-            {
-                result = this.db.Addresses.Count() / this.db.Addresses
-                    .GroupBy(x => new { x.FirstTransactionOn.Year, x.FirstTransactionOn.Month, x.FirstTransactionOn.Day, x.FirstTransactionOn.Hour })
-                    .Count();
-            }
-            else if (timePeriod == UnitOfTime.Day)
-            {
-                result = this.db.Addresses.Count() / this.db.Addresses
-                    .GroupBy(x => new { x.FirstTransactionOn.Year, x.FirstTransactionOn.Month, x.FirstTransactionOn.Day })
-                    .Count();
-            }
-            else if (timePeriod == UnitOfTime.Month)
-            {
-                result = this.db.Addresses.Count() / this.db.Addresses
-                    .GroupBy(x => new { x.FirstTransactionOn.Year, x.FirstTransactionOn.Month })
-                    .Count();
-            }
+            var lastAddress = this.db.Addresses
+                .OrderByDescending(x => x.LastTransactionOn)
+                .First()
+                .LastTransactionOn.AddMonths(-3);
 
-            return result;
+            return this.db.Addresses
+                 .Where(x => x.LastTransactionOn > lastAddress)
+                 .Count();
         }
 
         public T Find<T>(string address) =>
@@ -139,7 +121,7 @@ namespace StateOfNeo.Services.Address
 
             return result;
         }
-        
+
         private IEnumerable<ChartStatsViewModel> GetChart(ChartFilterViewModel filter, IQueryable<Data.Models.Address> query)
         {
             if (filter.StartDate == null)
