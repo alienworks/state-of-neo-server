@@ -2,6 +2,7 @@
 using StateOfNeo.Common.Constants;
 using StateOfNeo.Common.Enums;
 using StateOfNeo.Common.Extensions;
+using StateOfNeo.Server.Actors;
 using StateOfNeo.Services;
 using StateOfNeo.Services.Transaction;
 using StateOfNeo.ViewModels.Chart;
@@ -119,14 +120,13 @@ namespace StateOfNeo.Server.Controllers
         [HttpGet("[action]")]
         public IActionResult Total()
         {
-            return this.Ok(this.transactions.Total());
+            return this.Ok(BlockPersister.TotalTxCount);
         }
 
         [HttpGet("[action]")]
         public IActionResult TotalClaimed()
         {
-            var result = this.transactions.TotalClaimed();
-            return this.Ok(result);
+            return this.Ok(BlockPersister.TotalClaimed);
         }
     }
 }
