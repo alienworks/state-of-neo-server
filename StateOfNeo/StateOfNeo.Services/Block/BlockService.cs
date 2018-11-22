@@ -37,13 +37,10 @@ namespace StateOfNeo.Services.Block
         {
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
-            var latestBlockDate = this.db.Blocks
-                .OrderByDescending(x => x.Timestamp)
-                .First()
-                .Timestamp;
+            long latestBlockDate = this.GetLatestTimestamp();
 
-            filter.StartDate = latestBlockDate.ToUnixDate();
             filter.StartStamp = latestBlockDate;
+            filter.StartDate = latestBlockDate.ToUnixDate();
 
             List<ChartStatsViewModel> result = new List<ChartStatsViewModel>();
             foreach (var endStamp in filter.GetPeriodStamps())
@@ -65,23 +62,14 @@ namespace StateOfNeo.Services.Block
             stopwatch.Stop();
             Log.Information("GetBlockSizeStats time - " + stopwatch.ElapsedMilliseconds);
             return result;
-
-            return this.Filter<Data.Models.Block>(filter,
-                x => new ValueExtractionModel
-                {
-                    Size = x.Size,
-                    Timestamp = x.Timestamp
-                });
         }
 
         public IEnumerable<ChartStatsViewModel> GetBlockTimeStats(ChartFilterViewModel filter)
         {
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
-            var latestBlockDate = this.db.Blocks
-                .OrderByDescending(x => x.Timestamp)
-                .First()
-                .Timestamp;
+
+            var latestBlockDate = this.GetLatestTimestamp();
 
             filter.StartDate = latestBlockDate.ToUnixDate();
             filter.StartStamp = latestBlockDate;
@@ -92,7 +80,7 @@ namespace StateOfNeo.Services.Block
             {
                 var avg = this.db.Blocks
                     .Where(x => x.Timestamp <= latestBlockDate && x.Timestamp >= endStamp)
-                    .Average(x => x.Timestamp - x.PreviousBlock.Timestamp);
+                    .Average(x => x.TimeInSeconds);
 
                 result.Add(new ChartStatsViewModel
                 {
@@ -107,14 +95,14 @@ namespace StateOfNeo.Services.Block
             stopwatch.Stop();
             Log.Information("GetBlockTimeStats time - " + stopwatch.ElapsedMilliseconds);
             return result;
+        }
 
-            //return this.Filter<Data.Models.Block>(filter,
-            //    x => new ValueExtractionModel
-            //    {
-            //        Size = (decimal)(x.Timestamp.ToUnixDate() - x.PreviousBlock.Timestamp.ToUnixDate()).TotalSeconds,
-            //        Timestamp = x.Timestamp
-            //    },
-            //    x => x.PreviousBlock != null);
+        private long GetLatestTimestamp()
+        {
+            return this.db.Blocks
+                .Select(x => x.Timestamp)
+                .OrderByDescending(x => x)
+                .First();
         }
 
         public decimal GetAvgTxPerBlock()
@@ -125,16 +113,8 @@ namespace StateOfNeo.Services.Block
             return txs / blocks;
         }
 
-        public double GetAvgBlockTime()
-        {
-            var result = this.db.Blocks.Average(x => x.TimeInSeconds);
-            return result;
-        }
+        public double GetAvgBlockTime() => this.db.Blocks.Average(x => x.TimeInSeconds);
 
-        public double GetAvgBlockSize()
-        {
-            var result = this.db.Blocks.Average(x => x.Size);
-            return result;
-        }
+        public double GetAvgBlockSize() => this.db.Blocks.Average(x => x.Size);
     }
 }

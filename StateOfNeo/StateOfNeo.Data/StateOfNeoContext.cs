@@ -60,6 +60,9 @@ namespace StateOfNeo.Data
             modelBuilder.Entity<Block>().HasIndex(x => x.Height);
 
             modelBuilder.Entity<Transaction>().HasIndex(x => x.Timestamp);
+            modelBuilder.Entity<Transaction>().HasIndex(x => new { x.Timestamp, x.Hash });
+
+            modelBuilder.Entity<AssetInTransaction>().HasIndex(x => new { x.Timestamp, x.AssetHash });
 
             modelBuilder.Entity<NodeAudit>().HasIndex(x => x.Timestamp);
             modelBuilder.Entity<NodeAudit>()
