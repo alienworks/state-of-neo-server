@@ -396,7 +396,8 @@ namespace StateOfNeo.Server.Actors
                     {
                         AssetHash = assetTransactions.Key,
                         TransactionHash = transaction.Hash,
-                        CreatedOn = DateTime.UtcNow
+                        CreatedOn = DateTime.UtcNow,
+                        Timestamp = transaction.Timestamp
                     };
 
                     transaction.AssetsInTransactions.Add(assetInTransaction);
@@ -489,8 +490,13 @@ namespace StateOfNeo.Server.Actors
                         var symbol = this.TestInvoke(db, item.ScriptHash, "symbol").HexStringToString();
 
                         var decimalsHex = this.TestInvoke(db, item.ScriptHash, "decimals");
-                        var decimals = Convert.ToInt32(decimalsHex, 16);
+                        if (!int.TryParse(decimalsHex, out _))
+                        {
+                            continue;
+                        }
 
+                        var decimals = Convert.ToInt32(decimalsHex, 16);
+                        
                         var totalSupplyHex = this.TestInvoke(db, item.ScriptHash, "totalSupply");
                         var totalSupply = Convert.ToInt64(totalSupplyHex, 16);
 

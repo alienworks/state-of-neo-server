@@ -3,15 +3,17 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using StateOfNeo.Data;
 
 namespace StateOfNeo.Data.Migrations
 {
     [DbContext(typeof(StateOfNeoContext))]
-    partial class StateOfNeoContextModelSnapshot : ModelSnapshot
+    [Migration("20181122092214_AddCompositeIndexForTransactions")]
+    partial class AddCompositeIndexForTransactions
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -162,8 +164,6 @@ namespace StateOfNeo.Data.Migrations
                     b.Property<string>("AssetHash");
 
                     b.Property<DateTime>("CreatedOn");
-
-                    b.Property<long>("Timestamp");
 
                     b.Property<string>("TransactionHash");
 

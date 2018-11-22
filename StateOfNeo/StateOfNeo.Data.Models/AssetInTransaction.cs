@@ -12,6 +12,8 @@ namespace StateOfNeo.Data.Models
         }
 
         public int Id { get; set; }
+
+        public long Timestamp { get; set; }
         
         public string TransactionHash { get; set; }
 
