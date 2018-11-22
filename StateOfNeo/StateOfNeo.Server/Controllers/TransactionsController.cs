@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Serilog;
 using StateOfNeo.Common.Constants;
 using StateOfNeo.Common.Enums;
 using StateOfNeo.Common.Extensions;
@@ -63,6 +64,7 @@ namespace StateOfNeo.Server.Controllers
                 var sw = System.Diagnostics.Stopwatch.StartNew();
                 var res = this.transactions.TransactionsForAsset(asset, page, pageSize);
                 sw.Stop();
+                Log.Information($"{this.GetType().FullName} from List - ${sw.ElapsedMilliseconds}");
                 return this.Ok(res.ToListResult());
             }
 
