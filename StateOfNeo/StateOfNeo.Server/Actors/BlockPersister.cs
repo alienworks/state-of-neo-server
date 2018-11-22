@@ -522,7 +522,8 @@ namespace StateOfNeo.Server.Actors
                     {
                         AssetHash = asset.Hash,
                         CreatedOn = DateTime.UtcNow,
-                        TransactionHash = transaction.Hash.ToString()
+                        TransactionHash = transaction.Hash.ToString(),
+                        Timestamp = blockTime.ToUnixTimestamp()
                     };
 
                     db.AssetsInTransactions.Add(assetInTransaction);
@@ -820,7 +821,8 @@ namespace StateOfNeo.Server.Actors
             {
                 Asset = neo,
                 CreatedOn = DateTime.UtcNow,
-                TransactionHash = neoAssetIssueTransaction.Hash
+                TransactionHash = neoAssetIssueTransaction.Hash,
+                Timestamp = genesisBlock.Timestamp
             };
 
             neoAssetIssueTransaction.AssetsInTransactions.Add(assetInTransaction);
