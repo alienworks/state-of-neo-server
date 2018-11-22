@@ -10,25 +10,35 @@ namespace ConsoleApp2
     {
         static void Main(string[] args)
         {
-            var connectionString = "Server=.\\;Database=neo-monitor-main;Trusted_Connection=True;MultipleActiveResultSets=true";
+            var connectionString = "Server=.\\MSSQLSERVER01;Database=neo-monitor-main1;Password=JwuZbH1HjtLj;User Id=dbuser;";
             var db = StateOfNeoContext.Create(connectionString);
 
-            var items = db.Blocks.Where(x => x.DailyStamp == 0).Take(50_000).ToList();
+            var items = db.AssetsInTransactions
+                .Include(x => x.Transaction)
+                .Where(x => x.Timestamp == 0)
+                .Take(50_000).ToList();
             var count = 0;
             var iteration = 1;
+            var missing = 0;
             while (items.Any())
             {
                 var sw = System.Diagnostics.Stopwatch.StartNew();
                 foreach (var item in items)
                 {
-                    var date = item.Timestamp.ToUnixDate();
-                    var hourStamp = new DateTime(date.Year, date.Month, date.Day, date.Hour, 0, 0).ToUnixTimestamp();
-                    var dayStamp = new DateTime(date.Year, date.Month, date.Day).ToUnixTimestamp();
-                    var monthStamp = new DateTime(date.Year, date.Month, 1).ToUnixTimestamp();
+                    //var date = item.Timestamp.ToUnixDate();
+                    //var hourStamp = new DateTime(date.Year, date.Month, date.Day, date.Hour, 0, 0).ToUnixTimestamp();
+                    //var dayStamp = new DateTime(date.Year, date.Month, date.Day).ToUnixTimestamp();
+                    //var monthStamp = new DateTime(date.Year, date.Month, 1).ToUnixTimestamp();
 
-                    item.HourlyStamp = hourStamp;
-                    item.DailyStamp = dayStamp;
-                    item.MonthlyStamp = monthStamp;
+                    if (item.Transaction == null)
+                    {
+                        missing++;
+                        item.Transaction = db.Transactions.FirstOrDefault(x => x.Hash == item.TransactionHash);
+                    }
+                    item.Timestamp = item.Transaction.Timestamp;
+                    //item.HourlyStamp = hourStamp;
+                    //item.DailyStamp = dayStamp;
+                    //item.MonthlyStamp = monthStamp;
                 }
 
                 db.SaveChanges();
@@ -43,10 +53,13 @@ namespace ConsoleApp2
                     db = StateOfNeoContext.Create(connectionString);
                 }
 
-                items = db.Blocks.Where(x => x.DailyStamp == 0).Take(50_000).ToList();
+                items = db.AssetsInTransactions
+                    .Where(x => x.Timestamp == 0)
+                    .Take(50_000).ToList();
 
                 iteration++;
             }
+            Console.WriteLine($"missing transactions - {missing}");
 
             db.SaveChanges();
         }
