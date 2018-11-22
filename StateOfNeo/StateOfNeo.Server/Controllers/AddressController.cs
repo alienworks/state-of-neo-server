@@ -2,6 +2,7 @@
 using StateOfNeo.Common.Constants;
 using StateOfNeo.Common.Enums;
 using StateOfNeo.Common.Extensions;
+using StateOfNeo.Server.Actors;
 using StateOfNeo.Services;
 using StateOfNeo.Services.Address;
 using StateOfNeo.ViewModels.Address;
@@ -64,8 +65,7 @@ namespace StateOfNeo.Server.Controllers
         [HttpGet("[action]")]
         public IActionResult Created()
         {
-            var result = this.addresses.CreatedAddressesCount();
-            return this.Ok(result);
+            return this.Ok(BlockPersister.TotalAddressCount);
         }
 
         [HttpGet("[action]")]
