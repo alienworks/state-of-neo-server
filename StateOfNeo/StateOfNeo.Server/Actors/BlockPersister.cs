@@ -9,6 +9,7 @@ using Neo.Ledger;
 using Neo.SmartContract;
 using Neo.VM;
 using Neo.Wallets;
+using Serilog;
 using StateOfNeo.Common;
 using StateOfNeo.Common.Constants;
 using StateOfNeo.Common.Enums;
@@ -69,7 +70,7 @@ namespace StateOfNeo.Server.Actors
         {
             if (message is PersistCompleted m)
             {
-                var db = StateOfNeoContext.Create(this.connectionString);                
+                var db = StateOfNeoContext.Create(this.connectionString);
                 if (db.Blocks.Any(x => x.Hash == m.Block.Hash.ToString()))
                 {
                     return;
@@ -485,9 +486,9 @@ namespace StateOfNeo.Server.Actors
                     var name = this.TestInvoke(db, item.ScriptHash, "name").HexStringToString();
                     var assetHash = item.ScriptHash.ToString();
                     var asset = this.GetAsset(db, assetHash);
+                    var symbol = this.TestInvoke(db, item.ScriptHash, "symbol").HexStringToString();
                     if (asset == null)
                     {
-                        var symbol = this.TestInvoke(db, item.ScriptHash, "symbol").HexStringToString();
 
                         var decimalsHex = this.TestInvoke(db, item.ScriptHash, "decimals");
                         if (!int.TryParse(decimalsHex, out _))
@@ -496,7 +497,7 @@ namespace StateOfNeo.Server.Actors
                         }
 
                         var decimals = Convert.ToInt32(decimalsHex, 16);
-                        
+
                         var totalSupplyHex = this.TestInvoke(db, item.ScriptHash, "totalSupply");
                         var totalSupply = Convert.ToInt64(totalSupplyHex, 16);
 
@@ -529,13 +530,23 @@ namespace StateOfNeo.Server.Actors
                     db.AssetsInTransactions.Add(assetInTransaction);
 
                     var notification = item.GetNotification<TransferNotification>();
-                    var from = new UInt160(notification.From).ToAddress();
-                    var to = new UInt160(notification.To).ToAddress();
-                    var fromAddress = this.GetAddress(db, from, blockTime);
-                    fromAddress.TransactionsCount++;
+                    string from = null;
 
-                    var toAddress = this.GetAddress(db, to, blockTime);
-                    toAddress.TransactionsCount++;
+                    if (notification.From.Length == 20)
+                    {
+                        from = new UInt160(notification.From).ToAddress();
+                    }
+
+                    string to = null;
+
+                    if (notification.To.Length != 20)
+                    {
+                        Log.Warning($"{item.ScriptHash} NEP-5 token {name} / {symbol} invalid To address. Tx {transaction.Hash}");
+                    }
+                    else
+                    {
+                        to = new UInt160(notification.To).ToAddress();
+                    }
 
                     var ta = new Data.Models.Transactions.TransactedAsset
                     {
@@ -550,42 +561,55 @@ namespace StateOfNeo.Server.Actors
 
                     db.TransactedAssets.Add(ta);
 
-                    var fromAddressInTransaction = new AddressInTransaction
+                    if (from != null)
                     {
-                        AddressPublicAddress = fromAddress.PublicAddress,
-                        Amount = ta.Amount,
-                        AssetHash = asset.Hash,
-                        CreatedOn = DateTime.UtcNow,
-                        Timestamp = blockTime.ToUnixTimestamp(),
-                        TransactionHash = ta.TransactionHash
-                    };
+                        var fromAddress = this.GetAddress(db, from, blockTime);
+                        fromAddress.TransactionsCount++;
 
-                    var toAddressInTransaction = new AddressInTransaction
+                        var fromAddressInTransaction = new AddressInTransaction
+                        {
+                            AddressPublicAddress = fromAddress.PublicAddress,
+                            Amount = ta.Amount,
+                            AssetHash = asset.Hash,
+                            CreatedOn = DateTime.UtcNow,
+                            Timestamp = blockTime.ToUnixTimestamp(),
+                            TransactionHash = ta.TransactionHash
+                        };
+
+                        var fromAddressInAssetTransaction = new AddressInAssetTransaction
+                        {
+                            AddressPublicAddress = fromAddress.PublicAddress,
+                            CreatedOn = DateTime.UtcNow,
+                            Amount = ta.Amount
+                        };
+
+                        assetInTransaction.AddressesInAssetTransactions.Add(fromAddressInAssetTransaction);
+                    }
+
+                    if (to != null)
                     {
-                        AddressPublicAddress = toAddress.PublicAddress,
-                        Amount = ta.Amount,
-                        AssetHash = asset.Hash,
-                        CreatedOn = DateTime.UtcNow,
-                        Timestamp = blockTime.ToUnixTimestamp(),
-                        TransactionHash = ta.TransactionHash
-                    };
+                        var toAddress = this.GetAddress(db, to, blockTime);
+                        toAddress.TransactionsCount++;
 
-                    var fromAddressInAssetTransaction = new AddressInAssetTransaction
-                    {
-                        AddressPublicAddress = fromAddress.PublicAddress,
-                        CreatedOn = DateTime.UtcNow,
-                        Amount = ta.Amount
-                    };
+                        var toAddressInTransaction = new AddressInTransaction
+                        {
+                            AddressPublicAddress = toAddress.PublicAddress,
+                            Amount = ta.Amount,
+                            AssetHash = asset.Hash,
+                            CreatedOn = DateTime.UtcNow,
+                            Timestamp = blockTime.ToUnixTimestamp(),
+                            TransactionHash = ta.TransactionHash
+                        };
 
-                    var toAddressInAssetTransaction = new AddressInAssetTransaction
-                    {
-                        AddressPublicAddress = toAddress.PublicAddress,
-                        CreatedOn = DateTime.UtcNow,
-                        Amount = ta.Amount
-                    };
+                        var toAddressInAssetTransaction = new AddressInAssetTransaction
+                        {
+                            AddressPublicAddress = toAddress.PublicAddress,
+                            CreatedOn = DateTime.UtcNow,
+                            Amount = ta.Amount
+                        };
 
-                    assetInTransaction.AddressesInAssetTransactions.Add(fromAddressInAssetTransaction);
-                    assetInTransaction.AddressesInAssetTransactions.Add(toAddressInAssetTransaction);
+                        assetInTransaction.AddressesInAssetTransactions.Add(toAddressInAssetTransaction);
+                    }
 
                     asset.TransactionsCount++;
 
