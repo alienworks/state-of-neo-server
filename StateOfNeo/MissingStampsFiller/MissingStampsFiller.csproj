@@ -11,7 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\..\..\Work\NGD\state-of-neo-server\StateOfNeo\StateOfNeo.Data\StateOfNeo.Data.csproj" />
+    <ProjectReference Include="..\StateOfNeo.Data\StateOfNeo.Data.csproj" />
   </ItemGroup>
 
 </Project>

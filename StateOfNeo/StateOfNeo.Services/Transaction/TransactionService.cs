@@ -1,8 +1,10 @@
 ﻿using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
 using Neo.Network.P2P.Payloads;
+using Serilog;
 using StateOfNeo.Common.Enums;
 using StateOfNeo.Common.Extensions;
+using StateOfNeo.Common.Helpers.Filters;
 using StateOfNeo.Data;
 using StateOfNeo.ViewModels.Chart;
 using StateOfNeo.ViewModels.Transaction;
@@ -31,49 +33,14 @@ namespace StateOfNeo.Services.Transaction
                 .ProjectTo<TransactionListViewModel>()
                 .ToPagedList(page, pageSize);
 
-        //public IPagedList<TransactionListViewModel> TransactionsForAddress(string address, int page = 1, int pageSize = 10)
-        //{
-        //    var globalIncoming = this.db.TransactedAssets
-        //        .Include(x => x.InGlobalTransaction)
-        //        .Where(x => (x.ToAddressPublicAddress == address || x.FromAddressPublicAddress == address) && x.InGlobalTransaction != null)
-        //        .Select(x => x.InGlobalTransaction);
-
-        //    var globalOutgoing = this.db.TransactedAssets
-        //        .Include(x => x.OutGlobalTransaction)
-        //        .Where(x => (x.ToAddressPublicAddress == address || x.FromAddressPublicAddress == address) && x.OutGlobalTransaction != null)
-        //        .Select(x => x.OutGlobalTransaction);
-
-        //    var nepTransactions = this.db.TransactedAssets
-        //        .Include(x => x.Transaction)
-        //        .Where(x => (x.ToAddressPublicAddress == address || x.FromAddressPublicAddress == address) && x.Transaction != null)
-        //        .Select(x => x.Transaction);
-
-        //    var result = globalIncoming
-        //        .Union(globalOutgoing)
-        //        .Union(nepTransactions)
-        //        .ProjectTo<TransactionListViewModel>()
-        //        .OrderByDescending(x => x.Timestamp)
-        //        .ToPagedList(page, pageSize);
-
-        //    return result;
-        //}
 
         public IPagedList<TransactionListViewModel> TransactionsForAsset(string asset, int page = 1, int pageSize = 10) =>
-        //this.db.Transactions
-        //    .Where(x =>
-        //        x.Assets.Any(a => a.Asset.Hash == asset)
-        //        || x.GlobalIncomingAssets.Any(a => a.Asset.Hash == asset)
-        //        || x.GlobalIncomingAssets.Any(a => a.Asset.Hash == asset))
-        //    .OrderByDescending(x => x.Timestamp)
-        //    .ProjectTo<TransactionListViewModel>()
-        //    .ToPagedList(page, pageSize);
-
-        this.db.AssetsInTransactions
-            .Where(x => x.AssetHash == asset)
-            .Select(x => x.Transaction)
-            .OrderByDescending(x => x.Timestamp)
-            .ProjectTo<TransactionListViewModel>()
-            .ToPagedList(page, pageSize);
+            this.db.AssetsInTransactions
+                .Where(x => x.AssetHash == asset)
+                .OrderByDescending(x => x.Timestamp)
+                .Select(x => x.Transaction)
+                .ProjectTo<TransactionListViewModel>()
+                .ToPagedList(page, pageSize);
 
         public IPagedList<T> GetPageTransactions<T>(int page = 1, int pageSize = 10, string blockHash = null)
         {
@@ -93,49 +60,111 @@ namespace StateOfNeo.Services.Transaction
 
         public IEnumerable<ChartStatsViewModel> GetStats(ChartFilterViewModel filter)
         {
-            this.ConfirmStartDateValue<Data.Models.Transactions.Transaction>(filter);
-            var query = this.db.Set<Data.Models.Transactions.Transaction>().AsQueryable();
-            IQueryable<IGrouping<long, Data.Models.Transactions.Transaction>> grouping = null;
-            if (filter.UnitOfTime == UnitOfTime.Hour)
-            {
-                grouping = query.GroupBy(x => x.HourlyStamp);
-            }
-            else if (filter.UnitOfTime == UnitOfTime.Day)
-            {
-                grouping = query.GroupBy(x => x.DailyStamp);
-            }
-            else if (filter.UnitOfTime == UnitOfTime.Month)
-            {
-                grouping = query.GroupBy(x => x.MonthlyStamp);
-            }
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+            var latestDate = this.db.Transactions
+                .OrderByDescending(x => x.Timestamp)
+                .Select(x => x.Timestamp)
+                .First();
 
-            var result = grouping
-                .OrderByDescending(x => x.Key)
-                .Take(filter.EndPeriod)
-                .Select(x => new ChartStatsViewModel
+            filter.StartDate = latestDate.ToUnixDate();
+            filter.StartStamp = latestDate;
+
+            List<ChartStatsViewModel> result = new List<ChartStatsViewModel>();
+            var periods = filter.GetPeriodStamps();
+            foreach (var endStamp in periods)
+            {
+                var count = this.db.Transactions
+                    .Where(x => x.Timestamp <= latestDate && x.Timestamp >= endStamp)
+                    .Count();
+
+                result.Add(new ChartStatsViewModel
                 {
-                    StartDate = x.Key.ToUnixDate(),
-                    UnitOfTime = filter.UnitOfTime,
-                    Value = x.Count()
-                })
-                .ToList();
+                    Value = (decimal)count,
+                    StartDate = DateOrderFilter.GetDateTime(endStamp, filter.UnitOfTime),
+                    UnitOfTime = filter.UnitOfTime
+                });
 
-            result.Reverse();
+                latestDate = endStamp;
+            }
 
+            stopwatch.Stop();
+            Log.Information($"{this.GetType().FullName} - GetStats time - " + stopwatch.ElapsedMilliseconds);
             return result;
+
+            //this.ConfirmStartDateValue<Data.Models.Transactions.Transaction>(filter);
+            //var query = this.db.Set<Data.Models.Transactions.Transaction>().AsQueryable();
+            //IQueryable<IGrouping<long, Data.Models.Transactions.Transaction>> grouping = null;
+            //if (filter.UnitOfTime == UnitOfTime.Hour)
+            //{
+            //    grouping = query.GroupBy(x => x.HourlyStamp);
+            //}
+            //else if (filter.UnitOfTime == UnitOfTime.Day)
+            //{
+            //    grouping = query.GroupBy(x => x.DailyStamp);
+            //}
+            //else if (filter.UnitOfTime == UnitOfTime.Month)
+            //{
+            //    grouping = query.GroupBy(x => x.MonthlyStamp);
+            //}
+
+            //var result = grouping
+            //    .OrderByDescending(x => x.Key)
+            //    .Take(filter.EndPeriod)
+            //    .Select(x => new ChartStatsViewModel
+            //    {
+            //        StartDate = x.Key.ToUnixDate(),
+            //        UnitOfTime = filter.UnitOfTime,
+            //        Value = x.Count()
+            //    })
+            //    .ToList();
+
+            //result.Reverse();
+
+            //return result;
         }
 
-        //public IEnumerable<ChartStatsViewModel> GetStats(ChartFilterViewModel filter) => 
-        //    this.Filter<Data.Models.Transactions.Transaction>(filter);
+        public IEnumerable<ChartStatsViewModel> GetTransactionsForAssetChart(ChartFilterViewModel filter, string assetHash)
+        {
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+            var latestDate = this.db.Transactions
+                .OrderByDescending(x => x.Timestamp)
+                .Select(x => x.Timestamp)
+                .First();
 
-        public IEnumerable<ChartStatsViewModel> GetTransactionsForAssetChart(ChartFilterViewModel filter, string assetHash) =>
-            this.Filter<Data.Models.Transactions.Transaction>(
-                filter,
-                null,
-                x =>
-                    x.Assets.Any(a => a.AssetHash == assetHash)
-                    || x.GlobalIncomingAssets.Any(a => a.AssetHash == assetHash)
-                    || x.GlobalOutgoingAssets.Any(a => a.AssetHash == assetHash));
+            filter.StartDate = latestDate.ToUnixDate();
+            filter.StartStamp = latestDate;
+
+            List<ChartStatsViewModel> result = new List<ChartStatsViewModel>();
+            var periods = filter.GetPeriodStamps();
+            foreach (var endStamp in periods)
+            {
+                var count = this.db.AssetsInTransactions
+                    .Where(x => x.AssetHash == assetHash)
+                    .Select(x => x.Timestamp)
+                    .Count(x => x <= latestDate && x >= endStamp);
+
+                result.Add(new ChartStatsViewModel
+                {
+                    Value = (decimal)count,
+                    StartDate = DateOrderFilter.GetDateTime(endStamp, filter.UnitOfTime),
+                    UnitOfTime = filter.UnitOfTime
+                });
+
+                latestDate = endStamp;
+            }
+
+            stopwatch.Stop();
+            Log.Information($"{this.GetType().FullName} - GetStats time - " + stopwatch.ElapsedMilliseconds);
+            return result;
+
+            //return this.Filter<Data.Models.Transactions.Transaction>(
+            //      filter,
+            //      null,
+            //      x =>
+            //          );
+        }
 
         public IEnumerable<ChartStatsViewModel> GetTransactionsForAddressChart(ChartFilterViewModel filter, string address) =>
             this.Filter<Data.Models.Transactions.Transaction>(

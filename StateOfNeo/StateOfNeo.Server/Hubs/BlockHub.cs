@@ -23,7 +23,7 @@ namespace StateOfNeo.Server.Hubs
         {
             var block = this.db.Blocks
                 .OrderByDescending(x => x.Height)
-                .ProjectTo<BlockHubViewModel>()
+                .ProjectTo<HeaderStatsViewModel>()
                 .FirstOrDefault();
             
             await this.Clients.All.SendAsync("Receive", block);

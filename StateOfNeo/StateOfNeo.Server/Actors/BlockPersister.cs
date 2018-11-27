@@ -1,5 +1,6 @@
 ﻿using Akka.Actor;
 using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Neo;
@@ -8,6 +9,7 @@ using Neo.Ledger;
 using Neo.SmartContract;
 using Neo.VM;
 using Neo.Wallets;
+using Serilog;
 using StateOfNeo.Common;
 using StateOfNeo.Common.Constants;
 using StateOfNeo.Common.Enums;
@@ -46,9 +48,11 @@ namespace StateOfNeo.Server.Actors
         private readonly ICollection<Data.Models.Address> pendingAddresses = new List<Data.Models.Address>();
         private readonly ICollection<Data.Models.AddressAssetBalance> pendingBalances = new List<Data.Models.AddressAssetBalance>();
 
-        private long totalTxCount = 0;
-        private int totalAddressCount = 0;
-        private int totalAssetsCount = 0;
+        public static HeaderStatsViewModel HeaderStats;
+        public static long TotalTxCount = 0;
+        public static int TotalAddressCount = 0;
+        public static int TotalAssetsCount = 0;
+        public static decimal TotalClaimed = 0;
 
         public BlockPersister(IActorRef blockchain, string connectionString, IHubContext<StatsHub> statsHub, string net)
         {
@@ -66,7 +70,7 @@ namespace StateOfNeo.Server.Actors
         {
             if (message is PersistCompleted m)
             {
-                var db = StateOfNeoContext.Create(this.connectionString);                
+                var db = StateOfNeoContext.Create(this.connectionString);
                 if (db.Blocks.Any(x => x.Hash == m.Block.Hash.ToString()))
                 {
                     return;
@@ -77,20 +81,7 @@ namespace StateOfNeo.Server.Actors
                     this.SeedGenesisBlock(db);
                 }
 
-                if (this.totalTxCount == 0)
-                {
-                    this.totalTxCount += db.Transactions.Count();
-                }
-
-                if (this.totalAddressCount == 0)
-                {
-                    this.totalAddressCount += db.Addresses.Count();
-                }
-
-                if (this.totalAssetsCount == 0)
-                {
-                    this.totalAssetsCount += db.Assets.Count();
-                }
+                this.InitCache(db);
 
                 var currentHeight = db.Blocks.OrderByDescending(x => x.Height).Select(x => x.Height).FirstOrDefault();
 
@@ -120,6 +111,43 @@ namespace StateOfNeo.Server.Actors
 
                 db.Dispose();
             }
+        }
+
+        private void InitCache(StateOfNeoContext db)
+        {
+            if (HeaderStats == null)
+            {
+                HeaderStats = db.Blocks
+                    .OrderByDescending(x => x.Height)
+                    .ProjectTo<HeaderStatsViewModel>()
+                    .FirstOrDefault();
+            }
+
+            if (TotalTxCount == 0)
+            {
+                TotalTxCount = db.Transactions.Count();
+            }
+
+            if (TotalAddressCount == 0)
+            {
+                TotalAddressCount = db.Addresses.Count();
+            }
+
+            if (TotalAssetsCount == 0)
+            {
+                TotalAssetsCount = db.Assets.Count();
+            }
+
+            if (TotalClaimed == 0)
+            {
+                TotalClaimed = db.Transactions
+                    .Include(x => x.GlobalOutgoingAssets).ThenInclude(x => x.Asset)
+                    .Where(x => x.Type == Neo.Network.P2P.Payloads.TransactionType.ClaimTransaction)
+                    .SelectMany(x => x.GlobalOutgoingAssets.Where(a => a.AssetType == AssetType.GAS))
+                    .Sum(x => x.Amount);
+            }
+
+            this.EmitStatsInfo();
         }
 
         private Block PersistBlock(Neo.Network.P2P.Payloads.Block blockToPersist, StateOfNeoContext db)
@@ -213,7 +241,7 @@ namespace StateOfNeo.Server.Actors
                     };
 
                     transaction.RegisterTransaction = registerTransaction;
-                    
+
                     var asset = new Asset
                     {
                         CreatedOn = DateTime.UtcNow,
@@ -234,7 +262,7 @@ namespace StateOfNeo.Server.Actors
 
                     db.Assets.Add(asset);
                     pendingAssets.Add(asset);
-                    totalAssetsCount++;
+                    TotalAssetsCount++;
                 }
                 else if (item.Type == Neo.Network.P2P.Payloads.TransactionType.EnrollmentTransaction)
                 {
@@ -353,6 +381,11 @@ namespace StateOfNeo.Server.Actors
                     this.AdjustTransactedAmount(transactedAmounts, assetHash, toPublicAddress, ta.Amount);
 
                     transaction.GlobalOutgoingAssets.Add(ta);
+
+                    if (transaction.Type == Neo.Network.P2P.Payloads.TransactionType.ClaimTransaction)
+                    {
+                        TotalClaimed += ta.Amount;
+                    }
                 }
 
                 foreach (var assetTransactions in transactedAmounts)
@@ -364,7 +397,8 @@ namespace StateOfNeo.Server.Actors
                     {
                         AssetHash = assetTransactions.Key,
                         TransactionHash = transaction.Hash,
-                        CreatedOn = DateTime.UtcNow
+                        CreatedOn = DateTime.UtcNow,
+                        Timestamp = transaction.Timestamp
                     };
 
                     transaction.AssetsInTransactions.Add(assetInTransaction);
@@ -404,9 +438,9 @@ namespace StateOfNeo.Server.Actors
         }
 
         private void AdjustTransactedAmount(
-            Dictionary<string, Dictionary<string, decimal>> transactedAmounts, 
-            string assetHash, 
-            string publicAddress, 
+            Dictionary<string, Dictionary<string, decimal>> transactedAmounts,
+            string assetHash,
+            string publicAddress,
             decimal amount)
         {
             if (!transactedAmounts.ContainsKey(assetHash))
@@ -452,11 +486,16 @@ namespace StateOfNeo.Server.Actors
                     var name = this.TestInvoke(db, item.ScriptHash, "name").HexStringToString();
                     var assetHash = item.ScriptHash.ToString();
                     var asset = this.GetAsset(db, assetHash);
+                    var symbol = this.TestInvoke(db, item.ScriptHash, "symbol").HexStringToString();
                     if (asset == null)
                     {
-                        var symbol = this.TestInvoke(db, item.ScriptHash, "symbol").HexStringToString();
 
                         var decimalsHex = this.TestInvoke(db, item.ScriptHash, "decimals");
+                        if (!int.TryParse(decimalsHex, out _))
+                        {
+                            continue;
+                        }
+
                         var decimals = Convert.ToInt32(decimalsHex, 16);
 
                         var totalSupplyHex = this.TestInvoke(db, item.ScriptHash, "totalSupply");
@@ -477,26 +516,37 @@ namespace StateOfNeo.Server.Actors
 
                         db.Assets.Add(asset);
                         this.pendingAssets.Add(asset);
-                        this.totalAssetsCount++;
+                        TotalAssetsCount++;
                     }
 
                     var assetInTransaction = new AssetInTransaction
                     {
                         AssetHash = asset.Hash,
                         CreatedOn = DateTime.UtcNow,
-                        TransactionHash = transaction.Hash.ToString()
+                        TransactionHash = transaction.Hash.ToString(),
+                        Timestamp = blockTime.ToUnixTimestamp()
                     };
 
                     db.AssetsInTransactions.Add(assetInTransaction);
 
                     var notification = item.GetNotification<TransferNotification>();
-                    var from = new UInt160(notification.From).ToAddress();
-                    var to = new UInt160(notification.To).ToAddress();
-                    var fromAddress = this.GetAddress(db, from, blockTime);
-                    fromAddress.TransactionsCount++;
+                    string from = null;
 
-                    var toAddress = this.GetAddress(db, to, blockTime);
-                    toAddress.TransactionsCount++;
+                    if (notification.From.Length == 20)
+                    {
+                        from = new UInt160(notification.From).ToAddress();
+                    }
+
+                    string to = null;
+
+                    if (notification.To.Length != 20)
+                    {
+                        Log.Warning($"{item.ScriptHash} NEP-5 token {name} / {symbol} invalid To address. Tx {transaction.Hash}");
+                    }
+                    else
+                    {
+                        to = new UInt160(notification.To).ToAddress();
+                    }
 
                     var ta = new Data.Models.Transactions.TransactedAsset
                     {
@@ -511,42 +561,55 @@ namespace StateOfNeo.Server.Actors
 
                     db.TransactedAssets.Add(ta);
 
-                    var fromAddressInTransaction = new AddressInTransaction
+                    if (from != null)
                     {
-                        AddressPublicAddress = fromAddress.PublicAddress,
-                        Amount = ta.Amount,
-                        AssetHash = asset.Hash,
-                        CreatedOn = DateTime.UtcNow,
-                        Timestamp = blockTime.ToUnixTimestamp(),
-                        TransactionHash = ta.TransactionHash
-                    };
+                        var fromAddress = this.GetAddress(db, from, blockTime);
+                        fromAddress.TransactionsCount++;
 
-                    var toAddressInTransaction = new AddressInTransaction
+                        var fromAddressInTransaction = new AddressInTransaction
+                        {
+                            AddressPublicAddress = fromAddress.PublicAddress,
+                            Amount = ta.Amount,
+                            AssetHash = asset.Hash,
+                            CreatedOn = DateTime.UtcNow,
+                            Timestamp = blockTime.ToUnixTimestamp(),
+                            TransactionHash = ta.TransactionHash
+                        };
+
+                        var fromAddressInAssetTransaction = new AddressInAssetTransaction
+                        {
+                            AddressPublicAddress = fromAddress.PublicAddress,
+                            CreatedOn = DateTime.UtcNow,
+                            Amount = ta.Amount
+                        };
+
+                        assetInTransaction.AddressesInAssetTransactions.Add(fromAddressInAssetTransaction);
+                    }
+
+                    if (to != null)
                     {
-                        AddressPublicAddress = toAddress.PublicAddress,
-                        Amount = ta.Amount,
-                        AssetHash = asset.Hash,
-                        CreatedOn = DateTime.UtcNow,
-                        Timestamp = blockTime.ToUnixTimestamp(),
-                        TransactionHash = ta.TransactionHash
-                    };
+                        var toAddress = this.GetAddress(db, to, blockTime);
+                        toAddress.TransactionsCount++;
 
-                    var fromAddressInAssetTransaction = new AddressInAssetTransaction
-                    {
-                        AddressPublicAddress = fromAddress.PublicAddress,
-                        CreatedOn = DateTime.UtcNow,
-                        Amount = ta.Amount
-                    };
+                        var toAddressInTransaction = new AddressInTransaction
+                        {
+                            AddressPublicAddress = toAddress.PublicAddress,
+                            Amount = ta.Amount,
+                            AssetHash = asset.Hash,
+                            CreatedOn = DateTime.UtcNow,
+                            Timestamp = blockTime.ToUnixTimestamp(),
+                            TransactionHash = ta.TransactionHash
+                        };
 
-                    var toAddressInAssetTransaction = new AddressInAssetTransaction
-                    {
-                        AddressPublicAddress = toAddress.PublicAddress,
-                        CreatedOn = DateTime.UtcNow,
-                        Amount = ta.Amount
-                    };
+                        var toAddressInAssetTransaction = new AddressInAssetTransaction
+                        {
+                            AddressPublicAddress = toAddress.PublicAddress,
+                            CreatedOn = DateTime.UtcNow,
+                            Amount = ta.Amount
+                        };
 
-                    assetInTransaction.AddressesInAssetTransactions.Add(fromAddressInAssetTransaction);
-                    assetInTransaction.AddressesInAssetTransactions.Add(toAddressInAssetTransaction);
+                        assetInTransaction.AddressesInAssetTransactions.Add(toAddressInAssetTransaction);
+                    }
 
                     asset.TransactionsCount++;
 
@@ -592,19 +655,20 @@ namespace StateOfNeo.Server.Actors
         {
             db.SaveChanges();
 
-            var hubBlock = Mapper.Map<BlockHubViewModel>(block);
-            hubBlock.TransactionCount = transactions;
-            this.statsHub.Clients.All.SendAsync("header", hubBlock);
+            HeaderStats = Mapper.Map<HeaderStatsViewModel>(block);
+            HeaderStats.TransactionCount = transactions;
 
-            this.totalTxCount += transactions;
-            this.statsHub.Clients.All.SendAsync("tx-count", this.totalTxCount);
-            
-            this.statsHub.Clients.All.SendAsync("address-count", this.totalAddressCount);
-            this.statsHub.Clients.All.SendAsync("assets-count", this.totalAssetsCount);
+            TotalTxCount += transactions;
+            this.EmitStatsInfo();
+        }
 
-            this.pendingAddresses.Clear();
-            this.pendingBalances.Clear();
-            this.pendingAssets.Clear();
+        private void EmitStatsInfo()
+        {
+            this.statsHub.Clients.All.SendAsync("header", HeaderStats);
+            this.statsHub.Clients.All.SendAsync("tx-count", TotalTxCount);
+            this.statsHub.Clients.All.SendAsync("address-count", TotalAddressCount);
+            this.statsHub.Clients.All.SendAsync("assets-count", TotalAssetsCount);
+            this.statsHub.Clients.All.SendAsync("total-claimed", TotalClaimed);
         }
 
         private Asset GetAsset(StateOfNeoContext db, string hash)
@@ -673,9 +737,9 @@ namespace StateOfNeo.Server.Actors
                 db.Addresses.Add(result);
                 pendingAddresses.Add(result);
 
-                this.totalAddressCount++;
+                TotalAddressCount++;
             }
-             
+
             return result;
         }
 
@@ -781,7 +845,8 @@ namespace StateOfNeo.Server.Actors
             {
                 Asset = neo,
                 CreatedOn = DateTime.UtcNow,
-                TransactionHash = neoAssetIssueTransaction.Hash
+                TransactionHash = neoAssetIssueTransaction.Hash,
+                Timestamp = genesisBlock.Timestamp
             };
 
             neoAssetIssueTransaction.AssetsInTransactions.Add(assetInTransaction);

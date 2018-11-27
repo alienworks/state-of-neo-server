@@ -40,7 +40,8 @@ namespace StateOfNeo.Data
         public static StateOfNeoContext Create(string connectionString)
         {
             var optionsBuilder = new DbContextOptionsBuilder<StateOfNeoContext>();
-            optionsBuilder.UseSqlServer(connectionString, opts => opts.CommandTimeout((int)TimeSpan.FromMinutes(10).TotalSeconds));
+            optionsBuilder.UseSqlServer(connectionString, 
+                opts => opts.CommandTimeout((int)TimeSpan.FromMinutes(10000).TotalSeconds));
             return new StateOfNeoContext(optionsBuilder.Options);
         }
 
@@ -60,6 +61,9 @@ namespace StateOfNeo.Data
             modelBuilder.Entity<Block>().HasIndex(x => x.Height);
 
             modelBuilder.Entity<Transaction>().HasIndex(x => x.Timestamp);
+            modelBuilder.Entity<Transaction>().HasIndex(x => new { x.Timestamp, x.Hash });
+
+            modelBuilder.Entity<AssetInTransaction>().HasIndex(x => new { x.Timestamp, x.AssetHash });
 
             modelBuilder.Entity<NodeAudit>().HasIndex(x => x.Timestamp);
             modelBuilder.Entity<NodeAudit>()
@@ -79,7 +83,7 @@ namespace StateOfNeo.Data
 
             foreach (var property in decimalProps)
             {
-                property.Relational().ColumnType = "decimal(26, 9)";
+                property.Relational().ColumnType = "decimal(29, 8)";
             }
         }
 

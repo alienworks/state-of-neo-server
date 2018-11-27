@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Serilog;
 using StateOfNeo.Common.Constants;
 using StateOfNeo.Common.Enums;
 using StateOfNeo.Common.Extensions;
+using StateOfNeo.Server.Actors;
 using StateOfNeo.Services;
 using StateOfNeo.Services.Transaction;
 using StateOfNeo.ViewModels.Chart;
@@ -62,6 +64,7 @@ namespace StateOfNeo.Server.Controllers
                 var sw = System.Diagnostics.Stopwatch.StartNew();
                 var res = this.transactions.TransactionsForAsset(asset, page, pageSize);
                 sw.Stop();
+                Log.Information($"{this.GetType().FullName} from List - ${sw.ElapsedMilliseconds}");
                 return this.Ok(res.ToListResult());
             }
 
@@ -119,14 +122,13 @@ namespace StateOfNeo.Server.Controllers
         [HttpGet("[action]")]
         public IActionResult Total()
         {
-            return this.Ok(this.transactions.Total());
+            return this.Ok(BlockPersister.TotalTxCount);
         }
 
         [HttpGet("[action]")]
         public IActionResult TotalClaimed()
         {
-            var result = this.transactions.TotalClaimed();
-            return this.Ok(result);
+            return this.Ok(BlockPersister.TotalClaimed);
         }
     }
 }

@@ -3,15 +3,17 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using StateOfNeo.Data;
 
 namespace StateOfNeo.Data.Migrations
 {
     [DbContext(typeof(StateOfNeoContext))]
-    partial class StateOfNeoContextModelSnapshot : ModelSnapshot
+    [Migration("20181122092817_AddCompositeIndexForAssetsInTransaction")]
+    partial class AddCompositeIndexForAssetsInTransaction
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -50,7 +52,7 @@ namespace StateOfNeo.Data.Migrations
                     b.Property<string>("AssetHash");
 
                     b.Property<decimal>("Balance")
-                        .HasColumnType("decimal(29, 8)");
+                        .HasColumnType("decimal(26, 9)");
 
                     b.Property<DateTime>("CreatedOn");
 
@@ -74,7 +76,7 @@ namespace StateOfNeo.Data.Migrations
                     b.Property<string>("AddressPublicAddress");
 
                     b.Property<decimal>("Amount")
-                        .HasColumnType("decimal(29, 8)");
+                        .HasColumnType("decimal(26, 9)");
 
                     b.Property<int>("AssetInTransactionId");
 
@@ -98,7 +100,7 @@ namespace StateOfNeo.Data.Migrations
                     b.Property<string>("AddressPublicAddress");
 
                     b.Property<decimal>("Amount")
-                        .HasColumnType("decimal(29, 8)");
+                        .HasColumnType("decimal(26, 9)");
 
                     b.Property<string>("AssetHash");
 
@@ -163,17 +165,13 @@ namespace StateOfNeo.Data.Migrations
 
                     b.Property<DateTime>("CreatedOn");
 
-                    b.Property<long>("Timestamp");
-
                     b.Property<string>("TransactionHash");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AssetHash");
-
                     b.HasIndex("TransactionHash");
 
-                    b.HasIndex("Timestamp", "AssetHash");
+                    b.HasIndex("AssetHash", "TransactionHash");
 
                     b.ToTable("AssetsInTransactions");
                 });
@@ -314,7 +312,7 @@ namespace StateOfNeo.Data.Migrations
                     b.Property<int>("NodeId");
 
                     b.Property<decimal>("Peers")
-                        .HasColumnType("decimal(29, 8)");
+                        .HasColumnType("decimal(26, 9)");
 
                     b.Property<long>("Timestamp");
 
@@ -382,7 +380,7 @@ namespace StateOfNeo.Data.Migrations
                     b.Property<DateTime>("CreatedOn");
 
                     b.Property<decimal>("Gas")
-                        .HasColumnType("decimal(29, 8)");
+                        .HasColumnType("decimal(26, 9)");
 
                     b.Property<string>("ScriptAsHexString");
 
@@ -452,7 +450,7 @@ namespace StateOfNeo.Data.Migrations
                     b.Property<string>("AdminAddress");
 
                     b.Property<decimal>("Amount")
-                        .HasColumnType("decimal(29, 8)");
+                        .HasColumnType("decimal(26, 9)");
 
                     b.Property<byte>("AssetType");
 
@@ -518,7 +516,7 @@ namespace StateOfNeo.Data.Migrations
                         .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
                     b.Property<decimal>("Amount")
-                        .HasColumnType("decimal(29, 8)");
+                        .HasColumnType("decimal(26, 9)");
 
                     b.Property<string>("AssetHash");
 
@@ -575,7 +573,7 @@ namespace StateOfNeo.Data.Migrations
                     b.Property<long>("MonthlyStamp");
 
                     b.Property<decimal>("NetworkFee")
-                        .HasColumnType("decimal(29, 8)");
+                        .HasColumnType("decimal(26, 9)");
 
                     b.Property<int?>("PublishTransactionId");
 
@@ -586,7 +584,7 @@ namespace StateOfNeo.Data.Migrations
                     b.Property<int?>("StateTransactionId");
 
                     b.Property<decimal>("SystemFee")
-                        .HasColumnType("decimal(29, 8)");
+                        .HasColumnType("decimal(26, 9)");
 
                     b.Property<long>("Timestamp");
 
