@@ -28,9 +28,9 @@ namespace StateOfNeo.Data.Models
 
         public AssetType Type { get; set; }
 
-        public long MaxSupply { get; set; }
+        public long? MaxSupply { get; set; }
 
-        public long CurrentSupply { get; set; }
+        public long? CurrentSupply { get; set; }
 
         public int TransactionsCount { get; set; }
 
