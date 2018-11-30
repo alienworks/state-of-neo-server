@@ -3,15 +3,17 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using StateOfNeo.Data;
 
 namespace StateOfNeo.Data.Migrations
 {
     [DbContext(typeof(StateOfNeoContext))]
-    partial class StateOfNeoContextModelSnapshot : ModelSnapshot
+    [Migration("20181128130817_DecimalsPrecisionMovedTo36_8")]
+    partial class DecimalsPrecisionMovedTo36_8
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -49,7 +51,8 @@ namespace StateOfNeo.Data.Migrations
 
                     b.Property<string>("AssetHash");
 
-                    b.Property<float>("Balance");
+                    b.Property<decimal>("Balance")
+                        .HasColumnType("decimal(36, 8)");
 
                     b.Property<DateTime>("CreatedOn");
 

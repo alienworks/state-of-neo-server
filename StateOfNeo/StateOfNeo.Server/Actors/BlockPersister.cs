@@ -91,6 +91,11 @@ namespace StateOfNeo.Server.Actors
                 {
                     var sw1 = System.Diagnostics.Stopwatch.StartNew();
                     var hash = Blockchain.Singleton.GetBlockHash((uint)currentHeight + 1);
+
+                    // Left for duplicate transaction hash issue
+                    //var hash = Blockchain.Singleton.GetBlockHash((uint)2000357); //1826259
+                    //var hash1 = Blockchain.Singleton.GetBlockHash((uint)1826259); //
+
                     block = Blockchain.Singleton.GetBlock(hash);
                     persisted = this.PersistBlock(block, db);
                     currentHeight++;
@@ -183,10 +188,17 @@ namespace StateOfNeo.Server.Actors
 
             foreach (var item in blockToPersist.Transactions)
             {
+                var newTxHash = item.Hash.ToString();
+                if (db.Transactions.Any(x => x.Hash == newTxHash))
+                {
+                    newTxHash += "+1";
+                    Log.Warning($"Duplicate transaction hash - {newTxHash}");
+                }
+
                 var transaction = new Transaction
                 {
                     Type = item.Type,
-                    Hash = item.Hash.ToString(),
+                    Hash = newTxHash,
                     CreatedOn = DateTime.UtcNow,
                     NetworkFee = (decimal)item.NetworkFee,
                     SystemFee = (decimal)item.SystemFee,
@@ -349,7 +361,7 @@ namespace StateOfNeo.Server.Actors
 
                     fromAddress.LastTransactionOn = blockTime;
                     var fromBalance = this.GetBalance(db, asset.Hash, fromAddress.PublicAddress);
-                    fromBalance.Balance -= ta.Amount;
+                    fromBalance.Balance -= (float)ta.Amount;
                     this.AdjustTransactedAmount(transactedAmounts, assetHash, fromPublicAddress, -ta.Amount);
 
                     transaction.GlobalIncomingAssets.Add(ta);
@@ -377,7 +389,7 @@ namespace StateOfNeo.Server.Actors
 
                     toAddress.LastTransactionOn = blockTime;
                     var toBalance = this.GetBalance(db, asset.Hash, toAddress.PublicAddress);
-                    toBalance.Balance += ta.Amount;
+                    toBalance.Balance += (float)ta.Amount;
                     this.AdjustTransactedAmount(transactedAmounts, assetHash, toPublicAddress, ta.Amount);
 
                     transaction.GlobalOutgoingAssets.Add(ta);
@@ -615,7 +627,7 @@ namespace StateOfNeo.Server.Actors
 
                     var fromBalance = this.GetBalance(db, asset.Hash, from);
                     fromBalance.TransactionsCount++;
-                    fromBalance.Balance -= ta.Amount;
+                    fromBalance.Balance -= (float)ta.Amount;
                     if (fromBalance.Balance < 0)
                     {
                         fromBalance.Balance = -1;
@@ -623,7 +635,7 @@ namespace StateOfNeo.Server.Actors
 
                     var toBalance = this.GetBalance(db, asset.Hash, to);
                     toBalance.TransactionsCount++;
-                    toBalance.Balance += ta.Amount;
+                    toBalance.Balance += (float)ta.Amount;
                 }
             }
         }
@@ -887,14 +899,14 @@ namespace StateOfNeo.Server.Actors
                 CreatedOn = DateTime.UtcNow,
                 Address = toAddress,
                 Asset = neo,
-                Balance = transactedAsset.Amount,
+                Balance = (float)transactedAsset.Amount,
                 TransactionsCount = 1
             };
 
             var addressInTransaction = new AddressInTransaction
             {
                 AddressPublicAddress = toAddress.PublicAddress,
-                Amount = balance.Balance,
+                Amount = (decimal)balance.Balance,
                 AssetHash = neo.Hash,
                 CreatedOn = DateTime.UtcNow,
                 Timestamp = genesisBlock.Timestamp,
