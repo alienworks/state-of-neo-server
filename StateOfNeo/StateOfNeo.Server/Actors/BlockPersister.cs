@@ -23,6 +23,7 @@ using StateOfNeo.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Threading;
 using static Neo.Ledger.Blockchain;
 
@@ -495,14 +496,14 @@ namespace StateOfNeo.Server.Actors
                 var type = item.GetNotificationType();
                 if (type == "transfer")
                 {
-                    var name = this.TestInvoke(db, item.ScriptHash, "name").HexStringToString();
+                    var name = this.TestInvoke(item.ScriptHash, "name").HexStringToString();
                     var assetHash = item.ScriptHash.ToString();
                     var asset = this.GetAsset(db, assetHash);
-                    var symbol = this.TestInvoke(db, item.ScriptHash, "symbol").HexStringToString();
+                    var symbol = this.TestInvoke(item.ScriptHash, "symbol").HexStringToString();
                     if (asset == null)
                     {
 
-                        var decimalsHex = this.TestInvoke(db, item.ScriptHash, "decimals");
+                        var decimalsHex = this.TestInvoke(item.ScriptHash, "decimals");
                         if (!int.TryParse(decimalsHex, out _))
                         {
                             continue;
@@ -510,8 +511,15 @@ namespace StateOfNeo.Server.Actors
 
                         var decimals = Convert.ToInt32(decimalsHex, 16);
 
-                        var totalSupplyHex = this.TestInvoke(db, item.ScriptHash, "totalSupply");
-                        var totalSupply = Convert.ToInt64(totalSupplyHex, 16);
+                        long? totalSupply = null;
+                        try
+                        {
+                            totalSupply = Convert.ToInt64(this.TestInvoke(item.ScriptHash, "totalSupply"), 16);
+                        }
+                        catch (Exception e)
+                        {
+                            Log.Warning($"Getting totalSupply throw an error for contract - {assetHash}. In this Max and Total supply are set to null");
+                        }
 
                         asset = new Asset
                         {
@@ -640,27 +648,34 @@ namespace StateOfNeo.Server.Actors
             }
         }
 
-        private string TestInvoke(StateOfNeoContext db, UInt160 contractHash, string operation, params object[] args)
+
+        private string TestInvoke(UInt160 contractHash, string operation, params object[] args)
         {
-            using (var sb = new ScriptBuilder())
+            var result = this.TestInvokeForStackItem(contractHash, operation, args);
+            if (result == null)
             {
-                var parameters = new ContractParameter[]
-                {
+                return "";
+            }
+
+            return result.GetByteArray().ToHexString();
+        }
+
+        private StackItem TestInvokeForStackItem(UInt160 contractHash, string operation, params object[] args)
+        {
+            var sb = new ScriptBuilder();
+            var parameters = new ContractParameter[]
+            {
                     new ContractParameter { Type = ContractParameterType.String, Value = operation },
                     new ContractParameter { Type = ContractParameterType.Array, Value = new ContractParameter[0] }
-                };
+            };
 
-                sb.EmitAppCall(contractHash, parameters);
-                var script = sb.ToArray();
-                var engine = ApplicationEngine.Run(script, testMode: true);
-                var result = engine.ResultStack.FirstOrDefault();
-                if (result == null)
-                {
-                    return "";
-                }
+            sb.EmitAppCall(contractHash, parameters);
 
-                return result.GetByteArray().ToHexString();
-            }
+            var script = sb.ToArray();
+            var engine = ApplicationEngine.Run(script, testMode: true);
+            var result = engine.ResultStack.FirstOrDefault();
+
+            return result;
         }
 
         private void SaveEmitAndClear(StateOfNeoContext db, Block block, int transactions)
