@@ -1,6 +1,7 @@
 ﻿using Neo;
 using Neo.SmartContract;
 using Neo.VM;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -29,9 +30,14 @@ namespace StateOfNeo.Common.Extensions
                     if (property.PropertyType == typeof(BigInteger))
                     {
                         var valueAsString = rawValue.ToHexString();
-                        var result = BigInteger.Parse(valueAsString, NumberStyles.AllowHexSpecifier);
-                        
-                        SetPropertyValue(property.Name, instance, result);                        
+                        var result = new BigInteger(0);
+
+                        if (!string.IsNullOrEmpty(valueAsString))
+                        {
+                            result = BigInteger.Parse(valueAsString, NumberStyles.AllowHexSpecifier);
+                        }
+
+                        SetPropertyValue(property.Name, instance, result);
                     }
                     else if (property.PropertyType == typeof(byte[]))
                     {
@@ -48,16 +54,27 @@ namespace StateOfNeo.Common.Extensions
             return instance;
         }
 
-        public static IEnumerable<string> ToStringList(this IEnumerable<StackItem> stackItems) =>
-            stackItems.Skip(1).Select(si => si.GetByteArray().ToHexString().HexStringToString());
+        public static IEnumerable<string> ToStringList(this IEnumerable<StackItem> stackItems, int toSkip = 0) =>
+            stackItems.Skip(toSkip).Select(si => si.GetByteArray().ToHexString().HexStringToString());
 
         private static void SetPropertyValue(string propertyName, object instance, object value) =>
             instance.GetType().GetProperty(propertyName).SetValue(instance, value);
 
-        public static string GetNotificationType(this NotifyEventArgs args) =>
-            (args.State as Neo.VM.Types.Array)[0].GetByteArray().ToHexString().HexStringToString();
+        public static string GetNotificationType(this NotifyEventArgs args)
+        {
+            try
+            {
+                return (args.State as Neo.VM.Types.Array)[0].GetByteArray().ToHexString().HexStringToString();
+            }
+            catch (Exception e)
+            {
+                Log.Warning($@"NeoNotificationExtensions - {System.Reflection.MethodBase.GetCurrentMethod().Name}.State 
+                    could not cast {args.GetType().Name} to Neo.VM.Types.Array. Return result is args.State as string.");
+                return args.State.GetByteArray().ToHexString().HexStringToString();
+            }
+        }
 
-        public static T GetNotification<T>(this NotifyEventArgs args) =>
-            (args.State as Neo.VM.Types.Array).Skip(1).CreateObject<T>();
+        public static T GetNotification<T>(this NotifyEventArgs args, int toSkip = 1) =>
+            (args.State as Neo.VM.Types.Array).Skip(toSkip).CreateObject<T>();
     }
 }

@@ -549,7 +549,13 @@ namespace StateOfNeo.Server.Actors
 
                     db.AssetsInTransactions.Add(assetInTransaction);
 
-                    var notification = item.GetNotification<TransferNotification>();
+                    var notificationStringArray = (item.State as Neo.VM.Types.Array).ToStringList();
+                    var isLfx = symbol.ToLower() == "lfx";
+                    var notification = isLfx ? item.GetNotification<TransferNotification>(2) : item.GetNotification<TransferNotification>();
+
+                    if (notification.Amount == 0) Log.Warning($"Transfer with 0 amount value or empty array for {name}/{symbol}");
+                    if (isLfx) Log.Warning($"Transfer in {name}/{symbol} returns wrong number of arguments {notificationStringArray.Count()} - {string.Join(" | ", notificationStringArray)}");
+
                     string from = null;
 
                     if (notification.From.Length == 20)
@@ -644,6 +650,11 @@ namespace StateOfNeo.Server.Actors
                     var toBalance = this.GetBalance(db, asset.Hash, to);
                     toBalance.TransactionsCount++;
                     toBalance.Balance += (float)ta.Amount;
+                }
+                else
+                {
+                    Log.Information($@"Notification of type - {type} has been thrown by contract - {item.ScriptHash.ToString()}
+                        This is for tx = {transaction.Hash.ToString()}");
                 }
             }
         }
