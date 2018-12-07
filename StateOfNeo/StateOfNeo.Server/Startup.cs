@@ -54,6 +54,7 @@ namespace StateOfNeo.Server
             services.AddResponseCaching();
 
             services.Configure<NetSettings>(this.Configuration.GetSection("NetSettings"));
+            services.Configure<DbSettings>(this.Configuration.GetSection("ConnectionStrings"));
 
             // Data.Services
             services.AddScoped<IPaginatingService, PaginatingService>();
@@ -62,6 +63,8 @@ namespace StateOfNeo.Server
             services.AddScoped<IAssetService, AssetService>();
             services.AddScoped<ITransactionService, TransactionService>();
             services.AddScoped<IAddressService, AddressService>();
+
+            services.AddSingleton<IStateService, StateService>();
 
             // Infrastructure
             services.AddScoped<NodeCache>();
@@ -98,12 +101,14 @@ namespace StateOfNeo.Server
             IServiceProvider services,
             IOptions<NetSettings> netSettings,
             IHubContext<StatsHub> statsHub,
-            RPCNodeCaller nodeCaller)
+            RPCNodeCaller nodeCaller,
+            IStateService state)
         {
             var connectionString = this.Configuration.GetConnectionString("DefaultConnection");
             Program.NeoSystem.ActorSystem.ActorOf(BlockPersister.Props(
                 Program.NeoSystem.Blockchain,
                 connectionString,
+                state,
                 statsHub,
                 netSettings.Value.Net));
             //Program.NeoSystem.ActorSystem.ActorOf(NodePersister.Props(

@@ -19,6 +19,7 @@ using StateOfNeo.Data.Models;
 using StateOfNeo.Data.Models.Transactions;
 using StateOfNeo.Server.Actors.Notifications;
 using StateOfNeo.Server.Hubs;
+using StateOfNeo.Services;
 using StateOfNeo.ViewModels;
 using System;
 using System.Collections.Generic;
@@ -44,28 +45,30 @@ namespace StateOfNeo.Server.Actors
         private readonly string connectionString;
         private readonly string net;
         private readonly IHubContext<StatsHub> statsHub;
+        private IStateService state;
 
         private readonly ICollection<Data.Models.Asset> pendingAssets = new List<Data.Models.Asset>();
         private readonly ICollection<Data.Models.Address> pendingAddresses = new List<Data.Models.Address>();
         private readonly ICollection<Data.Models.AddressAssetBalance> pendingBalances = new List<Data.Models.AddressAssetBalance>();
 
-        public static HeaderStatsViewModel HeaderStats;
-        public static long TotalTxCount = 0;
-        public static int TotalAddressCount = 0;
-        public static int TotalAssetsCount = 0;
-        public static decimal TotalClaimed = 0;
+        //public static HeaderStatsViewModel HeaderStats;
+        //public static long TotalTxCount = 0;
+        //public static int TotalAddressCount = 0;
+        //public static int TotalAssetsCount = 0;
+        //public static decimal TotalClaimed = 0;
 
-        public BlockPersister(IActorRef blockchain, string connectionString, IHubContext<StatsHub> statsHub, string net)
+        public BlockPersister(IActorRef blockchain, string connectionString, IStateService state, IHubContext<StatsHub> statsHub, string net)
         {
             this.connectionString = connectionString;
             this.statsHub = statsHub;
             this.net = net;
+            this.state = state;
 
             blockchain.Tell(new Register());
         }
 
-        public static Props Props(IActorRef blockchain, string connectionString, IHubContext<StatsHub> statsHub, string net) =>
-            Akka.Actor.Props.Create(() => new BlockPersister(blockchain, connectionString, statsHub, net));
+        public static Props Props(IActorRef blockchain, string connectionString, IStateService state, IHubContext<StatsHub> statsHub, string net) =>
+            Akka.Actor.Props.Create(() => new BlockPersister(blockchain, connectionString, state, statsHub, net));
 
         protected override void OnReceive(object message)
         {
@@ -81,8 +84,6 @@ namespace StateOfNeo.Server.Actors
                 {
                     this.SeedGenesisBlock(db);
                 }
-
-                this.InitCache(db);
 
                 var currentHeight = db.Blocks.OrderByDescending(x => x.Height).Select(x => x.Height).FirstOrDefault();
 
@@ -117,43 +118,6 @@ namespace StateOfNeo.Server.Actors
 
                 db.Dispose();
             }
-        }
-
-        private void InitCache(StateOfNeoContext db)
-        {
-            if (HeaderStats == null)
-            {
-                HeaderStats = db.Blocks
-                    .OrderByDescending(x => x.Height)
-                    .ProjectTo<HeaderStatsViewModel>()
-                    .FirstOrDefault();
-            }
-
-            if (TotalTxCount == 0)
-            {
-                TotalTxCount = db.Transactions.Count();
-            }
-
-            if (TotalAddressCount == 0)
-            {
-                TotalAddressCount = db.Addresses.Count();
-            }
-
-            if (TotalAssetsCount == 0)
-            {
-                TotalAssetsCount = db.Assets.Count();
-            }
-
-            if (TotalClaimed == 0)
-            {
-                TotalClaimed = db.Transactions
-                    .Include(x => x.GlobalOutgoingAssets).ThenInclude(x => x.Asset)
-                    .Where(x => x.Type == Neo.Network.P2P.Payloads.TransactionType.ClaimTransaction)
-                    .SelectMany(x => x.GlobalOutgoingAssets.Where(a => a.AssetType == AssetType.GAS))
-                    .Sum(x => x.Amount);
-            }
-
-            this.EmitStatsInfo();
         }
 
         private Block PersistBlock(Neo.Network.P2P.Payloads.Block blockToPersist, StateOfNeoContext db)
@@ -275,7 +239,7 @@ namespace StateOfNeo.Server.Actors
 
                     db.Assets.Add(asset);
                     pendingAssets.Add(asset);
-                    TotalAssetsCount++;
+                    this.state.AddTotalAssetsCount(1);
                 }
                 else if (item.Type == Neo.Network.P2P.Payloads.TransactionType.EnrollmentTransaction)
                 {
@@ -397,7 +361,7 @@ namespace StateOfNeo.Server.Actors
 
                     if (transaction.Type == Neo.Network.P2P.Payloads.TransactionType.ClaimTransaction)
                     {
-                        TotalClaimed += ta.Amount;
+                        this.state.AddTotalClaimed(ta.Amount);
                     }
                 }
 
@@ -536,7 +500,7 @@ namespace StateOfNeo.Server.Actors
 
                         db.Assets.Add(asset);
                         this.pendingAssets.Add(asset);
-                        TotalAssetsCount++;
+                        this.state.AddTotalAssetsCount(1);
                     }
 
                     var assetInTransaction = new AssetInTransaction
@@ -693,20 +657,22 @@ namespace StateOfNeo.Server.Actors
         {
             db.SaveChanges();
 
-            HeaderStats = Mapper.Map<HeaderStatsViewModel>(block);
-            HeaderStats.TransactionCount = transactions;
+            var currentStats = Mapper.Map<HeaderStatsViewModel>(block);
+            currentStats.TransactionCount = transactions;
 
-            TotalTxCount += transactions;
+            this.state.SetHeaderStats(currentStats);
+            this.state.AddToTotalTxCount(transactions);
+
             this.EmitStatsInfo();
         }
 
         private void EmitStatsInfo()
         {
-            this.statsHub.Clients.All.SendAsync("header", HeaderStats);
-            this.statsHub.Clients.All.SendAsync("tx-count", TotalTxCount);
-            this.statsHub.Clients.All.SendAsync("address-count", TotalAddressCount);
-            this.statsHub.Clients.All.SendAsync("assets-count", TotalAssetsCount);
-            this.statsHub.Clients.All.SendAsync("total-claimed", TotalClaimed);
+            this.statsHub.Clients.All.SendAsync("header", this.state.GetHeaderStats());
+            this.statsHub.Clients.All.SendAsync("tx-count", this.state.GetTotalTxCount());
+            this.statsHub.Clients.All.SendAsync("address-count", this.state.GetTotalAddressCount());
+            this.statsHub.Clients.All.SendAsync("assets-count", this.state.GetTotalAssetsCount());
+            this.statsHub.Clients.All.SendAsync("total-claimed", this.state.GetTotalClaimed());
         }
 
         private Asset GetAsset(StateOfNeoContext db, string hash)
@@ -775,7 +741,7 @@ namespace StateOfNeo.Server.Actors
                 db.Addresses.Add(result);
                 pendingAddresses.Add(result);
 
-                TotalAddressCount++;
+                this.state.AddTotalAddressCount(1);
             }
 
             return result;
