@@ -17,11 +17,16 @@ namespace StateOfNeo.Server.Controllers
     {
         private readonly IPaginatingService paginating;
         private readonly ITransactionService transactions;
+        private readonly IStateService state;
 
-        public TransactionsController(IPaginatingService paginating, ITransactionService transactions)
+        public TransactionsController(
+            IPaginatingService paginating,
+            ITransactionService transactions,
+            IStateService state)
         {
             this.paginating = paginating;
             this.transactions = transactions;
+            this.state = state;
         }
 
         [HttpGet("[action]/{hash}")]
@@ -122,13 +127,13 @@ namespace StateOfNeo.Server.Controllers
         [HttpGet("[action]")]
         public IActionResult Total()
         {
-            return this.Ok(BlockPersister.TotalTxCount);
+            return this.Ok(this.state.GetTotalTxCount());
         }
 
         [HttpGet("[action]")]
         public IActionResult TotalClaimed()
         {
-            return this.Ok(BlockPersister.TotalClaimed);
+            return this.Ok(this.state.GetTotalClaimed());
         }
     }
 }
