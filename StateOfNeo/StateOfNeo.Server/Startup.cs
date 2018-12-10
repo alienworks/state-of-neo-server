@@ -17,6 +17,7 @@ using StateOfNeo.Data.Seed;
 using StateOfNeo.Infrastructure.Mapping;
 using StateOfNeo.Server.Actors;
 using StateOfNeo.Server.Cache;
+using StateOfNeo.Server.Common;
 using StateOfNeo.Server.Hubs;
 using StateOfNeo.Server.Infrastructure;
 using StateOfNeo.Services;
@@ -54,6 +55,7 @@ namespace StateOfNeo.Server
             services.AddResponseCaching();
 
             services.Configure<NetSettings>(this.Configuration.GetSection("NetSettings"));
+            services.Configure<ImportBlocksSettings>(this.Configuration.GetSection("Plugins.ImportBlocks"));
             services.Configure<DbSettings>(this.Configuration.GetSection("ConnectionStrings"));
 
             // Data.Services
@@ -100,6 +102,7 @@ namespace StateOfNeo.Server
             StateOfNeoContext ctx,
             IServiceProvider services,
             IOptions<NetSettings> netSettings,
+            IOptions<ImportBlocksSettings> importSettings,
             IHubContext<StatsHub> statsHub,
             IHubContext<NotificationHub> notificationHub, 
             RPCNodeCaller nodeCaller,
@@ -113,6 +116,9 @@ namespace StateOfNeo.Server
                 statsHub,
                 notificationHub,
                 netSettings.Value.Net));
+
+            new ImportBlocks(importSettings.Value.MaxOnImportHeight);
+
             //Program.NeoSystem.ActorSystem.ActorOf(NodePersister.Props(
             //    Program.NeoSystem.Blockchain,
             //    connectionString,
