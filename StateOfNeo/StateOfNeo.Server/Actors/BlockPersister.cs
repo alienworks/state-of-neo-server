@@ -67,7 +67,13 @@ namespace StateOfNeo.Server.Actors
             blockchain.Tell(new Register());
         }
 
-        public static Props Props(IActorRef blockchain, string connectionString, IStateService state, IHubContext<StatsHub> statsHub, string net) =>
+        public static Props Props(
+            IActorRef blockchain, 
+            string connectionString, 
+            IStateService state, 
+            IHubContext<StatsHub> statsHub, 
+            string net
+            ) =>
             Akka.Actor.Props.Create(() => new BlockPersister(blockchain, connectionString, state, statsHub, net));
 
         protected override void OnReceive(object message)
