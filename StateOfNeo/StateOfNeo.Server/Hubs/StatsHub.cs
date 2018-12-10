@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.SignalR;
 using StateOfNeo.Data;
 using StateOfNeo.Server.Actors;
+using StateOfNeo.Services;
 using StateOfNeo.ViewModels;
 using System.Linq;
 using System.Threading.Tasks;
@@ -10,20 +11,20 @@ namespace StateOfNeo.Server.Hubs
 {
     public class StatsHub : Hub
     {
-        private readonly StateOfNeoContext db;
+        private readonly IStateService state;
 
-        public StatsHub(StateOfNeoContext db)
+        public StatsHub(IStateService state)
         {
-            this.db = db;
+            this.state = state;
         }
 
         public override async Task OnConnectedAsync()
         {
-            await this.Clients.All.SendAsync("header", BlockPersister.HeaderStats);
-            await this.Clients.All.SendAsync("tx-count", BlockPersister.TotalTxCount);
-            await this.Clients.All.SendAsync("address-count", BlockPersister.TotalAddressCount);
-            await this.Clients.All.SendAsync("assets-count", BlockPersister.TotalAssetsCount);
-            await this.Clients.All.SendAsync("total-claimed", BlockPersister.TotalClaimed);
+            await this.Clients.All.SendAsync("header", this.state.GetHeaderStats());
+            await this.Clients.All.SendAsync("tx-count", this.state.GetTotalTxCount());
+            await this.Clients.All.SendAsync("address-count", this.state.GetTotalAddressCount());
+            await this.Clients.All.SendAsync("assets-count", this.state.GetTotalAssetsCount());
+            await this.Clients.All.SendAsync("total-claimed", this.state.GetTotalClaimed());
         }
     }
 }

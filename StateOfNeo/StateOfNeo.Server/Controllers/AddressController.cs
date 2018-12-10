@@ -14,11 +14,13 @@ namespace StateOfNeo.Server.Controllers
     {
         private readonly IAddressService addresses;
         private readonly IPaginatingService paginating;
+        private readonly IStateService state;
 
-        public AddressController(IAddressService addresses, IPaginatingService paginating)
+        public AddressController(IAddressService addresses, IPaginatingService paginating, IStateService state)
         {
             this.addresses = addresses;
             this.paginating = paginating;
+            this.state = state;
         }
 
         [HttpGet("[action]/{address}")]
@@ -65,7 +67,7 @@ namespace StateOfNeo.Server.Controllers
         [HttpGet("[action]")]
         public IActionResult Created()
         {
-            return this.Ok(BlockPersister.TotalAddressCount);
+            return this.Ok(this.state.GetTotalAddressCount());
         }
 
         [HttpGet("[action]")]
