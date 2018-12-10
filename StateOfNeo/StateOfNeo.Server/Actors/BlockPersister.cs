@@ -45,30 +45,39 @@ namespace StateOfNeo.Server.Actors
         private readonly string connectionString;
         private readonly string net;
         private readonly IHubContext<StatsHub> statsHub;
+        private readonly IHubContext<NotificationHub> notificationHub;
         private IStateService state;
 
         private readonly ICollection<Data.Models.Asset> pendingAssets = new List<Data.Models.Asset>();
         private readonly ICollection<Data.Models.Address> pendingAddresses = new List<Data.Models.Address>();
         private readonly ICollection<Data.Models.AddressAssetBalance> pendingBalances = new List<Data.Models.AddressAssetBalance>();
 
-        //public static HeaderStatsViewModel HeaderStats;
-        //public static long TotalTxCount = 0;
-        //public static int TotalAddressCount = 0;
-        //public static int TotalAssetsCount = 0;
-        //public static decimal TotalClaimed = 0;
-
-        public BlockPersister(IActorRef blockchain, string connectionString, IStateService state, IHubContext<StatsHub> statsHub, string net)
+        public BlockPersister(
+            IActorRef blockchain,
+            string connectionString,
+            IStateService state,
+            IHubContext<StatsHub> statsHub,
+            IHubContext<NotificationHub> notificationHub,
+            string net)
         {
             this.connectionString = connectionString;
             this.statsHub = statsHub;
+            this.notificationHub = notificationHub;
             this.net = net;
             this.state = state;
 
             blockchain.Tell(new Register());
         }
 
-        public static Props Props(IActorRef blockchain, string connectionString, IStateService state, IHubContext<StatsHub> statsHub, string net) =>
-            Akka.Actor.Props.Create(() => new BlockPersister(blockchain, connectionString, state, statsHub, net));
+        public static Props Props(
+            IActorRef blockchain,
+            string connectionString,
+            IStateService state,
+            IHubContext<StatsHub> statsHub,
+            IHubContext<NotificationHub> notificationHub,
+            string net) =>
+                Akka.Actor.Props.Create(() =>
+                    new BlockPersister(blockchain, connectionString, state, statsHub, notificationHub, net));
 
         protected override void OnReceive(object message)
         {
@@ -457,12 +466,15 @@ namespace StateOfNeo.Server.Actors
 
             foreach (var item in result.Notifications)
             {
+                var contractHash = item.ScriptHash.ToString();
                 var type = item.GetNotificationType();
+                string[] notificationStringArray = item.State is Neo.VM.Types.Array ?
+                    (item.State as Neo.VM.Types.Array).ToStringList().ToArray() : new string[] { type };
+
                 if (type == "transfer")
                 {
                     var name = this.TestInvoke(item.ScriptHash, "name").HexStringToString();
-                    var assetHash = item.ScriptHash.ToString();
-                    var asset = this.GetAsset(db, assetHash);
+                    var asset = this.GetAsset(db, contractHash);
                     var symbol = this.TestInvoke(item.ScriptHash, "symbol").HexStringToString();
                     if (asset == null)
                     {
@@ -482,14 +494,14 @@ namespace StateOfNeo.Server.Actors
                         }
                         catch (Exception e)
                         {
-                            Log.Warning($"Getting totalSupply throw an error for contract - {assetHash}. In this Max and Total supply are set to null");
+                            Log.Warning($"Getting totalSupply throw an error for contract - {contractHash}. In this Max and Total supply are set to null");
                         }
 
                         asset = new Asset
                         {
                             CreatedOn = DateTime.UtcNow,
                             GlobalType = null,
-                            Hash = assetHash,
+                            Hash = contractHash,
                             Name = name,
                             MaxSupply = totalSupply,
                             Type = AssetType.NEP5,
@@ -513,12 +525,11 @@ namespace StateOfNeo.Server.Actors
 
                     db.AssetsInTransactions.Add(assetInTransaction);
 
-                    var notificationStringArray = (item.State as Neo.VM.Types.Array).ToStringList();
                     var isLfx = symbol.ToLower() == "lfx";
                     var notification = isLfx ? item.GetNotification<TransferNotification>(2) : item.GetNotification<TransferNotification>();
 
                     if (notification.Amount == 0) Log.Warning($"Transfer with 0 amount value or empty array for {name}/{symbol}");
-                    if (isLfx) Log.Warning($"Transfer in {name}/{symbol} returns wrong number of arguments {notificationStringArray.Count()} - {string.Join(" | ", notificationStringArray)}");
+                    if (isLfx) Log.Warning($"Transfer in {name}/{symbol} returns wrong number of arguments {type} - {string.Join(" | ", notificationStringArray)}");
 
                     string from = null;
 
@@ -617,12 +628,21 @@ namespace StateOfNeo.Server.Actors
                 }
                 else
                 {
-                    Log.Information($@"Notification of type - {type} has been thrown by contract - {item.ScriptHash.ToString()}
+                    Log.Information($@"Notification of type - {type} has been thrown by contract - {contractHash}
                         This is for tx = {transaction.Hash.ToString()}");
                 }
+
+                this.state.SetOrAddNotificationsForContract(contractHash, blockTime.ToUnixTimestamp(), notificationStringArray);
+                this.notificationHub
+                    .Clients
+                    .Group(contractHash)
+                    .SendAsync("receive", this.state.GetNotificationsForContract(contractHash));
+                this.notificationHub
+                    .Clients
+                    .All
+                    .SendAsync("all", this.state.GetNotificationsForContract(NotificationConstants.AllNotificationsKey));
             }
         }
-
 
         private string TestInvoke(UInt160 contractHash, string operation, params object[] args)
         {

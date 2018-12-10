@@ -1,4 +1,6 @@
 ﻿using StateOfNeo.ViewModels;
+using StateOfNeo.ViewModels.Hub;
+using System.Collections.Generic;
 
 namespace StateOfNeo.Services
 {
@@ -18,5 +20,8 @@ namespace StateOfNeo.Services
 
         decimal GetTotalClaimed();
         void AddTotalClaimed(decimal amount);
+
+        IEnumerable<NotificationHubViewModel> GetNotificationsForContract(string hash);
+        void SetOrAddNotificationsForContract(string hash, long timestamp, string[] values);
     }
 }

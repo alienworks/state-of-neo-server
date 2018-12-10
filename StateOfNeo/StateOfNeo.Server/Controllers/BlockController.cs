@@ -14,13 +14,11 @@ namespace StateOfNeo.Server.Controllers
 {
     public class BlockController : BaseApiController
     {
-        private readonly IHubContext<BlockHub> blockHub;
         private readonly IBlockService blocks;
         private readonly IPaginatingService paginating;
 
-        public BlockController(IHubContext<BlockHub> blockHub, IBlockService blocks, IPaginatingService paginating)
+        public BlockController(IBlockService blocks, IPaginatingService paginating)
         {
-            this.blockHub = blockHub;
             this.blocks = blocks;
             this.paginating = paginating;
         }
@@ -79,12 +77,6 @@ namespace StateOfNeo.Server.Controllers
         public IActionResult GetHeight()
         {
             return this.Ok(Blockchain.Singleton.Height.ToString());
-        }
-
-        [HttpPost]
-        public async Task Post()
-        {
-            await blockHub.Clients.All.SendAsync(Blockchain.Singleton.Height.ToString());
         }
 
         [HttpGet("[action]")]

@@ -6,6 +6,7 @@ using StateOfNeo.Common.Enums;
 using StateOfNeo.Data;
 using StateOfNeo.ViewModels;
 using StateOfNeo.ViewModels.Chart;
+using StateOfNeo.ViewModels.Hub;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -13,7 +14,7 @@ namespace StateOfNeo.Services
 {
     public class StateService : IStateService
     {
-        private Dictionary<string, Dictionary<UnitOfTime, IEnumerable<ChartStatsViewModel>>> charts;
+        //private Dictionary<string, Dictionary<UnitOfTime, IEnumerable<ChartStatsViewModel>>> charts;
         private readonly StateOfNeoContext db;
 
         private HeaderStatsViewModel headerStats;
@@ -21,6 +22,8 @@ namespace StateOfNeo.Services
         private int? totalAddressCount;
         private int? totalAssetsCount;
         private decimal? totalClaimed;
+
+        private IDictionary<string, List<NotificationHubViewModel>> contractsNotifications;
 
         public StateService(IOptions<DbSettings> dbOptions)
         {
@@ -31,6 +34,8 @@ namespace StateOfNeo.Services
             this.GetTotalAddressCount();
             this.GetTotalAssetsCount();
             this.GetTotalClaimed();
+
+            this.contractsNotifications = new Dictionary<string, List<NotificationHubViewModel>>();
         }
 
         public HeaderStatsViewModel GetHeaderStats()
@@ -101,6 +106,40 @@ namespace StateOfNeo.Services
         public void AddTotalClaimed(decimal amount)
         {
             this.totalClaimed = this.GetTotalClaimed() + amount;
+        }
+
+        public IEnumerable<NotificationHubViewModel> GetNotificationsForContract(string hash)
+        {
+            if (!this.contractsNotifications.ContainsKey(hash))
+            {
+                return null;
+            }
+
+            return this.contractsNotifications[hash];
+        }
+
+        public void SetOrAddNotificationsForContract(string hash, long timestamp, string[] values)
+        {
+            var newValue = new NotificationHubViewModel(timestamp, hash, values);
+            if (!this.contractsNotifications.ContainsKey(hash))
+            {
+                this.contractsNotifications.Add(hash, new List<NotificationHubViewModel> { newValue });
+            }
+            else
+            {
+                this.contractsNotifications[hash].Add(newValue);
+
+                if (this.contractsNotifications[hash].Count > NotificationConstants.MaxNotificationCount)
+                {
+                    this.contractsNotifications[hash] =
+                        this.contractsNotifications[hash].Take(NotificationConstants.MaxNotificationCount).ToList();
+                }
+
+                if (hash != NotificationConstants.AllNotificationsKey)
+                {
+                    this.SetOrAddNotificationsForContract(NotificationConstants.AllNotificationsKey, timestamp,  values);
+                }
+            }
         }
     }
 }
