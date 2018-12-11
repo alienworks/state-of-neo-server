@@ -1,4 +1,8 @@
-﻿using StateOfNeo.ViewModels;
+﻿using StateOfNeo.Common.Enums;
+using StateOfNeo.ViewModels;
+using StateOfNeo.ViewModels.Chart;
+using System;
+using System.Collections.Generic;
 
 namespace StateOfNeo.Services
 {
@@ -18,5 +22,8 @@ namespace StateOfNeo.Services
 
         decimal GetTotalClaimed();
         void AddTotalClaimed(decimal amount);
+
+        ICollection<ChartStatsViewModel> GetTransactionsChart(UnitOfTime unitOfTime, int count);
+        void AddTransactions(int count, DateTime time);
     }
 }

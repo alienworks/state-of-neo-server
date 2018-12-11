@@ -82,7 +82,8 @@ namespace StateOfNeo.Server.Controllers
         [ResponseCache(Duration = CachingConstants.Hour)]
         public IActionResult Chart([FromBody]ChartFilterViewModel filter)
         {
-            var result = this.transactions.GetStats(filter);
+            //var result = this.transactions.GetStats(filter);
+            var result = this.state.GetTransactionsChart(filter.UnitOfTime, filter.EndPeriod);
             return this.Ok(result);
         }
         
