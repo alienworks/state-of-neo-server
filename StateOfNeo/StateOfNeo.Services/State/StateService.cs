@@ -111,7 +111,7 @@ namespace StateOfNeo.Services
         }
 
         public ICollection<ChartStatsViewModel> GetTransactionsChart(UnitOfTime unitOfTime, int count) =>
-            this.GetChart("transactions")[unitOfTime].Take(count).ToList();
+            this.GetChart("transactions")[unitOfTime].OrderByDescending(x => x.StartDate).Take(count).ToList();
 
         public void AddTotalClaimed(decimal amount)
         {
