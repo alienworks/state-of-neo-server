@@ -420,6 +420,8 @@ namespace StateOfNeo.Server.Actors
                 block.Transactions.Add(transaction);
             }
 
+            this.state.AddTransactions(blockToPersist.Transactions.Length, blockTime);
+
             return block;
         }
 
