@@ -17,13 +17,6 @@ namespace StateOfNeo.Services
 {
     public class StateService : IStateService
     {
-using System.Collections.Generic;
-using System.Linq;
-
-namespace StateOfNeo.Services
-{
-    public class StateService : IStateService
-    {
         private Dictionary<string, Dictionary<UnitOfTime, ICollection<ChartStatsViewModel>>> charts = new Dictionary<string, Dictionary<UnitOfTime, ICollection<ChartStatsViewModel>>>();
         private ICollection<ChartStatsViewModel> transactionTypes = new List<ChartStatsViewModel>();
         private DateTime? transactionTypesLastUpdate;
