@@ -118,26 +118,26 @@ namespace StateOfNeo.Services
             return this.contractsNotifications[hash];
         }
 
-        public void SetOrAddNotificationsForContract(string hash, long timestamp, string[] values)
+        public void SetOrAddNotificationsForContract(string key, string hash, long timestamp, string type, string[] values)
         {
-            var newValue = new NotificationHubViewModel(timestamp, hash, values);
-            if (!this.contractsNotifications.ContainsKey(hash))
+            var newValue = new NotificationHubViewModel(timestamp, hash, type, values);
+            if (!this.contractsNotifications.ContainsKey(key))
             {
-                this.contractsNotifications.Add(hash, new List<NotificationHubViewModel> { newValue });
+                this.contractsNotifications.Add(key, new List<NotificationHubViewModel> { newValue });
             }
             else
             {
-                this.contractsNotifications[hash].Add(newValue);
+                this.contractsNotifications[key].Insert(0, newValue);
 
-                if (this.contractsNotifications[hash].Count > NotificationConstants.MaxNotificationCount)
+                if (this.contractsNotifications[key].Count > NotificationConstants.MaxNotificationCount)
                 {
-                    this.contractsNotifications[hash] =
-                        this.contractsNotifications[hash].Take(NotificationConstants.MaxNotificationCount).ToList();
+                    this.contractsNotifications[key] =
+                        this.contractsNotifications[key].Take(NotificationConstants.MaxNotificationCount).ToList();
                 }
 
-                if (hash != NotificationConstants.AllNotificationsKey)
+                if (key != NotificationConstants.AllNotificationsKey)
                 {
-                    this.SetOrAddNotificationsForContract(NotificationConstants.AllNotificationsKey, timestamp,  values);
+                    this.SetOrAddNotificationsForContract(NotificationConstants.AllNotificationsKey, hash, timestamp, type, values);
                 }
             }
         }

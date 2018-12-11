@@ -29,7 +29,22 @@ namespace StateOfNeo.Server.Hubs
             var contractHash = this.CheckAndGetProperContractHash(hash);
             if (contractHash != null)
             {
-                await this.Groups.AddToGroupAsync(Context.ConnectionId, contractHash);
+                await this.Groups.AddToGroupAsync(this.Context.ConnectionId, contractHash);
+                await this.Clients.Group(contractHash).SendAsync("contract", this.state.GetNotificationsForContract(contractHash));
+            }
+            else
+            {
+                await this.Clients.Caller.SendAsync("hash-error", $"Hash : {hash} is with wrong value or length please enter new one");
+            }
+        }
+
+        public async Task Unsubscribe(string hash)
+        {
+            var contractHash = this.CheckAndGetProperContractHash(hash);
+            if (contractHash != null)
+            {
+                await this.Groups.RemoveFromGroupAsync(this.Context.ConnectionId, contractHash);
+                await this.Clients.Caller.SendAsync("unsubscribed", contractHash);
             }
             else
             {

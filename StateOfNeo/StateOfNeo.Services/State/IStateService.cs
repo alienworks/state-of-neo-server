@@ -22,6 +22,6 @@ namespace StateOfNeo.Services
         void AddTotalClaimed(decimal amount);
 
         IEnumerable<NotificationHubViewModel> GetNotificationsForContract(string hash);
-        void SetOrAddNotificationsForContract(string hash, long timestamp, string[] values);
+        void SetOrAddNotificationsForContract(string key, string hash, long timestamp, string type, string[] values);
     }
 }

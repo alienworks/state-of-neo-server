@@ -632,11 +632,11 @@ namespace StateOfNeo.Server.Actors
                         This is for tx = {transaction.Hash.ToString()}");
                 }
 
-                this.state.SetOrAddNotificationsForContract(contractHash, blockTime.ToUnixTimestamp(), notificationStringArray);
+                this.state.SetOrAddNotificationsForContract(contractHash, contractHash, blockTime.ToUnixTimestamp(), type, notificationStringArray);
                 this.notificationHub
                     .Clients
                     .Group(contractHash)
-                    .SendAsync("receive", this.state.GetNotificationsForContract(contractHash));
+                    .SendAsync("contract", this.state.GetNotificationsForContract(contractHash));
                 this.notificationHub
                     .Clients
                     .All

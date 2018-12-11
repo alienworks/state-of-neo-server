@@ -58,7 +58,7 @@ namespace StateOfNeo.Common.Extensions
         {
             return stackItems.Skip(toSkip)
                 .Select(si => (si is Neo.VM.Types.Array) ?
-                    string.Join(", ", (si as Neo.VM.Types.Array).ToStringList()) : si.GetByteArray().ToHexString().HexStringToString());
+                    string.Join(", ", (si as Neo.VM.Types.Array).ToStringList()) : si.GetByteArray().ToHexString());
         }
 
         private static void SetPropertyValue(string propertyName, object instance, object value) =>
