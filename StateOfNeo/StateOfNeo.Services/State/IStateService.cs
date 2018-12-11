@@ -1,8 +1,9 @@
 ﻿using StateOfNeo.Common.Enums;
 using StateOfNeo.ViewModels;
+using StateOfNeo.ViewModels.Hub;
+using System.Collections.Generic;
 using StateOfNeo.ViewModels.Chart;
 using System;
-using System.Collections.Generic;
 
 namespace StateOfNeo.Services
 {
@@ -25,5 +26,8 @@ namespace StateOfNeo.Services
 
         ICollection<ChartStatsViewModel> GetTransactionsChart(UnitOfTime unitOfTime, int count);
         void AddTransactions(int count, DateTime time);
+
+        IEnumerable<NotificationHubViewModel> GetNotificationsForContract(string hash);
+        void SetOrAddNotificationsForContract(string hash, long timestamp, string[] values);
     }
 }

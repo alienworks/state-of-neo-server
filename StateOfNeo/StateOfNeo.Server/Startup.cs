@@ -104,6 +104,7 @@ namespace StateOfNeo.Server
             IOptions<NetSettings> netSettings,
             IOptions<ImportBlocksSettings> importSettings,
             IHubContext<StatsHub> statsHub,
+            IHubContext<NotificationHub> notificationHub, 
             RPCNodeCaller nodeCaller,
             IStateService state)
         {
@@ -113,6 +114,7 @@ namespace StateOfNeo.Server
                 connectionString,
                 state,
                 statsHub,
+                notificationHub,
                 netSettings.Value.Net));
 
             new ImportBlocks(importSettings.Value.MaxOnImportHeight);
@@ -148,9 +150,8 @@ namespace StateOfNeo.Server
             app.UseSignalR(routes =>
             {
                 routes.MapHub<StatsHub>("/hubs/stats");
-                routes.MapHub<BlockHub>("/hubs/block");
                 routes.MapHub<NodeHub>("/hubs/node");
-                routes.MapHub<FailedP2PHub>("/hubs/fail-p2p"); 
+                routes.MapHub<NotificationHub>("/hubs/notification");
             });
 
             seeder.Init();

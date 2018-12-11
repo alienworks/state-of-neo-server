@@ -20,17 +20,15 @@ namespace StateOfNeo.Server.Controllers
     [ResponseCache(Duration = CachingConstants.Hour)]
     public class NodeController : BaseApiController
     {
-        private readonly IHubContext<NodeHub> nodeHub;
         private readonly NodeCache nodeCache;
         private readonly NodeSynchronizer nodeSynchronizer;
         private readonly INodeService nodeService;
 
-        public NodeController(IHubContext<NodeHub> nodeHub,
+        public NodeController(
             NodeCache nodeCache,
             NodeSynchronizer nodeSynchronizer,
             INodeService nodeService)
         {
-            this.nodeHub = nodeHub;
             this.nodeCache = nodeCache;
             this.nodeSynchronizer = nodeSynchronizer;
             this.nodeService = nodeService;
