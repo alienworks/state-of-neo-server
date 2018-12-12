@@ -33,7 +33,6 @@ namespace StateOfNeo.Services
         private decimal? totalClaimed;
 
         private IDictionary<string, List<NotificationHubViewModel>> contractsNotifications;
-        private IDictionary<string, KeyValuePair<string, string>> contractsInfo;
 
         public StateService(IOptions<DbSettings> dbOptions)
         {
@@ -47,7 +46,6 @@ namespace StateOfNeo.Services
             this.GetTotalClaimed();
 
             this.contractsNotifications = new Dictionary<string, List<NotificationHubViewModel>>();
-            this.contractsInfo = new Dictionary<string, KeyValuePair<string, string>>();
 
             this.UpdateTransactionTypes();
             this.LoadTransactionsMainChart();
