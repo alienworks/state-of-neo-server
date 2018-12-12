@@ -45,6 +45,8 @@ namespace StateOfNeo.Server.Hubs
             {
                 await this.Groups.RemoveFromGroupAsync(this.Context.ConnectionId, contractHash);
                 await this.Clients.Caller.SendAsync("unsubscribed", contractHash);
+                await this.Clients.All.SendAsync("all",
+                    this.state.GetNotificationsForContract(NotificationConstants.AllNotificationsKey));
             }
             else
             {

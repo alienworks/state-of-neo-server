@@ -4,6 +4,8 @@
     {
         public long Timestamp { get; set; }
         public string ContractHash { get; set; }
+        public string ContractName { get; set; }
+        public string ContractAuthor { get; set; }
         public string Type { get; set; }
         public string[] Values { get; set; }
 
@@ -13,6 +15,12 @@
             this.ContractHash = contractHash;
             this.Type = type;
             this.Values = values;
+        }
+
+        public void SetContractInfo(string name, string author)
+        {
+            this.ContractName = name;
+            this.ContractAuthor = author;
         }
     }
 }

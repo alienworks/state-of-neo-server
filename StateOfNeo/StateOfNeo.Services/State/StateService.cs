@@ -12,6 +12,10 @@ using System;
 using StateOfNeo.ViewModels.Hub;
 using System.Collections.Generic;
 using System.Linq;
+using System.Diagnostics;
+using Serilog;
+using Neo.Ledger;
+using Neo;
 
 namespace StateOfNeo.Services
 {
@@ -29,9 +33,11 @@ namespace StateOfNeo.Services
         private decimal? totalClaimed;
 
         private IDictionary<string, List<NotificationHubViewModel>> contractsNotifications;
+        private IDictionary<string, KeyValuePair<string, string>> contractsInfo;
 
         public StateService(IOptions<DbSettings> dbOptions)
         {
+            Stopwatch stopwatch = Stopwatch.StartNew();
             this.db = StateOfNeoContext.Create(dbOptions.Value.DefaultConnection);
 
             this.GetHeaderStats();
@@ -41,8 +47,12 @@ namespace StateOfNeo.Services
             this.GetTotalClaimed();
 
             this.contractsNotifications = new Dictionary<string, List<NotificationHubViewModel>>();
+            this.contractsInfo = new Dictionary<string, KeyValuePair<string, string>>();
+
             this.UpdateTransactionTypes();
             this.LoadTransactionsMainChart();
+            stopwatch.Stop();
+            Log.Information($"{nameof(StateService)} initialization {stopwatch.ElapsedMilliseconds} ms");
         }
 
         public HeaderStatsViewModel GetHeaderStats()
@@ -133,10 +143,21 @@ namespace StateOfNeo.Services
             var newValue = new NotificationHubViewModel(timestamp, hash, type, values);
             if (!this.contractsNotifications.ContainsKey(key))
             {
+                UpdateNotificationContractInfo(hash, newValue);
                 this.contractsNotifications.Add(key, new List<NotificationHubViewModel> { newValue });
             }
             else
             {
+                if (key != NotificationConstants.AllNotificationsKey)
+                {
+                    var existingNotification = this.contractsNotifications[key].First();
+                    newValue.SetContractInfo(existingNotification.ContractName, existingNotification.ContractAuthor);
+                }
+                else
+                {
+                    UpdateNotificationContractInfo(hash, newValue);
+                }
+
                 this.contractsNotifications[key].Insert(0, newValue);
 
                 if (this.contractsNotifications[key].Count > NotificationConstants.MaxNotificationCount)
@@ -152,6 +173,16 @@ namespace StateOfNeo.Services
             }
         }
 
+        private static void UpdateNotificationContractInfo(string hash, NotificationHubViewModel newValue)
+        {
+            var scripthash = UInt160.Parse(hash);
+            var contract = Blockchain.Singleton.Store.GetContracts().TryGet(scripthash);
+            var contractName = contract.Name;
+            var contractAuthor = contract.Author;
+
+            newValue.SetContractInfo(contractName, contractAuthor);
+        }
+
         public void AddTransactions(int count, DateTime time)
         {
             this.AddTransactionsForPeriod(count, time, UnitOfTime.Hour);
@@ -164,7 +195,7 @@ namespace StateOfNeo.Services
 
         public IEnumerable<ChartStatsViewModel> GetTransactionTypes()
         {
-            if (this.transactionTypesLastUpdate == null 
+            if (this.transactionTypesLastUpdate == null
                 || this.transactionTypesLastUpdate.Value.AddHours(6) <= DateTime.UtcNow)
             {
                 this.UpdateTransactionTypes();
