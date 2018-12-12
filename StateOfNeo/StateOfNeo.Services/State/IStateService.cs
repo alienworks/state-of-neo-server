@@ -33,9 +33,11 @@ namespace StateOfNeo.Services
         ICollection<ChartStatsViewModel> GetBlockSizesChart(UnitOfTime unitOfTime, int count);
         void AddBlockSize(int size, DateTime time);
 
+        ICollection<ChartStatsViewModel> GetBlockTimesChart(UnitOfTime unitOfTime, int count);
+        void AddBlockTime(double blockSeconds, DateTime time);
+
         ICollection<ChartStatsViewModel> GetBlockTransactionsChart(UnitOfTime unitOfTime, int count);
         void AddBlockTransactions(int transactions, DateTime time);
-
 
         IEnumerable<NotificationHubViewModel> GetNotificationsForContract(string hash);
         void SetOrAddNotificationsForContract(string key, string hash, long timestamp, string type, string[] values);
