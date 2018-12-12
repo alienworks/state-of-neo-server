@@ -686,6 +686,10 @@ namespace StateOfNeo.Server.Actors
             this.state.AddToTotalTxCount(transactions);
 
             this.EmitStatsInfo();
+            
+            this.pendingAddresses.Clear();
+            this.pendingAssets.Clear();
+            this.pendingBalances.Clear();
         }
 
         private void EmitStatsInfo()
@@ -764,6 +768,7 @@ namespace StateOfNeo.Server.Actors
                 pendingAddresses.Add(result);
 
                 this.state.AddTotalAddressCount(1);
+                this.state.AddAddresses(1, blockTime);
             }
 
             return result;

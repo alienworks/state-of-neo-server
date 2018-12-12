@@ -14,5 +14,7 @@ namespace StateOfNeo.ViewModels.Chart
         public UnitOfTime UnitOfTime { get; set; }
 
         public decimal Value { get; set; }
+
+        public decimal AccumulatedValue { get; set; }
     }
 }

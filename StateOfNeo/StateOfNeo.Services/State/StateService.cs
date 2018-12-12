@@ -41,8 +41,9 @@ namespace StateOfNeo.Services
             this.GetTotalClaimed();
 
             this.contractsNotifications = new Dictionary<string, List<NotificationHubViewModel>>();
-            this.UpdateTransactionTypes();
+            this.LoadTransactionTypes();
             this.LoadTransactionsMainChart();
+            this.LoadCreatedAddressesMainChart();
         }
 
         public HeaderStatsViewModel GetHeaderStats()
@@ -110,8 +111,38 @@ namespace StateOfNeo.Services
             return this.totalClaimed.Value;
         }
 
+        public ICollection<ChartStatsViewModel> GetAssetsChart(UnitOfTime unitOfTime, int count) =>
+            this.GetChart("assets")[unitOfTime].OrderByDescending(x => x.StartDate).Take(count).ToList();
+
+        public ICollection<ChartStatsViewModel> GetAddressesChart(UnitOfTime unitOfTime, int count) =>
+            this.GetChart("createdAddresses")[unitOfTime].OrderByDescending(x => x.StartDate).Take(count).ToList();
+
         public ICollection<ChartStatsViewModel> GetTransactionsChart(UnitOfTime unitOfTime, int count) =>
             this.GetChart("transactions")[unitOfTime].OrderByDescending(x => x.StartDate).Take(count).ToList();
+        
+        public ICollection<ChartStatsViewModel> GetBlockSizesChart(UnitOfTime unitOfTime, int count) =>
+            this.GetChart("blockSizes")[unitOfTime]
+                .OrderByDescending(x => x.StartDate)
+                .Take(count)
+                .Select(x => new ChartStatsViewModel { Label = x.Label, Value = x.AccumulatedValue / x.Value })
+                .ToList();
+
+        public void AddBlockSize(int size, DateTime time)
+        {
+            this.AddChartValues("blockSizes", 1, time, UnitOfTime.Hour, size);
+            this.AddChartValues("blockSizes", 1, time, UnitOfTime.Day, size);
+            this.AddChartValues("blockSizes", 1, time, UnitOfTime.Month, size);
+        }
+
+        public ICollection<ChartStatsViewModel> GetBlockTransactionsChart(UnitOfTime unitOfTime, int count) =>
+            this.GetChart("blockTransactions")[unitOfTime].OrderByDescending(x => x.StartDate).Take(count).ToList();
+
+        public void AddBlockTransactions(int transactions, DateTime time)
+        {
+            this.AddChartValues("blockTransactions", 1, time, UnitOfTime.Hour, transactions);
+            this.AddChartValues("blockTransactions", 1, time, UnitOfTime.Day, transactions);
+            this.AddChartValues("blockTransactions", 1, time, UnitOfTime.Month, transactions);
+        }
 
         public void AddTotalClaimed(decimal amount)
         {
@@ -151,12 +182,19 @@ namespace StateOfNeo.Services
                 }
             }
         }
+        
+        public void AddAddresses(int count, DateTime time)
+        {
+            this.AddChartValues("createdAddresses", count, time, UnitOfTime.Hour);
+            this.AddChartValues("createdAddresses", count, time, UnitOfTime.Day);
+            this.AddChartValues("createdAddresses", count, time, UnitOfTime.Month);
+        }
 
         public void AddTransactions(int count, DateTime time)
         {
-            this.AddTransactionsForPeriod(count, time, UnitOfTime.Hour);
-            this.AddTransactionsForPeriod(count, time, UnitOfTime.Day);
-            this.AddTransactionsForPeriod(count, time, UnitOfTime.Month);
+            this.AddChartValues("transactions", count, time, UnitOfTime.Hour);
+            this.AddChartValues("transactions", count, time, UnitOfTime.Day);
+            this.AddChartValues("transactions", count, time, UnitOfTime.Month);
         }
 
         public IEnumerable<ChartStatsViewModel> GetTransactionsPer(UnitOfTime unitOfTime, int count) =>
@@ -167,13 +205,13 @@ namespace StateOfNeo.Services
             if (this.transactionTypesLastUpdate == null 
                 || this.transactionTypesLastUpdate.Value.AddHours(6) <= DateTime.UtcNow)
             {
-                this.UpdateTransactionTypes();
+                this.LoadTransactionTypes();
             }
 
             return this.transactionTypes;
         }
 
-        public void UpdateTransactionTypes()
+        public void LoadTransactionTypes()
         {
             this.transactionTypes = this.db.Transactions
                  .Select(x => x.Type)
@@ -191,12 +229,88 @@ namespace StateOfNeo.Services
         public void LoadTransactionsMainChart()
         {
             var transactions = this.GetChart("transactions");
-            transactions[UnitOfTime.Hour] = this.GetStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Hour, EndPeriod = 36 });
-            transactions[UnitOfTime.Day] = this.GetStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Day, EndPeriod = 36 });
-            transactions[UnitOfTime.Month] = this.GetStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Month, EndPeriod = 36 });
+            transactions[UnitOfTime.Hour] = this.GetTransactionsStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Hour, EndPeriod = 36 });
+            transactions[UnitOfTime.Day] = this.GetTransactionsStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Day, EndPeriod = 36 });
+            transactions[UnitOfTime.Month] = this.GetTransactionsStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Month, EndPeriod = 36 });
         }
 
-        public ICollection<ChartStatsViewModel> GetStats(ChartFilterViewModel filter)
+        public void LoadCreatedAddressesMainChart()
+        {
+            var addresses = this.GetChart("createdAddresses");
+            addresses[UnitOfTime.Hour] = this.GetAddressesStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Hour, EndPeriod = 36 });
+            addresses[UnitOfTime.Day] = this.GetAddressesStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Day, EndPeriod = 36 });
+            addresses[UnitOfTime.Month] = this.GetAddressesStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Month, EndPeriod = 36 });
+        }
+
+        private ICollection<ChartStatsViewModel> GetAddressesStats(ChartFilterViewModel filter)
+        {
+            if (filter.StartDate == null)
+            {
+                filter.StartDate = this.db.Addresses
+                    .OrderByDescending(x => x.FirstTransactionOn)
+                    .Select(x => x.FirstTransactionOn)
+                    .FirstOrDefault();
+            }
+
+            var result = new List<ChartStatsViewModel>();
+            var query = this.db.Addresses.Where(x => x.FirstTransactionOn >= filter.GetEndPeriod());
+
+            if (filter.UnitOfTime == UnitOfTime.Hour)
+            {
+                result = query.ToList().GroupBy(x => new
+                {
+                    x.FirstTransactionOn.Year,
+                    x.FirstTransactionOn.Month,
+                    x.FirstTransactionOn.Day,
+                    x.FirstTransactionOn.Hour
+                })
+                .Select(x => new ChartStatsViewModel
+                {
+                    StartDate = new DateTime(x.Key.Year, x.Key.Month, x.Key.Day, x.Key.Hour, 0, 0),
+                    UnitOfTime = UnitOfTime.Hour,
+                    Value = x.Count()
+                })
+                .OrderBy(x => x.StartDate)
+                .ToList();
+            }
+            else if (filter.UnitOfTime == UnitOfTime.Day)
+            {
+                result = query.ToList().GroupBy(x => new
+                {
+                    x.FirstTransactionOn.Year,
+                    x.FirstTransactionOn.Month,
+                    x.FirstTransactionOn.Day
+                })
+                .Select(x => new ChartStatsViewModel
+                {
+                    StartDate = new DateTime(x.Key.Year, x.Key.Month, x.Key.Day),
+                    UnitOfTime = UnitOfTime.Day,
+                    Value = x.Count()
+                })
+                .OrderBy(x => x.StartDate)
+                .ToList();
+            }
+            else if (filter.UnitOfTime == UnitOfTime.Month)
+            {
+                result = query.ToList().GroupBy(x => new
+                {
+                    x.FirstTransactionOn.Year,
+                    x.FirstTransactionOn.Month
+                })
+                .Select(x => new ChartStatsViewModel
+                {
+                    StartDate = new DateTime(x.Key.Year, x.Key.Month, 1),
+                    UnitOfTime = UnitOfTime.Month,
+                    Value = x.Count()
+                })
+                .OrderBy(x => x.StartDate)
+                .ToList();
+            }
+
+            return result;
+        }
+
+        private ICollection<ChartStatsViewModel> GetTransactionsStats(ChartFilterViewModel filter)
         {
             var latestDate = this.db.Transactions
                 .OrderByDescending(x => x.Timestamp)
@@ -227,13 +341,13 @@ namespace StateOfNeo.Services
             return result.ToList();
         }
 
-        private void AddTransactionsForPeriod(int count, DateTime time, UnitOfTime unitOfTime)
+        private void AddChartValues(string chartName, int value, DateTime time, UnitOfTime unitOfTime, int? accumulatedValue = 0)
         {
-            var transactions = this.GetChart("transactions");
-            var lastRecord = transactions[unitOfTime].OrderByDescending(x => x.StartDate).FirstOrDefault();
+            var chart = this.GetChart(chartName);
+            var lastRecord = chart[unitOfTime].OrderByDescending(x => x.StartDate).FirstOrDefault();
             if (lastRecord.StartDate.IsInSamePeriodAs(time, unitOfTime))
             {
-                lastRecord.Value += count;
+                lastRecord.Value += value;
             }
             else
             {
@@ -241,15 +355,20 @@ namespace StateOfNeo.Services
                 {
                     StartDate = time,
                     UnitOfTime = unitOfTime,
-                    Value = count
+                    Value = value
                 };
 
-                if (this.charts["transactions"][unitOfTime].Count > 100)
+                if (this.charts[chartName][unitOfTime].Count > 100)
                 {
-                    this.charts["transactions"][unitOfTime] = this.charts["transactions"][unitOfTime].OrderByDescending(x => x.StartDate).Take(35).ToList();
+                    this.charts[chartName][unitOfTime] = this.charts[chartName][unitOfTime].OrderByDescending(x => x.StartDate).Take(35).ToList();
                 }
 
-                this.charts["transactions"][unitOfTime].Add(lastRecord);
+                this.charts[chartName][unitOfTime].Add(lastRecord);
+            }
+
+            if (accumulatedValue != 0)
+            {
+                lastRecord.AccumulatedValue += accumulatedValue.Value;
             }
         }
 

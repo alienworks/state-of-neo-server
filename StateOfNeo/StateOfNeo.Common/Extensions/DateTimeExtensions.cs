@@ -37,6 +37,5 @@ namespace StateOfNeo.Common.Extensions
 
             return false;
         }
-
     }
 }
