@@ -128,13 +128,13 @@ namespace StateOfNeo.Services
 
         public ICollection<ChartStatsViewModel> GetTransactionsChart(UnitOfTime unitOfTime, int count) =>
             this.GetChart("transactions")[unitOfTime].OrderByDescending(x => x.StartDate).Take(count).ToList();
-        
+
         public ICollection<ChartStatsViewModel> GetBlockSizesChart(UnitOfTime unitOfTime, int count) =>
             this.GetChart("blockSizes")[unitOfTime]
                 .OrderByDescending(x => x.StartDate)
                 .Take(count)
                 .Where(x => x.Value > 0)
-                .Select(x => new ChartStatsViewModel { Label = x.Label, Value = x.AccumulatedValue / x.Value })
+                .Select(x => new ChartStatsViewModel { Label = x.Label, StartDate = x.StartDate, Value = x.AccumulatedValue / x.Value })
                 .ToList();
 
         public ICollection<ChartStatsViewModel> GetBlockTimesChart(UnitOfTime unitOfTime, int count) =>
@@ -142,7 +142,7 @@ namespace StateOfNeo.Services
                 .OrderByDescending(x => x.StartDate)
                 .Take(count)
                 .Where(x => x.Value > 0)
-                .Select(x => new ChartStatsViewModel { Label = x.Label, Value = x.AccumulatedValue / x.Value })
+                .Select(x => new ChartStatsViewModel { Label = x.Label, StartDate = x.StartDate, Value = x.AccumulatedValue / x.Value })
                 .ToList();
 
         public void AddBlockTime(double blockSeconds, DateTime time)
@@ -228,7 +228,7 @@ namespace StateOfNeo.Services
 
             newValue.SetContractInfo(contractName, contractAuthor);
         }
-        
+
         public void AddAddresses(int count, DateTime time)
         {
             this.AddChartValues("createdAddresses", count, time, UnitOfTime.Hour);
@@ -314,13 +314,16 @@ namespace StateOfNeo.Services
             List<ChartStatsViewModel> result = new List<ChartStatsViewModel>();
             foreach (var endStamp in filter.GetPeriodStamps())
             {
-                var avg = this.db.Blocks
-                    .Where(x => x.Timestamp <= latestBlockDate && x.Timestamp >= endStamp)
-                    .Average(x => x.Size);
+                var blockQuery = this.db.Blocks
+                    .Where(x => x.Timestamp <= latestBlockDate && x.Timestamp >= endStamp);
+                var count = blockQuery.Count();
+                var sum = count > 0 ? blockQuery.Sum(x => x.Size) : 0;
 
                 result.Add(new ChartStatsViewModel
                 {
-                    Value = (decimal)avg,
+                    Label = endStamp.ToUnixDate().ToString(),
+                    AccumulatedValue = (decimal)sum,
+                    Value = (decimal)count,
                     StartDate = DateOrderFilter.GetDateTime(endStamp, filter.UnitOfTime),
                     UnitOfTime = filter.UnitOfTime
                 });
@@ -342,13 +345,16 @@ namespace StateOfNeo.Services
             var periods = filter.GetPeriodStamps();
             foreach (var endStamp in periods)
             {
-                var avg = this.db.Blocks
-                    .Where(x => x.Timestamp <= latestBlockDate && x.Timestamp >= endStamp)
-                    .Average(x => x.TimeInSeconds);
+                var blocksQuery = this.db.Blocks
+                    .Where(x => x.Timestamp <= latestBlockDate && x.Timestamp >= endStamp);
+                var count = blocksQuery.Count();
+                var sum = count > 0 ? blocksQuery.Sum(x => x.TimeInSeconds) : 0;
 
                 result.Add(new ChartStatsViewModel
                 {
-                    Value = (decimal)avg,
+                    Label = endStamp.ToUnixDate().ToString(),
+                    AccumulatedValue = (decimal)sum,
+                    Value = (decimal)count,
                     StartDate = DateOrderFilter.GetDateTime(endStamp, filter.UnitOfTime),
                     UnitOfTime = filter.UnitOfTime
                 });
@@ -509,10 +515,10 @@ namespace StateOfNeo.Services
 
         private long GetLatestTimestamp()
         {
-            return this.db.Blocks
-                .Select(x => x.Timestamp)
-                .OrderByDescending(x => x)
+            var block = this.db.Blocks
+                .OrderByDescending(x => x.Timestamp)
                 .First();
+            return block.Timestamp;
         }
     }
 }

@@ -38,11 +38,11 @@ namespace StateOfNeo.ViewModels.Chart
                 {
                     end = end.Value.AddHours(-i);
                 }
-                if (this.UnitOfTime == UnitOfTime.Day)
+                else if (this.UnitOfTime == UnitOfTime.Day)
                 {
-                    end = end.Value.AddHours(-i);
+                    end = end.Value.AddDays(-i);
                 }
-                if (this.UnitOfTime == UnitOfTime.Month)
+                else if (this.UnitOfTime == UnitOfTime.Month)
                 {
                     end = end.Value.AddMonths(-i);
                 }
