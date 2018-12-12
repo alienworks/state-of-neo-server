@@ -16,11 +16,13 @@ namespace StateOfNeo.Server.Controllers
     {
         private readonly IBlockService blocks;
         private readonly IPaginatingService paginating;
+        private readonly IStateService state;
 
-        public BlockController(IBlockService blocks, IPaginatingService paginating)
+        public BlockController(IBlockService blocks, IPaginatingService paginating, IStateService state)
         {
             this.blocks = blocks;
             this.paginating = paginating;
+            this.state = state;
         }
 
         [HttpGet("[action]/{hash}")]
@@ -61,7 +63,8 @@ namespace StateOfNeo.Server.Controllers
         [ResponseCache(Duration = CachingConstants.Hour)]
         public IActionResult BlockSizeChart([FromBody]ChartFilterViewModel filter)
         {
-            var result = this.blocks.GetBlockSizeStats(filter);
+            //var result = this.blocks.GetBlockSizeStats(filter);
+            var result = this.state.GetBlockSizesChart(filter.UnitOfTime, filter.EndPeriod);
             return this.Ok(result);
         }
 
@@ -69,7 +72,8 @@ namespace StateOfNeo.Server.Controllers
         [ResponseCache(Duration = CachingConstants.Hour)]
         public IActionResult BlockTimeChart([FromBody]ChartFilterViewModel filter)
         {
-            var result = this.blocks.GetBlockTimeStats(filter);
+            //var result = this.blocks.GetBlockTimeStats(filter);
+            var result = this.state.GetBlockTimesChart(filter.UnitOfTime, filter.EndPeriod);
             return this.Ok(result);
         }
 

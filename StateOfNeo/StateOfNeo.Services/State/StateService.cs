@@ -44,6 +44,8 @@ namespace StateOfNeo.Services
             this.LoadTransactionTypes();
             this.LoadTransactionsMainChart();
             this.LoadCreatedAddressesMainChart();
+            this.LoadBlockTimesMainChart();
+            this.LoadBlockSizesMainChart();
         }
 
         public HeaderStatsViewModel GetHeaderStats()
@@ -124,8 +126,24 @@ namespace StateOfNeo.Services
             this.GetChart("blockSizes")[unitOfTime]
                 .OrderByDescending(x => x.StartDate)
                 .Take(count)
+                .Where(x => x.Value > 0)
                 .Select(x => new ChartStatsViewModel { Label = x.Label, Value = x.AccumulatedValue / x.Value })
                 .ToList();
+
+        public ICollection<ChartStatsViewModel> GetBlockTimesChart(UnitOfTime unitOfTime, int count) =>
+            this.GetChart("blockTimes")[unitOfTime]
+                .OrderByDescending(x => x.StartDate)
+                .Take(count)
+                .Where(x => x.Value > 0)
+                .Select(x => new ChartStatsViewModel { Label = x.Label, Value = x.AccumulatedValue / x.Value })
+                .ToList();
+
+        public void AddBlockTime(double blockSeconds, DateTime time)
+        {
+            this.AddChartValues("blockTimes", 1, time, UnitOfTime.Hour, blockSeconds);
+            this.AddChartValues("blockTimes", 1, time, UnitOfTime.Day, blockSeconds);
+            this.AddChartValues("blockTimes", 1, time, UnitOfTime.Month, blockSeconds);
+        }
 
         public void AddBlockSize(int size, DateTime time)
         {
@@ -240,6 +258,77 @@ namespace StateOfNeo.Services
             addresses[UnitOfTime.Hour] = this.GetAddressesStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Hour, EndPeriod = 36 });
             addresses[UnitOfTime.Day] = this.GetAddressesStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Day, EndPeriod = 36 });
             addresses[UnitOfTime.Month] = this.GetAddressesStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Month, EndPeriod = 36 });
+        }
+
+        private void LoadBlockSizesMainChart()
+        {
+            var blockSizes = this.GetChart("blockSizes");
+            blockSizes[UnitOfTime.Hour] = this.GetBlockSizesStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Hour, EndPeriod = 36 });
+            blockSizes[UnitOfTime.Day] = this.GetBlockSizesStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Day, EndPeriod = 36 });
+            blockSizes[UnitOfTime.Month] = this.GetBlockSizesStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Month, EndPeriod = 36 });
+        }
+
+        private void LoadBlockTimesMainChart()
+        {
+            var blockTimes = this.GetChart("blockTimes");
+            blockTimes[UnitOfTime.Hour] = this.GetBlockTimesStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Hour, EndPeriod = 36 });
+            blockTimes[UnitOfTime.Day] = this.GetBlockTimesStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Day, EndPeriod = 36 });
+            blockTimes[UnitOfTime.Month] = this.GetBlockTimesStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Month, EndPeriod = 36 });
+        }
+
+        private ICollection<ChartStatsViewModel> GetBlockSizesStats(ChartFilterViewModel filter)
+        {
+            long latestBlockDate = this.GetLatestTimestamp();
+
+            filter.StartStamp = latestBlockDate;
+            filter.StartDate = latestBlockDate.ToUnixDate();
+
+            List<ChartStatsViewModel> result = new List<ChartStatsViewModel>();
+            foreach (var endStamp in filter.GetPeriodStamps())
+            {
+                var avg = this.db.Blocks
+                    .Where(x => x.Timestamp <= latestBlockDate && x.Timestamp >= endStamp)
+                    .Average(x => x.Size);
+
+                result.Add(new ChartStatsViewModel
+                {
+                    Value = (decimal)avg,
+                    StartDate = DateOrderFilter.GetDateTime(endStamp, filter.UnitOfTime),
+                    UnitOfTime = filter.UnitOfTime
+                });
+
+                latestBlockDate = endStamp;
+            }
+
+            return result;
+        }
+
+        private ICollection<ChartStatsViewModel> GetBlockTimesStats(ChartFilterViewModel filter)
+        {
+            var latestBlockDate = this.GetLatestTimestamp();
+
+            filter.StartDate = latestBlockDate.ToUnixDate();
+            filter.StartStamp = latestBlockDate;
+
+            List<ChartStatsViewModel> result = new List<ChartStatsViewModel>();
+            var periods = filter.GetPeriodStamps();
+            foreach (var endStamp in periods)
+            {
+                var avg = this.db.Blocks
+                    .Where(x => x.Timestamp <= latestBlockDate && x.Timestamp >= endStamp)
+                    .Average(x => x.TimeInSeconds);
+
+                result.Add(new ChartStatsViewModel
+                {
+                    Value = (decimal)avg,
+                    StartDate = DateOrderFilter.GetDateTime(endStamp, filter.UnitOfTime),
+                    UnitOfTime = filter.UnitOfTime
+                });
+
+                latestBlockDate = endStamp;
+            }
+
+            return result;
         }
 
         private ICollection<ChartStatsViewModel> GetAddressesStats(ChartFilterViewModel filter)
@@ -388,6 +477,14 @@ namespace StateOfNeo.Services
             }
 
             return this.charts[chart];
+        }
+
+        private long GetLatestTimestamp()
+        {
+            return this.db.Blocks
+                .Select(x => x.Timestamp)
+                .OrderByDescending(x => x)
+                .First();
         }
     }
 }
