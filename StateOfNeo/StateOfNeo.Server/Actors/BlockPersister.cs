@@ -47,6 +47,7 @@ namespace StateOfNeo.Server.Actors
         private readonly IHubContext<StatsHub> statsHub;
         private readonly IHubContext<NotificationHub> notificationHub;
         private IStateService state;
+        private DateTime genesisTime = GenesisBlock.Timestamp.ToUnixDate();
 
         private readonly ICollection<Data.Models.Asset> pendingAssets = new List<Data.Models.Asset>();
         private readonly ICollection<Data.Models.Address> pendingAddresses = new List<Data.Models.Address>();
@@ -248,7 +249,7 @@ namespace StateOfNeo.Server.Actors
 
                     db.Assets.Add(asset);
                     pendingAssets.Add(asset);
-                    this.state.AddTotalAssetsCount(1);
+                    this.state.MainStats.AddTotalAssetsCount(1);
                 }
                 else if (item.Type == Neo.Network.P2P.Payloads.TransactionType.EnrollmentTransaction)
                 {
@@ -370,7 +371,7 @@ namespace StateOfNeo.Server.Actors
 
                     if (transaction.Type == Neo.Network.P2P.Payloads.TransactionType.ClaimTransaction)
                     {
-                        this.state.AddTotalClaimed(ta.Amount);
+                        this.state.MainStats.AddTotalClaimed(ta.Amount);
                     }
                 }
 
@@ -516,7 +517,7 @@ namespace StateOfNeo.Server.Actors
 
                         db.Assets.Add(asset);
                         this.pendingAssets.Add(asset);
-                        this.state.AddTotalAssetsCount(1);
+                        this.state.MainStats.AddTotalAssetsCount(1);
                     }
 
                     var assetInTransaction = new AssetInTransaction
@@ -636,15 +637,15 @@ namespace StateOfNeo.Server.Actors
                         This is for tx = {transaction.Hash.ToString()}");
                 }
 
-                this.state.SetOrAddNotificationsForContract(contractHash, contractHash, blockTime.ToUnixTimestamp(), type, notificationStringArray);
+                this.state.Contracts.SetOrAddNotificationsForContract(contractHash, contractHash, blockTime.ToUnixTimestamp(), type, notificationStringArray);
                 this.notificationHub
                     .Clients
                     .Group(contractHash)
-                    .SendAsync("contract", this.state.GetNotificationsForContract(contractHash));
+                    .SendAsync("contract", this.state.Contracts.GetNotificationsFor(contractHash));
                 this.notificationHub
                     .Clients
                     .All
-                    .SendAsync("all", this.state.GetNotificationsForContract(NotificationConstants.AllNotificationsKey));
+                    .SendAsync("all", this.state.Contracts.GetNotificationsFor(NotificationConstants.AllNotificationsKey));
             }
         }
 
@@ -684,8 +685,12 @@ namespace StateOfNeo.Server.Actors
             var currentStats = Mapper.Map<HeaderStatsViewModel>(block);
             currentStats.TransactionCount = transactions;
 
-            this.state.SetHeaderStats(currentStats);
-            this.state.AddToTotalTxCount(transactions);
+            this.state.MainStats.SetHeaderStats(currentStats);
+            this.state.MainStats.AddToTotalTxCount(transactions);
+
+            this.state.MainStats.AddTotalBlocksCount(1);
+            this.state.MainStats.AddToTotalBlocksSizesCount(block.Size);
+            this.state.MainStats.AddToTotalBlocksTimesCount(block.TimeInSeconds);
 
             this.EmitStatsInfo();
             
@@ -696,11 +701,24 @@ namespace StateOfNeo.Server.Actors
 
         private void EmitStatsInfo()
         {
-            this.statsHub.Clients.All.SendAsync("header", this.state.GetHeaderStats());
-            this.statsHub.Clients.All.SendAsync("tx-count", this.state.GetTotalTxCount());
-            this.statsHub.Clients.All.SendAsync("address-count", this.state.GetTotalAddressCount());
-            this.statsHub.Clients.All.SendAsync("assets-count", this.state.GetTotalAssetsCount());
-            this.statsHub.Clients.All.SendAsync("total-claimed", this.state.GetTotalClaimed());
+            // Header
+            this.statsHub.Clients.All.SendAsync("header", this.state.MainStats.GetHeaderStats());
+            // Blocks
+            this.statsHub.Clients.All.SendAsync("total-block-count", this.state.MainStats.GetTotalBlocksCount());
+            this.statsHub.Clients.All.SendAsync("total-block-time", this.state.MainStats.GetTotalBlocksTimesCount());
+            this.statsHub.Clients.All.SendAsync("total-block-size", this.state.MainStats.GetTotalBlocksSizesCount());
+            // Transactions
+            this.statsHub.Clients.All.SendAsync("tx-count", this.state.MainStats.GetTotalTxCount());
+            this.statsHub.Clients.All.SendAsync("total-claimed", this.state.MainStats.GetTotalClaimed());
+            // Addresses
+            this.statsHub.Clients.All.SendAsync("address-count", this.state.MainStats.GetTotalAddressCount());
+            // Assets
+            this.statsHub.Clients.All.SendAsync("assets-count", this.state.MainStats.GetTotalAssetsCount());
+        }
+
+        private TimeSpan TimeSpanBetweenGenesisAndNow()
+        {
+            return (DateTime.UtcNow - this.genesisTime);
         }
 
         private Asset GetAsset(StateOfNeoContext db, string hash)
@@ -769,7 +787,7 @@ namespace StateOfNeo.Server.Actors
                 db.Addresses.Add(result);
                 pendingAddresses.Add(result);
 
-                this.state.AddTotalAddressCount(1);
+                this.state.MainStats.AddTotalAddressCount(1);
                 this.state.AddAddresses(1, blockTime);
             }
 

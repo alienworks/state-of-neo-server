@@ -1,10 +1,5 @@
-﻿using AutoMapper.QueryableExtensions;
-using Microsoft.AspNetCore.SignalR;
-using StateOfNeo.Data;
-using StateOfNeo.Server.Actors;
+﻿using Microsoft.AspNetCore.SignalR;
 using StateOfNeo.Services;
-using StateOfNeo.ViewModels;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace StateOfNeo.Server.Hubs
@@ -20,11 +15,16 @@ namespace StateOfNeo.Server.Hubs
 
         public override async Task OnConnectedAsync()
         {
-            await this.Clients.Caller.SendAsync("header", this.state.GetHeaderStats());
-            await this.Clients.Caller.SendAsync("tx-count", this.state.GetTotalTxCount());
-            await this.Clients.Caller.SendAsync("address-count", this.state.GetTotalAddressCount());
-            await this.Clients.Caller.SendAsync("assets-count", this.state.GetTotalAssetsCount());
-            await this.Clients.Caller.SendAsync("total-claimed", this.state.GetTotalClaimed());
+            await this.Clients.Caller.SendAsync("header", this.state.MainStats.GetHeaderStats());
+            // Blocks
+            await this.Clients.All.SendAsync("total-block-count", this.state.MainStats.GetTotalBlocksCount());
+            await this.Clients.All.SendAsync("total-block-time", this.state.MainStats.GetTotalBlocksTimesCount());
+            await this.Clients.All.SendAsync("total-block-size", this.state.MainStats.GetTotalBlocksSizesCount());
+
+            await this.Clients.Caller.SendAsync("tx-count", this.state.MainStats.GetTotalTxCount());
+            await this.Clients.Caller.SendAsync("address-count", this.state.MainStats.GetTotalAddressCount());
+            await this.Clients.Caller.SendAsync("assets-count", this.state.MainStats.GetTotalAssetsCount());
+            await this.Clients.Caller.SendAsync("total-claimed", this.state.MainStats.GetTotalClaimed());
         }
     }
 }

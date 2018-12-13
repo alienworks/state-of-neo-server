@@ -128,13 +128,13 @@ namespace StateOfNeo.Server.Controllers
         [HttpGet("[action]")]
         public IActionResult Total()
         {
-            return this.Ok(this.state.GetTotalTxCount());
+            return this.Ok(this.state.MainStats.GetTotalTxCount());
         }
 
         [HttpGet("[action]")]
         public IActionResult TotalClaimed()
         {
-            return this.Ok(this.state.GetTotalClaimed());
+            return this.Ok(this.state.MainStats.GetTotalClaimed());
         }
     }
 }
