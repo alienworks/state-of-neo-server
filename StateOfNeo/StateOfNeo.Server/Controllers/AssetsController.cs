@@ -57,5 +57,12 @@ namespace StateOfNeo.Server.Controllers
             int result = this.assets.TxCount(types);
             return this.Ok(result);
         }
+
+        [HttpPost("[action]")]
+        public IActionResult TokenChart()
+        {
+            var result = this.assets.TokenChart();
+            return this.Ok(result);
+        }
     }
 }

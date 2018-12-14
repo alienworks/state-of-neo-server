@@ -118,7 +118,7 @@ namespace StateOfNeo.Server
                 notificationHub,
                 netSettings.Value.Net));
 
-            new ImportBlocks(importSettings.Value.MaxOnImportHeight);
+            //new ImportBlocks(importSettings.Value.MaxOnImportHeight);
 
             //Program.NeoSystem.ActorSystem.ActorOf(NodePersister.Props(
             //    Program.NeoSystem.Blockchain,
