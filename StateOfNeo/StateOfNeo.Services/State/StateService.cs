@@ -32,7 +32,7 @@ namespace StateOfNeo.Services
         private int? totalAssetsCount;
         private decimal? totalClaimed;
 
-        private IDictionary<string, List<NotificationHubViewModel>> contractsNotifications;
+        private IDictionary<string, List<NotificationHubViewModel>> contractsNotifications = new Dictionary<string, List<NotificationHubViewModel>>();
 
         public StateService(IOptions<DbSettings> dbOptions)
         {
@@ -44,13 +44,12 @@ namespace StateOfNeo.Services
             this.GetTotalAddressCount();
             this.GetTotalAssetsCount();
             this.GetTotalClaimed();
-
-            this.contractsNotifications = new Dictionary<string, List<NotificationHubViewModel>>();
             this.LoadTransactionTypes();
             this.LoadTransactionsMainChart();
             this.LoadCreatedAddressesMainChart();
             this.LoadBlockTimesMainChart();
             this.LoadBlockSizesMainChart();
+
             stopwatch.Stop();
             Log.Information($"{nameof(StateService)} initialization {stopwatch.ElapsedMilliseconds} ms");
         }

@@ -83,6 +83,11 @@ namespace StateOfNeo.Server.Actors
         {
             if (message is PersistCompleted m)
             {
+                if (m.Block.Index <= 3062777)
+                {
+                    return;
+                }
+
                 var db = StateOfNeoContext.Create(this.connectionString);
                 if (db.Blocks.Any(x => x.Hash == m.Block.Hash.ToString()))
                 {
