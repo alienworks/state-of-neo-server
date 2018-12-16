@@ -24,6 +24,8 @@ namespace StateOfNeo.Services
         decimal GetTotalClaimed();
         void AddTotalClaimed(decimal amount);
 
+        IEnumerable<ChartStatsViewModel> GetTransactionTypes();
+
         ICollection<ChartStatsViewModel> GetTransactionsChart(UnitOfTime unitOfTime, int count);
         void AddTransactions(int count, DateTime time);
 

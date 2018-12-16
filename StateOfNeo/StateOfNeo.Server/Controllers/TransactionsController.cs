@@ -114,7 +114,8 @@ namespace StateOfNeo.Server.Controllers
         [ResponseCache(Duration = CachingConstants.Hour)]
         public IActionResult PieChart()
         {
-            IEnumerable<ChartStatsViewModel> result = this.transactions.GetPieStats();
+            //IEnumerable<ChartStatsViewModel> result = this.transactions.GetPieStats();
+            var result = this.state.GetTransactionTypes();
             return this.Ok(result);
         }
 
