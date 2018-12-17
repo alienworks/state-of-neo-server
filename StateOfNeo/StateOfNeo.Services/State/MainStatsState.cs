@@ -38,10 +38,14 @@ namespace StateOfNeo.Services
             this.GetTotalTxCount();
             this.GetTotalAddressCount();
             this.GetTotalAssetsCount();
-            this.GetTotalClaimed();
-            this.GetTotalBlocksCount();
-            this.GetTotalBlocksTimesCount();
-            this.GetTotalBlocksSizesCount();
+            //this.GetTotalClaimed();
+            this.totalClaimedTx = 10;
+            //this.GetTotalBlocksCount();
+            this.blockHeight = 3000000;
+            //this.GetTotalBlocksTimesCount();
+            this.totalBlocksTimes = 100009569569;
+            //this.GetTotalBlocksSizesCount();
+            this.totalBlocksSizes = 106570009569569;
 
             this.db.Dispose();
 

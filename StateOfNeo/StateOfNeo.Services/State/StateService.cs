@@ -24,7 +24,10 @@ namespace StateOfNeo.Services
         private Dictionary<string, Dictionary<UnitOfTime, ICollection<ChartStatsViewModel>>> charts = new Dictionary<string, Dictionary<UnitOfTime, ICollection<ChartStatsViewModel>>>();
         private ICollection<ChartStatsViewModel> transactionTypes = new List<ChartStatsViewModel>();
         private DateTime? transactionTypesLastUpdate;
+
+        private long? lastBlockTime;
         private readonly StateOfNeoContext db;
+        private readonly List<ChartStatsViewModel> dbCharts;
 
         public IMainStatsState MainStats { get; }
         public IContractsState Contracts { get; }
@@ -39,6 +42,7 @@ namespace StateOfNeo.Services
             this.Contracts = new ContractsState();
 
             this.LoadTransactionTypes();
+
             this.LoadTransactionsMainChart();
             this.LoadCreatedAddressesMainChart();
             this.LoadBlockTimesMainChart();
@@ -47,6 +51,9 @@ namespace StateOfNeo.Services
             stopwatch.Stop();
             Log.Information($"{nameof(StateService)} initialization {stopwatch.ElapsedMilliseconds} ms");
         }
+
+        private ICollection<ChartStatsViewModel> GetChartEntries(UnitOfTime unitOfTime, ChartEntryType type) =>
+            this.db.ChartEntries.Where(x => x.UnitOfTime == unitOfTime && x.Type == type).Take(36).ProjectTo<ChartStatsViewModel>().ToList();
 
         public ICollection<ChartStatsViewModel> GetAssetsChart(UnitOfTime unitOfTime, int count) =>
             this.GetChart("assets")[unitOfTime].OrderByDescending(x => x.StartDate).Take(count).ToList();
@@ -182,19 +189,32 @@ namespace StateOfNeo.Services
             List<ChartStatsViewModel> result = new List<ChartStatsViewModel>();
             foreach (var endStamp in filter.GetPeriodStamps())
             {
-                var blockQuery = this.db.Blocks
-                    .Where(x => x.Timestamp <= latestBlockDate && x.Timestamp >= endStamp);
-                var count = blockQuery.Count();
-                var sum = count > 0 ? blockQuery.Sum(x => x.Size) : 0;
+                var chartEntry = this.db.ChartEntries
+                    .Where(x =>
+                        x.Type == ChartEntryType.BlockSizes
+                        && x.TimeStamp == endStamp
+                        && x.UnitOfTime == filter.UnitOfTime)
+                    .ProjectTo<ChartStatsViewModel>()
+                    .FirstOrDefault();
 
-                result.Add(new ChartStatsViewModel
+                if (chartEntry == null)
                 {
-                    Label = endStamp.ToUnixDate().ToString(),
-                    AccumulatedValue = (decimal)sum,
-                    Value = (decimal)count,
-                    StartDate = DateOrderFilter.GetDateTime(endStamp, filter.UnitOfTime),
-                    UnitOfTime = filter.UnitOfTime
-                });
+                    var blockQuery = this.db.Blocks
+                        .Where(x => x.Timestamp <= latestBlockDate && x.Timestamp >= endStamp);
+                    var count = blockQuery.Count();
+                    var sum = count > 0 ? blockQuery.Sum(x => x.Size) : 0;
+
+                    chartEntry = new ChartStatsViewModel
+                    {
+                        Label = endStamp.ToUnixDate().ToString(),
+                        AccumulatedValue = (decimal)sum,
+                        Value = (decimal)count,
+                        StartDate = DateOrderFilter.GetDateTime(endStamp, filter.UnitOfTime),
+                        UnitOfTime = filter.UnitOfTime
+                    };
+                }
+
+                result.Add(chartEntry);
 
                 latestBlockDate = endStamp;
             }
@@ -243,7 +263,7 @@ namespace StateOfNeo.Services
                     .FirstOrDefault();
             }
 
-            var result = new List<ChartStatsViewModel>();
+            var result = this.GetChartEntries(filter.UnitOfTime, ChartEntryType.CreatedAddresses);
             var query = this.db.Addresses.Where(x => x.FirstTransactionOn >= filter.GetEndPeriod());
 
             if (filter.UnitOfTime == UnitOfTime.Hour)
@@ -303,16 +323,14 @@ namespace StateOfNeo.Services
 
         private ICollection<ChartStatsViewModel> GetTransactionsStats(ChartFilterViewModel filter)
         {
-            var latestDate = this.db.Transactions
-                .OrderByDescending(x => x.Timestamp)
-                .Select(x => x.Timestamp)
-                .First();
+            var latestDate = this.GetLatestTimestamp();
 
             filter.StartDate = latestDate.ToUnixDate();
             filter.StartStamp = latestDate;
 
-            List<ChartStatsViewModel> result = new List<ChartStatsViewModel>();
-            var periods = filter.GetPeriodStamps();
+            var result = this.GetChartEntries(filter.UnitOfTime, ChartEntryType.Transactions);
+            var periods = filter.GetPeriodStamps().Where(x => !result.Any(y => y.Timestamp == x));
+
             foreach (var endStamp in periods)
             {
                 var count = this.db.Transactions
@@ -351,7 +369,10 @@ namespace StateOfNeo.Services
 
                 if (this.charts[chartName][unitOfTime].Count > 100)
                 {
-                    this.charts[chartName][unitOfTime] = this.charts[chartName][unitOfTime].OrderByDescending(x => x.StartDate).Take(35).ToList();
+                    this.charts[chartName][unitOfTime] = this.charts[chartName][unitOfTime]
+                        .OrderByDescending(x => x.StartDate)
+                        .Take(35)
+                        .ToList();
                 }
 
                 this.charts[chartName][unitOfTime].Add(lastRecord);
@@ -383,10 +404,16 @@ namespace StateOfNeo.Services
 
         private long GetLatestTimestamp()
         {
-            var block = this.db.Blocks
-                .OrderByDescending(x => x.Timestamp)
-                .First();
-            return block.Timestamp;
+            if (this.lastBlockTime == null)
+            {
+                var block = this.db.Blocks
+                    .OrderByDescending(x => x.Timestamp)
+                    .First();
+
+                this.lastBlockTime = block.Timestamp;
+            }
+
+            return this.lastBlockTime.Value;
         }
     }
 }
