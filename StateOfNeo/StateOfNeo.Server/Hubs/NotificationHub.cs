@@ -21,7 +21,7 @@ namespace StateOfNeo.Server.Hubs
         public override async Task OnConnectedAsync()
         {
             await this.Clients.Caller.SendAsync("all", 
-                this.state.GetNotificationsForContract(NotificationConstants.AllNotificationsKey));
+                this.state.Contracts.GetNotificationsFor(NotificationConstants.AllNotificationsKey));
         }
 
         public async Task TrackContract(string hash)
@@ -30,7 +30,7 @@ namespace StateOfNeo.Server.Hubs
             if (contractHash != null)
             {
                 await this.Groups.AddToGroupAsync(this.Context.ConnectionId, contractHash);
-                await this.Clients.Group(contractHash).SendAsync("contract", this.state.GetNotificationsForContract(contractHash));
+                await this.Clients.Group(contractHash).SendAsync("contract", this.state.Contracts.GetNotificationsFor(contractHash));
             }
             else
             {
@@ -46,7 +46,7 @@ namespace StateOfNeo.Server.Hubs
                 await this.Groups.RemoveFromGroupAsync(this.Context.ConnectionId, contractHash);
                 await this.Clients.Caller.SendAsync("unsubscribed", contractHash);
                 await this.Clients.All.SendAsync("all",
-                    this.state.GetNotificationsForContract(NotificationConstants.AllNotificationsKey));
+                    this.state.Contracts.GetNotificationsFor(NotificationConstants.AllNotificationsKey));
             }
             else
             {

@@ -9,21 +9,9 @@ namespace StateOfNeo.Services
 {
     public interface IStateService
     {
-        HeaderStatsViewModel GetHeaderStats();
-        void SetHeaderStats(HeaderStatsViewModel newValue);
-
-        long GetTotalTxCount();
-        void AddToTotalTxCount(int count);
-
-        int GetTotalAddressCount();
-        void AddTotalAddressCount(int count);
-
-        int GetTotalAssetsCount();
-        void AddTotalAssetsCount(int count);
-
-        decimal GetTotalClaimed();
-        void AddTotalClaimed(decimal amount);
-
+        IMainStatsState MainStats { get; }
+        IContractsState Contracts { get; }
+        
         IEnumerable<ChartStatsViewModel> GetTransactionTypes();
 
         ICollection<ChartStatsViewModel> GetTransactionsChart(UnitOfTime unitOfTime, int count);
@@ -40,8 +28,5 @@ namespace StateOfNeo.Services
 
         ICollection<ChartStatsViewModel> GetBlockTransactionsChart(UnitOfTime unitOfTime, int count);
         void AddBlockTransactions(int transactions, DateTime time);
-
-        IEnumerable<NotificationHubViewModel> GetNotificationsForContract(string hash);
-        void SetOrAddNotificationsForContract(string key, string hash, long timestamp, string type, string[] values);
     }
 }

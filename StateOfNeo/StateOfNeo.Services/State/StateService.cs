@@ -24,27 +24,25 @@ namespace StateOfNeo.Services
         private Dictionary<string, Dictionary<UnitOfTime, ICollection<ChartStatsViewModel>>> charts = new Dictionary<string, Dictionary<UnitOfTime, ICollection<ChartStatsViewModel>>>();
         private ICollection<ChartStatsViewModel> transactionTypes = new List<ChartStatsViewModel>();
         private DateTime? transactionTypesLastUpdate;
+
+        private long? lastBlockTime;
         private readonly StateOfNeoContext db;
+        private readonly List<ChartStatsViewModel> dbCharts;
 
-        private HeaderStatsViewModel headerStats;
-        private long? totalTxCount;
-        private int? totalAddressCount;
-        private int? totalAssetsCount;
-        private decimal? totalClaimed;
+        public IMainStatsState MainStats { get; }
+        public IContractsState Contracts { get; }
 
-        private IDictionary<string, List<NotificationHubViewModel>> contractsNotifications = new Dictionary<string, List<NotificationHubViewModel>>();
-
-        public StateService(IOptions<DbSettings> dbOptions)
+        public StateService(IOptions<DbSettings> dbOptions, IMainStatsState mainStats)
         {
+            this.MainStats = mainStats;
+
             Stopwatch stopwatch = Stopwatch.StartNew();
             this.db = StateOfNeoContext.Create(dbOptions.Value.DefaultConnection);
 
-            this.GetHeaderStats();
-            this.GetTotalTxCount();
-            this.GetTotalAddressCount();
-            this.GetTotalAssetsCount();
-            this.GetTotalClaimed();
+            this.Contracts = new ContractsState();
+
             this.LoadTransactionTypes();
+
             this.LoadTransactionsMainChart();
             this.LoadCreatedAddressesMainChart();
             this.LoadBlockTimesMainChart();
@@ -54,70 +52,8 @@ namespace StateOfNeo.Services
             Log.Information($"{nameof(StateService)} initialization {stopwatch.ElapsedMilliseconds} ms");
         }
 
-        public HeaderStatsViewModel GetHeaderStats()
-        {
-            if (this.headerStats == null)
-            {
-                this.headerStats = this.db.Blocks
-                    .OrderByDescending(x => x.Height)
-                    .ProjectTo<HeaderStatsViewModel>()
-                    .FirstOrDefault();
-            }
-
-            return this.headerStats;
-        }
-
-        public void SetHeaderStats(HeaderStatsViewModel newValue)
-        {
-            this.headerStats = newValue;
-        }
-
-        public long GetTotalTxCount()
-        {
-            if (this.totalTxCount == null) this.totalTxCount = this.db.Transactions.Count();
-            return this.totalTxCount.Value;
-        }
-
-        public void AddToTotalTxCount(int count)
-        {
-            this.totalTxCount = this.GetTotalTxCount() + count;
-        }
-
-        public int GetTotalAddressCount()
-        {
-            if (this.totalAddressCount == null) this.totalAddressCount = this.db.Addresses.Count();
-            return this.totalAddressCount.Value;
-        }
-
-        public void AddTotalAddressCount(int count)
-        {
-            this.totalAddressCount = this.GetTotalAddressCount() + count;
-        }
-
-        public int GetTotalAssetsCount()
-        {
-            if (this.totalAssetsCount == null) this.totalAssetsCount = this.db.Assets.Count();
-            return this.totalAssetsCount.Value;
-        }
-
-        public void AddTotalAssetsCount(int count)
-        {
-            this.totalAssetsCount = this.GetTotalAssetsCount() + count;
-        }
-
-        public decimal GetTotalClaimed()
-        {
-            if (this.totalClaimed == null)
-            {
-                this.totalClaimed = this.db.Transactions
-                    .Include(x => x.GlobalOutgoingAssets).ThenInclude(x => x.Asset)
-                    .Where(x => x.Type == Neo.Network.P2P.Payloads.TransactionType.ClaimTransaction)
-                    .SelectMany(x => x.GlobalOutgoingAssets.Where(a => a.AssetType == AssetType.GAS))
-                    .Sum(x => x.Amount);
-            }
-
-            return this.totalClaimed.Value;
-        }
+        private ICollection<ChartStatsViewModel> GetChartEntries(UnitOfTime unitOfTime, ChartEntryType type) =>
+            this.db.ChartEntries.Where(x => x.UnitOfTime == unitOfTime && x.Type == type).Take(36).ProjectTo<ChartStatsViewModel>().ToList();
 
         public ICollection<ChartStatsViewModel> GetAssetsChart(UnitOfTime unitOfTime, int count) =>
             this.GetChart("assets")[unitOfTime].OrderByDescending(x => x.StartDate).Take(count).ToList();
@@ -166,66 +102,6 @@ namespace StateOfNeo.Services
             this.AddChartValues("blockTransactions", 1, time, UnitOfTime.Hour, transactions);
             this.AddChartValues("blockTransactions", 1, time, UnitOfTime.Day, transactions);
             this.AddChartValues("blockTransactions", 1, time, UnitOfTime.Month, transactions);
-        }
-
-        public void AddTotalClaimed(decimal amount)
-        {
-            this.totalClaimed = this.GetTotalClaimed() + amount;
-        }
-
-        public IEnumerable<NotificationHubViewModel> GetNotificationsForContract(string hash)
-        {
-            if (!this.contractsNotifications.ContainsKey(hash))
-            {
-                return null;
-            }
-
-            return this.contractsNotifications[hash];
-        }
-
-        public void SetOrAddNotificationsForContract(string key, string hash, long timestamp, string type, string[] values)
-        {
-            var newValue = new NotificationHubViewModel(timestamp, hash, type, values);
-            if (!this.contractsNotifications.ContainsKey(key))
-            {
-                UpdateNotificationContractInfo(hash, newValue);
-                this.contractsNotifications.Add(key, new List<NotificationHubViewModel> { newValue });
-            }
-            else
-            {
-                if (key != NotificationConstants.AllNotificationsKey)
-                {
-                    var existingNotification = this.contractsNotifications[key].First();
-                    newValue.SetContractInfo(existingNotification.ContractName, existingNotification.ContractAuthor);
-                }
-                else
-                {
-                    UpdateNotificationContractInfo(hash, newValue);
-                }
-
-                this.contractsNotifications[key].Insert(0, newValue);
-
-                if (this.contractsNotifications[key].Count > NotificationConstants.MaxNotificationCount)
-                {
-                    this.contractsNotifications[key] =
-                        this.contractsNotifications[key].Take(NotificationConstants.MaxNotificationCount).ToList();
-                }
-
-                if (key != NotificationConstants.AllNotificationsKey)
-                {
-                    this.SetOrAddNotificationsForContract(NotificationConstants.AllNotificationsKey, hash, timestamp, type, values);
-                }
-            }
-        }
-
-        private static void UpdateNotificationContractInfo(string hash, NotificationHubViewModel newValue)
-        {
-            var scripthash = UInt160.Parse(hash);
-            var contract = Blockchain.Singleton.Store.GetContracts().TryGet(scripthash);
-            var contractName = contract.Name;
-            var contractAuthor = contract.Author;
-
-            newValue.SetContractInfo(contractName, contractAuthor);
         }
 
         public void AddAddresses(int count, DateTime time)
@@ -313,19 +189,32 @@ namespace StateOfNeo.Services
             List<ChartStatsViewModel> result = new List<ChartStatsViewModel>();
             foreach (var endStamp in filter.GetPeriodStamps())
             {
-                var blockQuery = this.db.Blocks
-                    .Where(x => x.Timestamp <= latestBlockDate && x.Timestamp >= endStamp);
-                var count = blockQuery.Count();
-                var sum = count > 0 ? blockQuery.Sum(x => x.Size) : 0;
+                var chartEntry = this.db.ChartEntries
+                    .Where(x =>
+                        x.Type == ChartEntryType.BlockSizes
+                        && x.TimeStamp == endStamp
+                        && x.UnitOfTime == filter.UnitOfTime)
+                    .ProjectTo<ChartStatsViewModel>()
+                    .FirstOrDefault();
 
-                result.Add(new ChartStatsViewModel
+                if (chartEntry == null)
                 {
-                    Label = endStamp.ToUnixDate().ToString(),
-                    AccumulatedValue = (decimal)sum,
-                    Value = (decimal)count,
-                    StartDate = DateOrderFilter.GetDateTime(endStamp, filter.UnitOfTime),
-                    UnitOfTime = filter.UnitOfTime
-                });
+                    var blockQuery = this.db.Blocks
+                        .Where(x => x.Timestamp <= latestBlockDate && x.Timestamp >= endStamp);
+                    var count = blockQuery.Count();
+                    var sum = count > 0 ? blockQuery.Sum(x => x.Size) : 0;
+
+                    chartEntry = new ChartStatsViewModel
+                    {
+                        Label = endStamp.ToUnixDate().ToString(),
+                        AccumulatedValue = (decimal)sum,
+                        Value = (decimal)count,
+                        StartDate = DateOrderFilter.GetDateTime(endStamp, filter.UnitOfTime),
+                        UnitOfTime = filter.UnitOfTime
+                    };
+                }
+
+                result.Add(chartEntry);
 
                 latestBlockDate = endStamp;
             }
@@ -374,7 +263,7 @@ namespace StateOfNeo.Services
                     .FirstOrDefault();
             }
 
-            var result = new List<ChartStatsViewModel>();
+            var result = this.GetChartEntries(filter.UnitOfTime, ChartEntryType.CreatedAddresses);
             var query = this.db.Addresses.Where(x => x.FirstTransactionOn >= filter.GetEndPeriod());
 
             if (filter.UnitOfTime == UnitOfTime.Hour)
@@ -434,16 +323,14 @@ namespace StateOfNeo.Services
 
         private ICollection<ChartStatsViewModel> GetTransactionsStats(ChartFilterViewModel filter)
         {
-            var latestDate = this.db.Transactions
-                .OrderByDescending(x => x.Timestamp)
-                .Select(x => x.Timestamp)
-                .First();
+            var latestDate = this.GetLatestTimestamp();
 
             filter.StartDate = latestDate.ToUnixDate();
             filter.StartStamp = latestDate;
 
-            List<ChartStatsViewModel> result = new List<ChartStatsViewModel>();
-            var periods = filter.GetPeriodStamps();
+            var result = this.GetChartEntries(filter.UnitOfTime, ChartEntryType.Transactions);
+            var periods = filter.GetPeriodStamps().Where(x => !result.Any(y => y.Timestamp == x));
+
             foreach (var endStamp in periods)
             {
                 var count = this.db.Transactions
@@ -482,7 +369,10 @@ namespace StateOfNeo.Services
 
                 if (this.charts[chartName][unitOfTime].Count > 100)
                 {
-                    this.charts[chartName][unitOfTime] = this.charts[chartName][unitOfTime].OrderByDescending(x => x.StartDate).Take(35).ToList();
+                    this.charts[chartName][unitOfTime] = this.charts[chartName][unitOfTime]
+                        .OrderByDescending(x => x.StartDate)
+                        .Take(35)
+                        .ToList();
                 }
 
                 this.charts[chartName][unitOfTime].Add(lastRecord);
@@ -514,10 +404,16 @@ namespace StateOfNeo.Services
 
         private long GetLatestTimestamp()
         {
-            var block = this.db.Blocks
-                .OrderByDescending(x => x.Timestamp)
-                .First();
-            return block.Timestamp;
+            if (this.lastBlockTime == null)
+            {
+                var block = this.db.Blocks
+                    .OrderByDescending(x => x.Timestamp)
+                    .First();
+
+                this.lastBlockTime = block.Timestamp;
+            }
+
+            return this.lastBlockTime.Value;
         }
     }
 }

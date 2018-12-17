@@ -66,7 +66,7 @@ namespace StateOfNeo.Server.Controllers
         [HttpGet("[action]")]
         public IActionResult Created()
         {
-            return this.Ok(this.state.GetTotalAddressCount());
+            return this.Ok(this.state.MainStats.GetTotalAddressCount());
         }
 
         [HttpGet("[action]")]

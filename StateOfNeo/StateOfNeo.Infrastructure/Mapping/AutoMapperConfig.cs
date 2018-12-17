@@ -12,6 +12,7 @@ namespace StateOfNeo.Infrastructure.Mapping
                 AssetConfig.InitMap(cfg);
                 AddressConfig.InitMap(cfg);
                 TransactionConfig.InitMap(cfg);
+                ChartMapping.InitMap(cfg);
             });
         }
     }
