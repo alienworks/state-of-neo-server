@@ -5,6 +5,7 @@ using Serilog;
 using StateOfNeo.Common;
 using StateOfNeo.Common.Enums;
 using StateOfNeo.Data;
+using StateOfNeo.Data.Models;
 using StateOfNeo.ViewModels;
 using System.Diagnostics;
 using System.Linq;
@@ -14,38 +15,39 @@ namespace StateOfNeo.Services
 {
     public class MainStatsState : IMainStatsState
     {
-        private HeaderStatsViewModel headerStats;
+        public TotalStats TotalStats { get; set; }
 
-        private long? totalTxCount;
-        private decimal? totalClaimedTx;
-
-        private int? totalAddressCount;
-        private int? totalAssetsCount;
-
-        private double? totalBlocksTimes;
-        private int? blockHeight;
-        private long? totalBlocksSizes;
-        
         private readonly StateOfNeoContext db;
+        private HeaderStatsViewModel headerStats;
 
         public MainStatsState(IOptions<DbSettings> dbOptions)
         {
             Stopwatch stopwatch = Stopwatch.StartNew();
 
             this.db = StateOfNeoContext.Create(dbOptions.Value.DefaultConnection);
+            this.TotalStats = this.db.TotalStats.FirstOrDefault();
 
             this.GetHeaderStats();
+
+            if (this.TotalStats == null)
+            {
+                this.TotalStats = new TotalStats
+                {
+                    BlockCount = this.headerStats.Height,
+                    Timestamp = this.headerStats.Timestamp
+                };
+
+                this.db.TotalStats.Add(this.TotalStats);
+                this.db.SaveChanges();
+            }
+
             this.GetTotalTxCount();
             this.GetTotalAddressCount();
             this.GetTotalAssetsCount();
-            //this.GetTotalClaimed();
-            this.totalClaimedTx = 10;
-            //this.GetTotalBlocksCount();
-            this.blockHeight = 3000000;
-            //this.GetTotalBlocksTimesCount();
-            this.totalBlocksTimes = 100009569569;
-            //this.GetTotalBlocksSizesCount();
-            this.totalBlocksSizes = 106570009569569;
+            this.GetTotalClaimed();
+            this.GetTotalBlocksCount();
+            this.GetTotalBlocksTimesCount();
+            this.GetTotalBlocksSizesCount();
 
             this.db.Dispose();
 
@@ -73,87 +75,87 @@ namespace StateOfNeo.Services
 
         public long GetTotalTxCount()
         {
-            if (this.totalTxCount == null) this.totalTxCount = this.db.Transactions.Count();
-            return this.totalTxCount.Value;
+            if (this.TotalStats.TransactionsCount == null) this.TotalStats.TransactionsCount = this.db.Transactions.Count();
+            return this.TotalStats.TransactionsCount.Value;
         }
 
         public void AddToTotalTxCount(int count)
         {
-            this.totalTxCount = this.GetTotalTxCount() + count;
+            this.TotalStats.TransactionsCount = this.GetTotalTxCount() + count;
         }
 
         public int GetTotalAddressCount()
         {
-            if (this.totalAddressCount == null) this.totalAddressCount = this.db.Addresses.Count();
-            return this.totalAddressCount.Value;
+            if (this.TotalStats.AddressCount == null) this.TotalStats.AddressCount = this.db.Addresses.Count();
+            return this.TotalStats.AddressCount.Value;
         }
 
         public void AddTotalAddressCount(int count)
         {
-            this.totalAddressCount = this.GetTotalAddressCount() + count;
+            this.TotalStats.AddressCount = this.GetTotalAddressCount() + count;
         }
 
         public int GetTotalAssetsCount()
         {
-            if (this.totalAssetsCount == null) this.totalAssetsCount = this.db.Assets.Count();
-            return this.totalAssetsCount.Value;
+            if (this.TotalStats.AssetsCount == null) this.TotalStats.AssetsCount = this.db.Assets.Count();
+            return this.TotalStats.AssetsCount.Value;
         }
 
         public void AddTotalAssetsCount(int count)
         {
-            this.totalAssetsCount = this.GetTotalAssetsCount() + count;
+            this.TotalStats.AssetsCount = this.GetTotalAssetsCount() + count;
         }
 
         public decimal GetTotalClaimed()
         {
-            if (this.totalClaimedTx == null)
+            if (this.TotalStats.ClaimedGas == null)
             {
-                this.totalClaimedTx = this.db.Transactions
+                this.TotalStats.ClaimedGas = this.db.Transactions
                     .Include(x => x.GlobalOutgoingAssets).ThenInclude(x => x.Asset)
                     .Where(x => x.Type == Neo.Network.P2P.Payloads.TransactionType.ClaimTransaction)
                     .SelectMany(x => x.GlobalOutgoingAssets.Where(a => a.AssetType == AssetType.GAS))
                     .Sum(x => x.Amount);
             }
 
-            return this.totalClaimedTx.Value;
+            return this.TotalStats.ClaimedGas.Value;
         }
 
         public void AddTotalClaimed(decimal amount)
         {
-            this.totalClaimedTx = this.GetTotalClaimed() + amount;
+            this.TotalStats.ClaimedGas = this.GetTotalClaimed() + amount;
         }
 
         public int GetTotalBlocksCount()
         {
-            if (this.blockHeight == null) this.blockHeight = this.db.Blocks.Count();
-            return this.blockHeight.Value;
+            if (this.TotalStats.BlockCount == null) this.TotalStats.BlockCount = this.db.Blocks.Count();
+            return this.TotalStats.BlockCount.Value;
         }
 
         public void AddTotalBlocksCount(int count)
         {
-            this.blockHeight = this.GetTotalBlocksCount() + count;
+            this.TotalStats.BlockCount = this.GetTotalBlocksCount() + count;
         }
 
-        public double GetTotalBlocksTimesCount()
+        public decimal GetTotalBlocksTimesCount()
         {
-            if (this.totalBlocksTimes == null) this.totalBlocksTimes = this.db.Blocks.Sum(x => x.TimeInSeconds);
-            return this.totalBlocksTimes.Value;
+            if (this.TotalStats.BlocksTimes == null) this.TotalStats.BlocksTimes = (decimal)this.db.Blocks.Sum(x => x.TimeInSeconds);
+            return this.TotalStats.BlocksTimes.Value;
         }
 
-        public void AddToTotalBlocksTimesCount(double value)
+        public void AddToTotalBlocksTimesCount(decimal value)
         {
-            this.totalBlocksTimes = this.GetTotalBlocksTimesCount() + value;
+            this.TotalStats.BlocksTimes = this.GetTotalBlocksTimesCount() + value;
         }
 
         public long GetTotalBlocksSizesCount()
         {
-            if (this.totalBlocksSizes == null) this.totalBlocksSizes = this.db.Blocks.Select(x => (long)x.Size).ToList().Sum();
-            return this.totalBlocksSizes.Value;
+            if (this.TotalStats.BlocksSizes == null) this.TotalStats.BlocksSizes = this.db.Blocks.Select(x => (long)x.Size).ToList().Sum();
+            return this.TotalStats.BlocksSizes.Value;
         }
 
         public void AddToTotalBlocksSizesCount(int value)
         {
-            this.totalBlocksSizes = this.GetTotalBlocksSizesCount() + value;
+            this.TotalStats.BlocksSizes = this.GetTotalBlocksSizesCount() + value;
         }
     }
 }

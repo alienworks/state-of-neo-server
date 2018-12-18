@@ -9,6 +9,7 @@
     <Compile Remove="Migrations\20181105232129_test.cs" />
     <Compile Remove="Migrations\20181113082203_NodeTimesAddedInNode_NodeAuditAdd_NodeStatusRenamed.cs" />
     <Compile Remove="Migrations\20181113094159_NodeTimesAddedInNode_NodeAuditAdd_NodeStatusRenamed.cs" />
+    <Compile Remove="Migrations\20181217170920_TotalStats_PropertiesUpdatedToNullable.cs" />
   </ItemGroup>
 
   <ItemGroup>

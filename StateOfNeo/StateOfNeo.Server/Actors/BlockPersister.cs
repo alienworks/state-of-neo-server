@@ -685,8 +685,6 @@ namespace StateOfNeo.Server.Actors
 
         private void SaveEmitAndClear(StateOfNeoContext db, Block block, int transactions)
         {
-            db.SaveChanges();
-
             var currentStats = Mapper.Map<HeaderStatsViewModel>(block);
             currentStats.TransactionCount = transactions;
 
@@ -695,7 +693,10 @@ namespace StateOfNeo.Server.Actors
 
             this.state.MainStats.AddTotalBlocksCount(1);
             this.state.MainStats.AddToTotalBlocksSizesCount(block.Size);
-            this.state.MainStats.AddToTotalBlocksTimesCount(block.TimeInSeconds);
+            this.state.MainStats.AddToTotalBlocksTimesCount((decimal)block.TimeInSeconds);
+
+            db.TotalStats.Update(this.state.MainStats.TotalStats);
+            db.SaveChanges();
 
             this.EmitStatsInfo();
             

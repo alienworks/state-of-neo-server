@@ -4,16 +4,16 @@
     {
         public int Id { get; set; }
 
-        public int BlockCount { get; set; }
-        public double BlocksTimes;
-        public long BlocksSizes;
+        public int? BlockCount { get; set; }
+        public decimal? BlocksTimes { get; set; }
+        public long? BlocksSizes { get; set; }
 
-        public decimal ClaimedGas { get; set; }
-        public int TransactionsCount { get; set; }
+        public decimal? ClaimedGas { get; set; }
+        public long? TransactionsCount { get; set; }
 
-        public int AddressCount;
-        public int AssetsCount;
+        public int? AddressCount { get; set; }
+        public int? AssetsCount { get; set; }
 
-        public long Timestamp { get; set; }
+        public long? Timestamp { get; set; }
     }
 }

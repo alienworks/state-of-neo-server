@@ -1,10 +1,13 @@
-﻿using StateOfNeo.ViewModels;
+﻿using StateOfNeo.Data.Models;
+using StateOfNeo.ViewModels;
 using System.Numerics;
 
 namespace StateOfNeo.Services
 {
     public interface IMainStatsState
     {
+        TotalStats TotalStats { get; set; }
+
         HeaderStatsViewModel GetHeaderStats();
         void SetHeaderStats(HeaderStatsViewModel newValue);
 
@@ -21,8 +24,8 @@ namespace StateOfNeo.Services
 
         int GetTotalBlocksCount();
         void AddTotalBlocksCount(int count);
-        double GetTotalBlocksTimesCount();
-        void AddToTotalBlocksTimesCount(double value);
+        decimal GetTotalBlocksTimesCount();
+        void AddToTotalBlocksTimesCount(decimal value);
         long GetTotalBlocksSizesCount();
         void AddToTotalBlocksSizesCount(int value);
     }
