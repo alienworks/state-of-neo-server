@@ -55,7 +55,7 @@ namespace StateOfNeo.Services
         private List<ChartStatsViewModel> GetChartEntries(UnitOfTime unitOfTime, ChartEntryType type) =>
             this.db.ChartEntries
                 .Where(x => x.UnitOfTime == unitOfTime && x.Type == type)
-                .OrderBy(x => x.TimeStamp)
+                .OrderByDescending(x => x.TimeStamp)
                 .Take(36)
                 .ProjectTo<ChartStatsViewModel>()
                 .ToList();
@@ -304,6 +304,7 @@ namespace StateOfNeo.Services
                     .Select(x => new ChartStatsViewModel
                     {
                         StartDate = new DateTime(x.Key.Year, x.Key.Month, x.Key.Day, x.Key.Hour, 0, 0),
+                        Timestamp = new DateTime(x.Key.Year, x.Key.Month, x.Key.Day, x.Key.Hour, 0, 0).ToUnixTimestamp(),
                         UnitOfTime = UnitOfTime.Hour,
                         Value = x.Count()
                     })
@@ -323,6 +324,7 @@ namespace StateOfNeo.Services
                     .Select(x => new ChartStatsViewModel
                     {
                         StartDate = new DateTime(x.Key.Year, x.Key.Month, x.Key.Day),
+                        Timestamp = new DateTime(x.Key.Year, x.Key.Month, x.Key.Day).ToUnixTimestamp(),
                         UnitOfTime = UnitOfTime.Day,
                         Value = x.Count()
                     })
@@ -341,6 +343,7 @@ namespace StateOfNeo.Services
                     .Select(x => new ChartStatsViewModel
                     {
                         StartDate = new DateTime(x.Key.Year, x.Key.Month, 1),
+                        Timestamp = new DateTime(x.Key.Year, x.Key.Month, 1).ToUnixTimestamp(),
                         UnitOfTime = UnitOfTime.Month,
                         Value = x.Count()
                     })
@@ -464,11 +467,10 @@ namespace StateOfNeo.Services
         {
             if (this.lastBlockTime == null)
             {
-                var block = this.db.Blocks
-                    .OrderByDescending(x => x.Timestamp)
+                this.lastBlockTime = this.db.Blocks
+                    .Select(x => x.Timestamp)
+                    .OrderByDescending(x => x)
                     .First();
-
-                this.lastBlockTime = block.Timestamp;
             }
 
             return this.lastBlockTime.Value;
