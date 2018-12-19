@@ -17,7 +17,7 @@ namespace StateOfNeo.Common.Extensions
 
         public static bool IsOlderThan(this long timestamp, UnitOfTime unitOfTime)
         {
-            var date = ToUnixDate(timestamp);
+            var date = ToUnixDate(timestamp).ToUniversalTime();
             var now = DateTime.UtcNow;
             if (unitOfTime == UnitOfTime.Hour)
             {

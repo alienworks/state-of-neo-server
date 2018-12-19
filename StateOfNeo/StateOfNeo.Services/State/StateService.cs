@@ -277,13 +277,10 @@ namespace StateOfNeo.Services
 
         private ICollection<ChartStatsViewModel> GetAddressesStats(ChartFilterViewModel filter)
         {
-            if (filter.StartDate == null)
-            {
-                filter.StartDate = this.db.Addresses
-                    .OrderByDescending(x => x.FirstTransactionOn)
-                    .Select(x => x.FirstTransactionOn)
-                    .FirstOrDefault();
-            }
+            var latestBlockDate = this.GetLatestTimestamp();
+
+            filter.StartDate = latestBlockDate.ToUnixDate();
+            filter.StartStamp = latestBlockDate;
 
             var result = this.GetChartEntries(filter.UnitOfTime, ChartEntryType.CreatedAddresses);
             var query = this.db.Addresses

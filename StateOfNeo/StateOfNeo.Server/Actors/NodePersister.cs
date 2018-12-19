@@ -1,5 +1,6 @@
 ﻿using Akka.Actor;
 using Microsoft.EntityFrameworkCore;
+using Neo.Ledger;
 using StateOfNeo.Common.Extensions;
 using StateOfNeo.Data;
 using StateOfNeo.Data.Models;
@@ -46,6 +47,9 @@ namespace StateOfNeo.Server.Actors
                 optionsBuilder.UseSqlServer(this.connectionString, opts => opts.CommandTimeout((int)TimeSpan.FromMinutes(10).TotalSeconds));
                 var db = new StateOfNeoContext(optionsBuilder.Options);
 
+                var previousBlock = Blockchain.Singleton.GetBlock(m.Block.PrevHash);
+                var previousBlockTime = previousBlock.Timestamp.ToUnixDate();
+
                 var nodes = db.Nodes
                     .Include(x => x.Audits)
                     .Where(x => x.Net == this.net && x.SuccessUrl != null)
@@ -53,7 +57,7 @@ namespace StateOfNeo.Server.Actors
 
                 foreach (var node in nodes)
                 {
-                    var audit = this.NodeAudit(node, m.Block.Timestamp);
+                    var audit = this.NodeAudit(node, m.Block.Timestamp, (m.Block.Timestamp.ToUnixDate() - previousBlockTime).TotalSeconds);
 
                     if (audit != null)
                     {
@@ -62,13 +66,12 @@ namespace StateOfNeo.Server.Actors
                     }
 
                     db.Nodes.Update(node);
+                    db.SaveChanges();
                 }
-
-                db.SaveChanges();
             }
         }
 
-        private void UpdateNodeTimes(Node node, uint timestamp)
+        private void UpdateNodeTimes(Node node, uint timestamp, double secondsOnline)
         {
             if (!node.FirstRuntime.HasValue)
             {
@@ -82,7 +85,7 @@ namespace StateOfNeo.Server.Actors
             }
             else
             {
-                node.SecondsOnline += (long)(timestamp.ToUnixDate() - node.LatestRuntime.Value.ToUnixDate()).TotalSeconds;
+                node.SecondsOnline += (long)secondsOnline;
                 node.LatestRuntime = timestamp;
             }
         }
@@ -112,7 +115,7 @@ namespace StateOfNeo.Server.Actors
             return result;
         }
 
-        private NodeAudit NodeAudit(Node node, uint blockStamp)
+        private NodeAudit NodeAudit(Node node, uint blockStamp, double secondsSinceLastBlock)
         {
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
@@ -122,7 +125,7 @@ namespace StateOfNeo.Server.Actors
             if (height.HasValue)
             {
                 node.Height = height.Value;
-                this.UpdateNodeTimes(node, blockStamp);
+                this.UpdateNodeTimes(node, blockStamp, secondsSinceLastBlock);
                 this.UpdateCache(LatencyCacheType, node.Id, stopwatch.ElapsedMilliseconds);
 
                 var peers = this.nodeCaller.GetNodePeers(node).GetAwaiter().GetResult();
@@ -132,7 +135,7 @@ namespace StateOfNeo.Server.Actors
                     this.UpdateCache(PeersCacheType, node.Id, peers.Connected.Count());
                 }
 
-                if (!node.LastAudit.HasValue || node.LastAudit.Value.ToUnixDate().AddHours(1) <= blockStamp.ToUnixDate())
+                if (node.LastAudit == null || node.LastAudit.Value.ToUnixDate().AddHours(1) < blockStamp.ToUnixDate())
                 {
                     var audit = new NodeAudit
                     {
@@ -143,6 +146,7 @@ namespace StateOfNeo.Server.Actors
                         Timestamp = blockStamp
                     };
 
+                    node.LastAudit = blockStamp;
                     return audit;
                 }
             }
