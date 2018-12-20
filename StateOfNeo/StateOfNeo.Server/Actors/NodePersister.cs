@@ -43,30 +43,33 @@ namespace StateOfNeo.Server.Actors
         {
             if (message is PersistCompleted m)
             {
-                var optionsBuilder = new DbContextOptionsBuilder<StateOfNeoContext>();
-                optionsBuilder.UseSqlServer(this.connectionString, opts => opts.CommandTimeout((int)TimeSpan.FromMinutes(10).TotalSeconds));
-                var db = new StateOfNeoContext(optionsBuilder.Options);
-
-                var previousBlock = Blockchain.Singleton.GetBlock(m.Block.PrevHash);
-                var previousBlockTime = previousBlock.Timestamp.ToUnixDate();
-
-                var nodes = db.Nodes
-                    .Include(x => x.Audits)
-                    .Where(x => x.Net == this.net && x.SuccessUrl != null)
-                    .ToList();
-
-                foreach (var node in nodes)
+                if (m.Block.Index % 300 == 0)
                 {
-                    var audit = this.NodeAudit(node, m.Block.Timestamp, (m.Block.Timestamp.ToUnixDate() - previousBlockTime).TotalSeconds);
+                    var optionsBuilder = new DbContextOptionsBuilder<StateOfNeoContext>();
+                    optionsBuilder.UseSqlServer(this.connectionString, opts => opts.CommandTimeout((int)TimeSpan.FromMinutes(10).TotalSeconds));
+                    var db = new StateOfNeoContext(optionsBuilder.Options);
 
-                    if (audit != null)
+                    var previousBlock = Blockchain.Singleton.GetBlock(m.Block.PrevHash);
+                    var previousBlockTime = previousBlock.Timestamp.ToUnixDate();
+
+                    var nodes = db.Nodes
+                        .Include(x => x.Audits)
+                        .Where(x => x.Net == this.net && x.SuccessUrl != null)
+                        .ToList();
+
+                    foreach (var node in nodes)
                     {
-                        db.NodeAudits.Add(audit);
-                        node.LastAudit = m.Block.Timestamp;
-                    }
+                        var audit = this.NodeAudit(node, m.Block.Timestamp, (m.Block.Timestamp.ToUnixDate() - previousBlockTime).TotalSeconds);
 
-                    db.Nodes.Update(node);
-                    db.SaveChanges();
+                        if (audit != null)
+                        {
+                            db.NodeAudits.Add(audit);
+                            node.LastAudit = m.Block.Timestamp;
+                        }
+
+                        db.Nodes.Update(node);
+                        db.SaveChanges();
+                    }
                 }
             }
         }
