@@ -6,6 +6,7 @@ using StateOfNeo.Common.Extensions;
 using StateOfNeo.Server.Hubs;
 using StateOfNeo.Services;
 using StateOfNeo.Services.Block;
+using StateOfNeo.ViewModels;
 using StateOfNeo.ViewModels.Block;
 using StateOfNeo.ViewModels.Chart;
 using System.Threading.Tasks;
@@ -39,10 +40,21 @@ namespace StateOfNeo.Server.Controllers
         }
 
         [HttpGet("[action]/{height}")]
-        [ResponseCache(Duration = CachingConstants.TenYears)]
         public IActionResult ByHeight(int height)
         {
-            var block = this.blocks.Find<BlockDetailsViewModel>(height);
+            var block = this.blocks.Find<StampViewModel>(height);
+            if (block == null)
+            {
+                return this.BadRequest("Invalid block height");
+            }
+
+            return this.Ok(block);
+        }
+
+        [HttpGet("[action]/{height}")]
+        public IActionResult StampByHeight(int height)
+        {
+            var block = this.blocks.Find<StampViewModel>(height);
             if (block == null)
             {
                 return this.BadRequest("Invalid block height");

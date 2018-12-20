@@ -11,6 +11,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using X.PagedList;
 
+using WebSocket4Net;
+
 namespace StateOfNeo.Services
 {
     public class NodeService : FilterService, INodeService
@@ -44,6 +46,23 @@ namespace StateOfNeo.Services
             return this.Filter<NodeAudit>(filter,
                 x => new ValueExtractionModel { Size = x.Peers, Timestamp = x.Timestamp },
                 x => x.NodeId == nodeId);
+        }
+
+        public async Task<bool> GetWsStatusAsync(int nodeId)
+        {
+            var nodeUrl = this.db.Nodes
+                .Where(x => x.Id == nodeId)
+                .Select(x => $"ws://{x.Url}:10334")
+                .FirstOrDefault();
+
+            var websocket = new WebSocket(nodeUrl);            
+            await websocket.OpenAsync();
+
+            while (websocket.State == WebSocketState.Connecting) { }
+            var success = websocket.State == WebSocketState.Open;
+
+            await websocket.CloseAsync();
+            return success;
         }
     }
 }

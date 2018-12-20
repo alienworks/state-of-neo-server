@@ -7,6 +7,7 @@ namespace StateOfNeo.Infrastructure.Mapping
         public static void Init()
         {
             Mapper.Initialize(cfg => {
+                BaseConfig.InitMap(cfg);
                 NodeConfig.InitMap(cfg);
                 BlockConfig.InitMap(cfg);
                 AssetConfig.InitMap(cfg);
