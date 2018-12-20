@@ -140,5 +140,12 @@ namespace StateOfNeo.Server.Controllers
             var result = this.nodeService.PeersChart(filter, nodeId);
             return Ok(result);
         }
+
+        [HttpGet("[action]/{nodeId}")]
+        public async Task<IActionResult> WsStatus(int nodeId)
+        {
+            var status = await this.nodeService.GetWsStatusAsync(nodeId);
+            return this.Ok(status);
+        }
     }
 }
