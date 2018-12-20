@@ -82,7 +82,8 @@ namespace StateOfNeo.Server.Controllers
         [ResponseCache(Duration = CachingConstants.Hour)]
         public IActionResult Chart([FromBody]ChartFilterViewModel filter)
         {
-            var result = this.transactions.GetStats(filter);
+            //var result = this.transactions.GetStats(filter);
+            var result = this.state.GetTransactionsChart(filter.UnitOfTime, filter.EndPeriod);
             return this.Ok(result);
         }
         
@@ -113,7 +114,8 @@ namespace StateOfNeo.Server.Controllers
         [ResponseCache(Duration = CachingConstants.Hour)]
         public IActionResult PieChart()
         {
-            IEnumerable<ChartStatsViewModel> result = this.transactions.GetPieStats();
+            //IEnumerable<ChartStatsViewModel> result = this.transactions.GetPieStats();
+            var result = this.state.GetTransactionTypes();
             return this.Ok(result);
         }
 
@@ -127,13 +129,13 @@ namespace StateOfNeo.Server.Controllers
         [HttpGet("[action]")]
         public IActionResult Total()
         {
-            return this.Ok(this.state.GetTotalTxCount());
+            return this.Ok(this.state.MainStats.GetTotalTxCount());
         }
 
         [HttpGet("[action]")]
         public IActionResult TotalClaimed()
         {
-            return this.Ok(this.state.GetTotalClaimed());
+            return this.Ok(this.state.MainStats.GetTotalClaimed());
         }
     }
 }

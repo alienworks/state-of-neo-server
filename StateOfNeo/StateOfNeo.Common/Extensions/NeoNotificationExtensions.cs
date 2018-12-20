@@ -54,8 +54,12 @@ namespace StateOfNeo.Common.Extensions
             return instance;
         }
 
-        public static IEnumerable<string> ToStringList(this IEnumerable<StackItem> stackItems, int toSkip = 0) =>
-            stackItems.Skip(toSkip).Select(si => si.GetByteArray().ToHexString().HexStringToString());
+        public static IEnumerable<string> ToStringList(this IEnumerable<StackItem> stackItems, int toSkip = 0)
+        {
+            return stackItems.Skip(toSkip)
+                .Select(si => (si is Neo.VM.Types.Array) ?
+                    string.Join(", ", (si as Neo.VM.Types.Array).ToStringList()) : si.GetByteArray().ToHexString());
+        }
 
         private static void SetPropertyValue(string propertyName, object instance, object value) =>
             instance.GetType().GetProperty(propertyName).SetValue(instance, value);

@@ -32,8 +32,7 @@ namespace StateOfNeo.Services.Transaction
                 .Select(x => x.Transaction)
                 .ProjectTo<TransactionListViewModel>()
                 .ToPagedList(page, pageSize);
-
-
+        
         public IPagedList<TransactionListViewModel> TransactionsForAsset(string asset, int page = 1, int pageSize = 10) =>
             this.db.AssetsInTransactions
                 .Where(x => x.AssetHash == asset)

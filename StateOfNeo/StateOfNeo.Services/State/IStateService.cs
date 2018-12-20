@@ -1,22 +1,32 @@
-﻿using StateOfNeo.ViewModels;
+﻿using StateOfNeo.Common.Enums;
+using StateOfNeo.ViewModels;
+using StateOfNeo.ViewModels.Hub;
+using System.Collections.Generic;
+using StateOfNeo.ViewModels.Chart;
+using System;
 
 namespace StateOfNeo.Services
 {
     public interface IStateService
     {
-        HeaderStatsViewModel GetHeaderStats();
-        void SetHeaderStats(HeaderStatsViewModel newValue);
+        IMainStatsState MainStats { get; }
+        IContractsState Contracts { get; }
+        
+        IEnumerable<ChartStatsViewModel> GetTransactionTypes();
 
-        long GetTotalTxCount();
-        void AddToTotalTxCount(int count);
+        ICollection<ChartStatsViewModel> GetTransactionsChart(UnitOfTime unitOfTime, int count);
+        void AddTransactions(int count, DateTime time);
 
-        int GetTotalAddressCount();
-        void AddTotalAddressCount(int count);
+        ICollection<ChartStatsViewModel> GetAddressesChart(UnitOfTime unitOfTime, int count);
+        void AddAddresses(int count, DateTime time);
 
-        int GetTotalAssetsCount();
-        void AddTotalAssetsCount(int count);
+        ICollection<ChartStatsViewModel> GetBlockSizesChart(UnitOfTime unitOfTime, int count);
+        void AddBlockSize(int size, DateTime time);
 
-        decimal GetTotalClaimed();
-        void AddTotalClaimed(decimal amount);
+        ICollection<ChartStatsViewModel> GetBlockTimesChart(UnitOfTime unitOfTime, int count);
+        void AddBlockTime(double blockSeconds, DateTime time);
+
+        ICollection<ChartStatsViewModel> GetBlockTransactionsChart(UnitOfTime unitOfTime, int count);
+        void AddBlockTransactions(int transactions, DateTime time);
     }
 }

@@ -14,15 +14,15 @@ namespace StateOfNeo.Server.Controllers
 {
     public class BlockController : BaseApiController
     {
-        private readonly IHubContext<BlockHub> blockHub;
         private readonly IBlockService blocks;
         private readonly IPaginatingService paginating;
+        private readonly IStateService state;
 
-        public BlockController(IHubContext<BlockHub> blockHub, IBlockService blocks, IPaginatingService paginating)
+        public BlockController(IBlockService blocks, IPaginatingService paginating, IStateService state)
         {
-            this.blockHub = blockHub;
             this.blocks = blocks;
             this.paginating = paginating;
+            this.state = state;
         }
 
         [HttpGet("[action]/{hash}")]
@@ -63,7 +63,8 @@ namespace StateOfNeo.Server.Controllers
         [ResponseCache(Duration = CachingConstants.Hour)]
         public IActionResult BlockSizeChart([FromBody]ChartFilterViewModel filter)
         {
-            var result = this.blocks.GetBlockSizeStats(filter);
+            //var result = this.blocks.GetBlockSizeStats(filter);
+            var result = this.state.GetBlockSizesChart(filter.UnitOfTime, filter.EndPeriod);
             return this.Ok(result);
         }
 
@@ -71,7 +72,8 @@ namespace StateOfNeo.Server.Controllers
         [ResponseCache(Duration = CachingConstants.Hour)]
         public IActionResult BlockTimeChart([FromBody]ChartFilterViewModel filter)
         {
-            var result = this.blocks.GetBlockTimeStats(filter);
+            //var result = this.blocks.GetBlockTimeStats(filter);
+            var result = this.state.GetBlockTimesChart(filter.UnitOfTime, filter.EndPeriod);
             return this.Ok(result);
         }
 
@@ -79,12 +81,6 @@ namespace StateOfNeo.Server.Controllers
         public IActionResult GetHeight()
         {
             return this.Ok(Blockchain.Singleton.Height.ToString());
-        }
-
-        [HttpPost]
-        public async Task Post()
-        {
-            await blockHub.Clients.All.SendAsync(Blockchain.Singleton.Height.ToString());
         }
 
         [HttpGet("[action]")]

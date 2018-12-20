@@ -39,7 +39,6 @@ namespace StateOfNeo.Server.Controllers
         public IActionResult List(int page = 1, int pageSize = 10)
         {
             var result = this.addresses.GetPage(page, pageSize);
-
             return this.Ok(result.ToListResult());
         }
 
@@ -67,7 +66,7 @@ namespace StateOfNeo.Server.Controllers
         [HttpGet("[action]")]
         public IActionResult Created()
         {
-            return this.Ok(this.state.GetTotalAddressCount());
+            return this.Ok(this.state.MainStats.GetTotalAddressCount());
         }
 
         [HttpGet("[action]")]
@@ -82,7 +81,8 @@ namespace StateOfNeo.Server.Controllers
         [ResponseCache(Duration = CachingConstants.Hour)]
         public IActionResult Chart([FromBody]ChartFilterViewModel filter)
         {
-            var result = this.addresses.GetCreatedAddressesChart(filter);
+            //var result = this.addresses.GetCreatedAddressesChart(filter);
+            var result = this.state.GetAddressesChart(filter.UnitOfTime, filter.EndPeriod);
             return this.Ok(result);
         }
         

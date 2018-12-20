@@ -3,15 +3,17 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using StateOfNeo.Data;
 
 namespace StateOfNeo.Data.Migrations
 {
     [DbContext(typeof(StateOfNeoContext))]
-    partial class StateOfNeoContextModelSnapshot : ModelSnapshot
+    [Migration("20181217111709_Add_ChartEntry_And_TotalStats_Tables")]
+    partial class Add_ChartEntry_And_TotalStats_Tables
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -385,21 +387,14 @@ namespace StateOfNeo.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
-                    b.Property<int?>("AddressCount");
+                    b.Property<int>("BlockCount");
 
-                    b.Property<int?>("AssetsCount");
+                    b.Property<decimal>("ClaimedGas")
+                        .HasColumnType("decimal(36, 8)");
 
-                    b.Property<int?>("BlockCount");
+                    b.Property<long>("Timestamp");
 
-                    b.Property<long?>("BlocksSizes");
-
-                    b.Property<decimal?>("BlocksTimes");
-
-                    b.Property<decimal?>("ClaimedGas");
-
-                    b.Property<long?>("Timestamp");
-
-                    b.Property<long?>("TransactionsCount");
+                    b.Property<int>("TransactionsCount");
 
                     b.HasKey("Id");
 

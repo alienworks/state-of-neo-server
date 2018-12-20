@@ -73,8 +73,7 @@ namespace StateOfNeo.Services.Address
         public IPagedList<AddressListViewModel> GetPage(int page = 1, int pageSize = 10)
         {
             var query = this.db.Addresses
-                .Include(x => x.OutgoingTransactions)
-                .Include(x => x.IncomingTransactions)
+                .Include(x => x.AddressesInAssetTransactions)
                 .AsQueryable();
 
             return query

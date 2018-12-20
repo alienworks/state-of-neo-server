@@ -1,7 +1,5 @@
 ﻿using StateOfNeo.Common.Enums;
 using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace StateOfNeo.ViewModels.Chart
 {
@@ -11,8 +9,12 @@ namespace StateOfNeo.ViewModels.Chart
 
         public DateTime StartDate { get; set; }
 
+        public long Timestamp { get; set; }
+
         public UnitOfTime UnitOfTime { get; set; }
 
         public decimal Value { get; set; }
+
+        public decimal AccumulatedValue { get; set; }
     }
 }

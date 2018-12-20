@@ -21,34 +21,50 @@ namespace StateOfNeo.ViewModels.Chart
 
         public DateTime GetEndPeriod()
         {
-            if (this.UnitOfTime == UnitOfTime.Hour) return this.StartDate.Value.AddHours(-this.EndPeriod);
-            if (this.UnitOfTime == UnitOfTime.Day) return this.StartDate.Value.AddDays(-this.EndPeriod);
-            if (this.UnitOfTime == UnitOfTime.Month) return this.StartDate.Value.AddMonths(-this.EndPeriod);
-            return this.StartDate.Value.AddDays(-this.EndPeriod);
+            if (this.UnitOfTime == UnitOfTime.Hour) return new DateTime(this.StartDate.Value.Year, this.StartDate.Value.Month, this.StartDate.Value.Day, this.StartDate.Value.Hour, 0, 0).AddHours(-this.EndPeriod);
+            if (this.UnitOfTime == UnitOfTime.Day) return new DateTime(this.StartDate.Value.Year, this.StartDate.Value.Month, this.StartDate.Value.Day).AddDays(-this.EndPeriod);
+            if (this.UnitOfTime == UnitOfTime.Month) return new DateTime(this.StartDate.Value.Year, this.StartDate.Value.Month, 1).AddMonths(-this.EndPeriod);
+            return new DateTime(this.StartDate.Value.Year, this.StartDate.Value.Month, this.StartDate.Value.Day).AddDays(-this.EndPeriod);
         }
 
         public IEnumerable<long> GetPeriodStamps()
         {
             List<long> periods = new List<long>();
 
-            for (int i = 1; i <= this.EndPeriod; i++)
+            for (int i = 1; i <= this.EndPeriod - 1; i++)
             {
-                var end = this.StartDate;
+                var end = default(DateTime);
                 if (this.UnitOfTime == UnitOfTime.Hour)
                 {
-                    end = end.Value.AddHours(-i);
+                    end = new DateTime(this.StartDate.Value.Year, this.StartDate.Value.Month, this.StartDate.Value.Day, this.StartDate.Value.Hour, 0, 0).AddHours(-i);
                 }
-                if (this.UnitOfTime == UnitOfTime.Day)
+                else if (this.UnitOfTime == UnitOfTime.Day)
                 {
-                    end = end.Value.AddHours(-i);
+                    end = new DateTime(this.StartDate.Value.Year, this.StartDate.Value.Month, this.StartDate.Value.Day).AddDays(-i);
                 }
-                if (this.UnitOfTime == UnitOfTime.Month)
+                else if (this.UnitOfTime == UnitOfTime.Month)
                 {
-                    end = end.Value.AddMonths(-i);
+                    end = new DateTime(this.StartDate.Value.Year, this.StartDate.Value.Month, 1).AddMonths(-i);
                 }
 
                 periods.Add(((DateTimeOffset)end).ToUnixTimeSeconds());
             }
+
+            var lastPeriod = default(DateTime);
+            if (this.UnitOfTime == UnitOfTime.Hour)
+            {
+                lastPeriod=new DateTime(this.StartDate.Value.Year, this.StartDate.Value.Month, this.StartDate.Value.Day, this.StartDate.Value.Hour, 0, 0).AddHours(1);
+            }
+            else if (this.UnitOfTime == UnitOfTime.Day)
+            {
+                lastPeriod = new DateTime(this.StartDate.Value.Year, this.StartDate.Value.Month, this.StartDate.Value.Day).AddDays(1);
+            }
+            else if (this.UnitOfTime == UnitOfTime.Month)
+            {
+                lastPeriod = new DateTime(this.StartDate.Value.Year, this.StartDate.Value.Month, 1).AddMonths(1);
+            }
+
+            periods.Add(((DateTimeOffset)lastPeriod).ToUnixTimeSeconds());
 
             return periods;
         }
