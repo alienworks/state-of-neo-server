@@ -46,6 +46,7 @@ namespace StateOfNeo.Services
             this.LoadTransactionsMainChart();
             this.LoadCreatedAddressesMainChart();
             this.LoadBlockTimesMainChart();
+
             this.LoadBlockSizesMainChart();
 
             stopwatch.Stop();
@@ -199,7 +200,7 @@ namespace StateOfNeo.Services
                 var blockQuery = this.db.Blocks
                     .Where(x => x.Timestamp <= latestBlockDate && x.Timestamp >= endStamp);
                 var count = blockQuery.Count();
-                var sum = count > 0 ? blockQuery.Sum(x => x.Size) : 0;
+                var sum = count > 0 ? blockQuery.Select(x => (long)x.Size).ToList().Sum() : 0;
 
                 result.Add(new ChartStatsViewModel
                 {
