@@ -1,12 +1,11 @@
 ﻿using Neo.SmartContract;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace StateOfNeo.Data.Models
 {
     public class SmartContract : BaseEntity
     {
+        public int Id { get; set; }
+
         public string Hash { get; set; }
 
         public long Timestamp { get; set; }
