@@ -50,6 +50,7 @@ namespace StateOfNeo.Server.Actors
         private DateTime genesisTime = GenesisBlock.Timestamp.ToUnixDate();
 
         private readonly ICollection<Data.Models.Asset> pendingAssets = new List<Data.Models.Asset>();
+        private readonly ICollection<Data.Models.SmartContract> pendingSmartContracts = new List<Data.Models.SmartContract>();
         private readonly ICollection<Data.Models.Address> pendingAddresses = new List<Data.Models.Address>();
         private readonly ICollection<Data.Models.AddressAssetBalance> pendingBalances = new List<Data.Models.AddressAssetBalance>();
 
@@ -106,7 +107,6 @@ namespace StateOfNeo.Server.Actors
                 Neo.Network.P2P.Payloads.Block block = null;
                 while (currentHeight < m.Block.Index)
                 {
-                    var sw1 = System.Diagnostics.Stopwatch.StartNew();
                     var hash = Blockchain.Singleton.GetBlockHash((uint)currentHeight + 1);
 
                     // Left for duplicate transaction hash issue
@@ -118,12 +118,7 @@ namespace StateOfNeo.Server.Actors
                     currentHeight++;
                     if (db.ChangeTracker.Entries().Count() > 10_000)
                     {
-                        sw1.Stop();
-                        var sw2 = System.Diagnostics.Stopwatch.StartNew();
                         this.SaveEmitAndClear(db, persisted, block.Transactions.Length);
-                        sw2.Stop();
-
-                        var totalTime = sw1.ElapsedMilliseconds + sw2.ElapsedMilliseconds;
 
                         db = StateOfNeoContext.Create(this.connectionString);
                     }
@@ -169,7 +164,7 @@ namespace StateOfNeo.Server.Actors
             foreach (var item in blockToPersist.Transactions)
             {
                 var newTxHash = item.Hash.ToString();
-                if (db.Transactions.Any(x => x.Hash == newTxHash))
+                while (db.Transactions.Any(x => x.Hash == newTxHash))
                 {
                     newTxHash += "+1";
                     Log.Warning($"Duplicate transaction hash - {newTxHash}");
@@ -341,7 +336,7 @@ namespace StateOfNeo.Server.Actors
 
                     fromAddress.LastTransactionOn = blockTime;
                     var fromBalance = this.GetBalance(db, asset.Hash, fromAddress.PublicAddress);
-                    fromBalance.Balance -= (float)ta.Amount;
+                    fromBalance.Balance -= ta.Amount;
                     this.AdjustTransactedAmount(transactedAmounts, assetHash, fromPublicAddress, -ta.Amount);
 
                     transaction.GlobalIncomingAssets.Add(ta);
@@ -369,7 +364,7 @@ namespace StateOfNeo.Server.Actors
 
                     toAddress.LastTransactionOn = blockTime;
                     var toBalance = this.GetBalance(db, asset.Hash, toAddress.PublicAddress);
-                    toBalance.Balance += (float)ta.Amount;
+                    toBalance.Balance += ta.Amount;
                     this.AdjustTransactedAmount(transactedAmounts, assetHash, toPublicAddress, ta.Amount);
 
                     transaction.GlobalOutgoingAssets.Add(ta);
@@ -433,6 +428,44 @@ namespace StateOfNeo.Server.Actors
             return block;
         }
 
+        private void EnsureSmartContractCreated(UInt160 contractHash, StateOfNeoContext db, long timestamp)
+        {
+            var result = db.SmartContracts.Where(x => x.Hash == contractHash.ToString()).FirstOrDefault();
+            if (result != null)
+            {
+                return;
+            }
+
+            result = pendingSmartContracts.FirstOrDefault(x => x.Hash == contractHash.ToString());
+            if (result != null)
+            {
+                return;
+            }
+
+            var contractsStore = Singleton.Store.GetContracts();
+            var sc = contractsStore.TryGet(contractHash);
+
+            var newSc = new SmartContract
+            {
+                Author = sc.Author,
+                CreatedOn = DateTime.UtcNow,
+                Description = sc.Description,
+                Email = sc.Email,
+                HasDynamicInvoke = sc.HasDynamicInvoke,
+                Hash = contractHash.ToString(),
+                HasStorage = sc.HasStorage,
+                InputParameters = string.Join(",", sc.ParameterList.Select(x => x)),
+                Name = sc.Name,
+                Payable = sc.Payable,
+                ReturnType = sc.ReturnType,
+                Timestamp = timestamp,
+                Version = sc.CodeVersion
+            };
+
+            db.SmartContracts.Add(newSc);
+            pendingSmartContracts.Add(newSc);
+        }
+
         private void AdjustTransactedAmount(
             Dictionary<string, Dictionary<string, decimal>> transactedAmounts,
             string assetHash,
@@ -455,6 +488,7 @@ namespace StateOfNeo.Server.Actors
         private void TrackInvocationTransaction(Neo.Network.P2P.Payloads.InvocationTransaction transaction, StateOfNeoContext db, DateTime blockTime)
         {
             AppExecutionResult result = null;
+            UInt160 contractHash = null;
             using (ApplicationEngine engine = new ApplicationEngine(TriggerType.Application, transaction, Blockchain.Singleton.GetSnapshot().Clone(), transaction.Gas))
             {
                 engine.LoadScript(transaction.Script);
@@ -472,11 +506,14 @@ namespace StateOfNeo.Server.Actors
                     Stack = engine.ResultStack.ToArray(),
                     Notifications = engine.Service.Notifications.ToArray()
                 };
+
+                contractHash = new UInt160(engine.CurrentContext.ScriptHash);
             }
+
+            this.EnsureSmartContractCreated(contractHash, db, blockTime.ToUnixTimestamp());
 
             foreach (var item in result.Notifications)
             {
-                var contractHash = item.ScriptHash.ToString();
                 var type = item.GetNotificationType();
                 string[] notificationStringArray = item.State is Neo.VM.Types.Array ?
                     (item.State as Neo.VM.Types.Array).ToStringList().ToArray() : new string[] { type };
@@ -484,7 +521,7 @@ namespace StateOfNeo.Server.Actors
                 if (type == "transfer")
                 {
                     var name = this.TestInvoke(item.ScriptHash, "name").HexStringToString();
-                    var asset = this.GetAsset(db, contractHash);
+                    var asset = this.GetAsset(db, contractHash.ToString());
                     var symbol = this.TestInvoke(item.ScriptHash, "symbol").HexStringToString();
                     if (asset == null)
                     {
@@ -511,7 +548,7 @@ namespace StateOfNeo.Server.Actors
                         {
                             CreatedOn = DateTime.UtcNow,
                             GlobalType = null,
-                            Hash = contractHash,
+                            Hash = contractHash.ToString(),
                             Name = name,
                             MaxSupply = totalSupply,
                             Type = AssetType.NEP5,
@@ -561,7 +598,7 @@ namespace StateOfNeo.Server.Actors
 
                     var ta = new Data.Models.Transactions.TransactedAsset
                     {
-                        Amount = (decimal)notification.Amount,
+                        Amount = notification.Amount.ToDecimal(asset.Decimals),
                         Asset = asset,
                         FromAddressPublicAddress = from,
                         ToAddressPublicAddress = to,
@@ -626,7 +663,7 @@ namespace StateOfNeo.Server.Actors
 
                     var fromBalance = this.GetBalance(db, asset.Hash, from);
                     fromBalance.TransactionsCount++;
-                    fromBalance.Balance -= (float)ta.Amount;
+                    fromBalance.Balance -= ta.Amount;
                     if (fromBalance.Balance < 0)
                     {
                         fromBalance.Balance = -1;
@@ -634,7 +671,7 @@ namespace StateOfNeo.Server.Actors
 
                     var toBalance = this.GetBalance(db, asset.Hash, to);
                     toBalance.TransactionsCount++;
-                    toBalance.Balance += (float)ta.Amount;
+                    toBalance.Balance += ta.Amount;
                 }
                 else
                 {
@@ -642,11 +679,11 @@ namespace StateOfNeo.Server.Actors
                         This is for tx = {transaction.Hash.ToString()}");
                 }
 
-                this.state.Contracts.SetOrAddNotificationsForContract(contractHash, contractHash, blockTime.ToUnixTimestamp(), type, notificationStringArray);
+                this.state.Contracts.SetOrAddNotificationsForContract(contractHash.ToString(), contractHash.ToString(), blockTime.ToUnixTimestamp(), type, notificationStringArray);
                 this.notificationHub
                     .Clients
-                    .Group(contractHash)
-                    .SendAsync("contract", this.state.Contracts.GetNotificationsFor(contractHash));
+                    .Group(contractHash.ToString())
+                    .SendAsync("contract", this.state.Contracts.GetNotificationsFor(contractHash.ToString()));
                 this.notificationHub
                     .Clients
                     .All
@@ -703,6 +740,7 @@ namespace StateOfNeo.Server.Actors
             this.pendingAddresses.Clear();
             this.pendingAssets.Clear();
             this.pendingBalances.Clear();
+            this.pendingSmartContracts.Clear();
         }
 
         private void EmitStatsInfo()
@@ -944,14 +982,14 @@ namespace StateOfNeo.Server.Actors
                 CreatedOn = DateTime.UtcNow,
                 Address = toAddress,
                 Asset = neo,
-                Balance = (float)transactedAsset.Amount,
+                Balance = transactedAsset.Amount,
                 TransactionsCount = 1
             };
 
             var addressInTransaction = new AddressInTransaction
             {
                 AddressPublicAddress = toAddress.PublicAddress,
-                Amount = (decimal)balance.Balance,
+                Amount = balance.Balance,
                 AssetHash = neo.Hash,
                 CreatedOn = DateTime.UtcNow,
                 Timestamp = genesisBlock.Timestamp,

@@ -3,6 +3,7 @@ using Neo.Cryptography;
 using StateOfNeo.Common.Enums;
 using System;
 using System.Collections.Generic;
+using System.Numerics;
 using System.Text;
 
 namespace StateOfNeo.Common.Extensions
@@ -10,14 +11,14 @@ namespace StateOfNeo.Common.Extensions
     public static class NumberExtensions
     {
         public static DateTime ToUnixDate(this long timestamp) =>
-            new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).AddSeconds(timestamp).ToLocalTime();
+            new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).AddSeconds(timestamp);
 
         public static DateTime ToUnixDate(this uint timestamp) =>
-            new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).AddSeconds(timestamp).ToLocalTime();
+            new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).AddSeconds(timestamp);
 
         public static bool IsOlderThan(this long timestamp, UnitOfTime unitOfTime)
         {
-            var date = ToUnixDate(timestamp).ToUniversalTime();
+            var date = ToUnixDate(timestamp);
             var now = DateTime.UtcNow;
             if (unitOfTime == UnitOfTime.Hour)
             {
@@ -34,6 +35,9 @@ namespace StateOfNeo.Common.Extensions
 
             return false;
         }
+
+        public static decimal ToDecimal(this BigInteger source, int precision = 8) => 
+            (decimal)source / (decimal)Math.Pow(10, precision);
         
         //public static string ToAddress(this UInt160 scriptHash)
         //{

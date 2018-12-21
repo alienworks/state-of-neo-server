@@ -65,6 +65,7 @@ namespace StateOfNeo.Common.Helpers.Filters
             {
                 return new DateTime(date.Year, date.Month, date.Day);
             }
+
             return new DateTime(date.Year, date.Month, date.Day, date.Hour, 0, 0);
         }
     }

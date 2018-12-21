@@ -56,7 +56,7 @@ namespace StateOfNeo.Services
         private List<ChartStatsViewModel> GetChartEntries(UnitOfTime unitOfTime, ChartEntryType type) =>
             this.db.ChartEntries
                 .Where(x => x.UnitOfTime == unitOfTime && x.Type == type)
-                .OrderByDescending(x => x.TimeStamp)
+                .OrderByDescending(x => x.Timestamp)
                 .Take(36)
                 .ProjectTo<ChartStatsViewModel>()
                 .ToList();
@@ -216,7 +216,7 @@ namespace StateOfNeo.Services
                     this.db.ChartEntries.Add(new Data.Models.ChartEntry
                     {
                         UnitOfTime = filter.UnitOfTime,
-                        TimeStamp = endStamp,
+                        Timestamp = endStamp,
                         Type = ChartEntryType.BlockSizes,
                         AccumulatedValue = sum,
                         Value = count
@@ -261,7 +261,7 @@ namespace StateOfNeo.Services
                     this.db.ChartEntries.Add(new Data.Models.ChartEntry
                     {
                         UnitOfTime = filter.UnitOfTime,
-                        TimeStamp = endStamp,
+                        Timestamp = endStamp,
                         Type = ChartEntryType.BlockTimes,
                         AccumulatedValue = (decimal)sum,
                         Value = count
@@ -358,7 +358,7 @@ namespace StateOfNeo.Services
                     this.db.ChartEntries.Add(new Data.Models.ChartEntry
                     {
                         UnitOfTime = filter.UnitOfTime,
-                        TimeStamp = entry.Timestamp,
+                        Timestamp = entry.Timestamp,
                         Type = ChartEntryType.CreatedAddresses,
                         Value = entry.Value
                     });
@@ -395,7 +395,7 @@ namespace StateOfNeo.Services
                     this.db.ChartEntries.Add(new Data.Models.ChartEntry
                     {
                         UnitOfTime = filter.UnitOfTime,
-                        TimeStamp = endStamp,
+                        Timestamp = endStamp,
                         Type = ChartEntryType.Transactions,
                         Value = count
                     });

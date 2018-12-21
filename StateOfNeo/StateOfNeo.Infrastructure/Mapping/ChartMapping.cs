@@ -10,7 +10,7 @@ namespace StateOfNeo.Infrastructure.Mapping
         internal static void InitMap(IMapperConfigurationExpression cfg)
         {
             cfg.CreateMap<ChartEntry, ChartStatsViewModel>()
-                .ForMember(x => x.StartDate, y => y.MapFrom(z => z.TimeStamp.ToUnixDate()));
+                .ForMember(x => x.StartDate, y => y.MapFrom(z => z.Timestamp.ToUnixDate()));
         }
     }
 }

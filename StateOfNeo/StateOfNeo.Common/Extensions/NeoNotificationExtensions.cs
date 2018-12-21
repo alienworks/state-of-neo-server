@@ -29,14 +29,7 @@ namespace StateOfNeo.Common.Extensions
                     var rawValue = stackItems.ElementAt(i).GetByteArray();
                     if (property.PropertyType == typeof(BigInteger))
                     {
-                        var valueAsString = rawValue.ToHexString();
-                        var result = new BigInteger(0);
-
-                        if (!string.IsNullOrEmpty(valueAsString))
-                        {
-                            result = BigInteger.Parse(valueAsString, NumberStyles.AllowHexSpecifier);
-                        }
-
+                        var result = new BigInteger(rawValue);
                         SetPropertyValue(property.Name, instance, result);
                     }
                     else if (property.PropertyType == typeof(byte[]))
