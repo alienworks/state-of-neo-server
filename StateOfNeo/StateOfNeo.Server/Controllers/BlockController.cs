@@ -42,10 +42,23 @@ namespace StateOfNeo.Server.Controllers
         [HttpGet("[action]/{height}")]
         public IActionResult ByHeight(int height)
         {
-            var block = this.blocks.Find<StampViewModel>(height);
+            var block = this.blocks.Find<BlockDetailsViewModel>(height);
             if (block == null)
             {
                 return this.BadRequest("Invalid block height");
+            }
+
+            return this.Ok(block);
+        }
+
+        [HttpGet("[action]/{hash}")]
+        [ResponseCache(Duration = CachingConstants.TenYears)]
+        public IActionResult StampByHash(string hash)
+        {
+            var block = this.blocks.Find<StampViewModel>(hash);
+            if (block == null)
+            {
+                return this.BadRequest("Invalid block hash");
             }
 
             return this.Ok(block);
