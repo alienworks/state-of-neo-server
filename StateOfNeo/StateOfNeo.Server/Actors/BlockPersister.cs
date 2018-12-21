@@ -394,6 +394,7 @@ namespace StateOfNeo.Server.Actors
                     };
 
                     transaction.AssetsInTransactions.Add(assetInTransaction);
+                    this.state.MainStats.AddToTotalNeoGasTxCount(1);
 
                     foreach (var addressTransaction in assetTransactions.Value)
                     {
@@ -534,6 +535,7 @@ namespace StateOfNeo.Server.Actors
                     };
 
                     db.AssetsInTransactions.Add(assetInTransaction);
+                    this.state.MainStats.AddToTotalNep5TxCount(1);
 
                     var isLfx = symbol.ToLower() == "lfx";
                     var notification = isLfx ? item.GetNotification<TransferNotification>(2) : item.GetNotification<TransferNotification>();
@@ -720,6 +722,8 @@ namespace StateOfNeo.Server.Actors
             this.statsHub.Clients.All.SendAsync("address-count", this.state.MainStats.GetTotalAddressCount());
             // Assets
             this.statsHub.Clients.All.SendAsync("assets-count", this.state.MainStats.GetTotalAssetsCount());
+            this.statsHub.Clients.All.SendAsync("gas-neo-tx-count", this.state.MainStats.GetTotalGasAndNeoTxCount());
+            this.statsHub.Clients.All.SendAsync("nep-5-tx-count", this.state.MainStats.GetTotalNep5TxCount());
         }
 
         private TimeSpan TimeSpanBetweenGenesisAndNow()
