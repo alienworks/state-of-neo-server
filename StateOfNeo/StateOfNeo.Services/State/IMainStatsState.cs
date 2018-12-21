@@ -21,6 +21,10 @@ namespace StateOfNeo.Services
 
         int GetTotalAssetsCount();
         void AddTotalAssetsCount(int count);
+        long GetTotalGasAndNeoTxCount();
+        void AddToTotalNeoGasTxCount(int value);
+        long GetTotalNep5TxCount();
+        void AddToTotalNep5TxCount(int value);
 
         int GetTotalBlocksCount();
         void AddTotalBlocksCount(int count);

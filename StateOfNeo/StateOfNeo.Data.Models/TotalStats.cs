@@ -14,6 +14,9 @@
         public int? AddressCount { get; set; }
         public int? AssetsCount { get; set; }
 
+        public long? NeoGasTxCount { get; set; }
+        public long? Nep5TxCount { get; set; }
+
         public long? Timestamp { get; set; }
     }
 }

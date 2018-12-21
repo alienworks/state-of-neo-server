@@ -25,6 +25,8 @@ namespace StateOfNeo.Server.Hubs
             await this.Clients.Caller.SendAsync("address-count", this.state.MainStats.GetTotalAddressCount());
             await this.Clients.Caller.SendAsync("assets-count", this.state.MainStats.GetTotalAssetsCount());
             await this.Clients.Caller.SendAsync("total-claimed", this.state.MainStats.GetTotalClaimed());
+            await this.Clients.Caller.SendAsync("gas-neo-tx-count", this.state.MainStats.GetTotalGasAndNeoTxCount());
+            await this.Clients.Caller.SendAsync("nep-5-tx-count", this.state.MainStats.GetTotalNep5TxCount());
         }
     }
 }
