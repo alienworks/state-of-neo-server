@@ -23,6 +23,7 @@ using StateOfNeo.Services;
 using StateOfNeo.ViewModels;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Threading;
@@ -445,6 +446,10 @@ namespace StateOfNeo.Server.Actors
 
             var contractsStore = Singleton.Store.GetContracts();
             var sc = contractsStore.TryGet(contractHash);
+            if (sc == null)
+            {
+                return;
+            }
 
             var newSc = new SmartContract
             {
@@ -489,13 +494,45 @@ namespace StateOfNeo.Server.Actors
         private void TrackInvocationTransaction(Neo.Network.P2P.Payloads.InvocationTransaction transaction, StateOfNeoContext db, DateTime blockTime)
         {
             AppExecutionResult result = null;
-            UInt160 contractHash = null;
-            using (ApplicationEngine engine = new ApplicationEngine(TriggerType.Application, transaction, Blockchain.Singleton.GetSnapshot().Clone(), transaction.Gas))
+            using (ApplicationEngine engine = new ApplicationEngine(TriggerType.Application, transaction, Blockchain.Singleton.GetSnapshot().Clone(), transaction.Gas, true))
             {
                 engine.LoadScript(transaction.Script);
-                if (engine.Execute())
+                while (
+                    !engine.State.HasFlag(VMState.FAULT) 
+                    && engine.InvocationStack.Any() 
+                    && engine.CurrentContext.InstructionPointer != engine.CurrentContext.Script.Length)
+                {
+                    var nextOpCode = engine.CurrentContext.NextInstruction;
+                    if (nextOpCode == OpCode.APPCALL)
+                    {
+                        var startingPosition = engine.CurrentContext.InstructionPointer;
+                        engine.CurrentContext.InstructionPointer = startingPosition + 1;
+
+                        var reader = engine.CurrentContext.GetFieldValue<BinaryReader>("OpReader");
+                        var rawContractHash = reader.ReadBytes(20);
+                        engine.CurrentContext.InstructionPointer = startingPosition;
+
+                        var contractHash = new UInt160(rawContractHash);
+                        this.EnsureSmartContractCreated(contractHash, db, blockTime.ToUnixTimestamp());
+                    }
+
+                    engine.StepInto();
+                }
+
+                var success = !engine.State.HasFlag(VMState.FAULT);
+                if (success)
                 {
                     engine.Service.Commit();
+
+                    var createdContracts = engine.Service
+                        .GetFieldValue<Dictionary<UInt160, UInt160>>("ContractsCreated")
+                        .Select(x => x.Key)                        
+                        .ToList();
+
+                    foreach (var item in createdContracts)
+                    {
+                        this.EnsureSmartContractCreated(item, db, blockTime.ToUnixTimestamp());
+                    }
                 }
 
                 result = new AppExecutionResult
@@ -507,22 +544,19 @@ namespace StateOfNeo.Server.Actors
                     Stack = engine.ResultStack.ToArray(),
                     Notifications = engine.Service.Notifications.ToArray()
                 };
-
-                contractHash = new UInt160(engine.CurrentContext.ScriptHash);
             }
-
-            this.EnsureSmartContractCreated(contractHash, db, blockTime.ToUnixTimestamp());
 
             foreach (var item in result.Notifications)
             {
                 var type = item.GetNotificationType();
-                string[] notificationStringArray = item.State is Neo.VM.Types.Array ?
-                    (item.State as Neo.VM.Types.Array).ToStringList().ToArray() : new string[] { type };
+                string[] notificationStringArray = item.State is Neo.VM.Types.Array 
+                    ? (item.State as Neo.VM.Types.Array).ToStringList().ToArray() 
+                    : new string[] { type };
 
                 if (type == "transfer")
                 {
                     var name = this.TestInvoke(item.ScriptHash, "name").HexStringToString();
-                    var asset = this.GetAsset(db, contractHash.ToString());
+                    var asset = this.GetAsset(db, item.ScriptHash.ToString());
                     var symbol = this.TestInvoke(item.ScriptHash, "symbol").HexStringToString();
                     if (asset == null)
                     {
@@ -542,14 +576,14 @@ namespace StateOfNeo.Server.Actors
                         }
                         catch (Exception e)
                         {
-                            Log.Warning($"Getting totalSupply throw an error for contract - {contractHash}. In this Max and Total supply are set to null");
+                            Log.Warning($"Getting totalSupply throw an error for contract - {item.ScriptHash.ToString()}. In this Max and Total supply are set to null");
                         }
 
                         asset = new Asset
                         {
                             CreatedOn = DateTime.UtcNow,
                             GlobalType = null,
-                            Hash = contractHash.ToString(),
+                            Hash = item.ScriptHash.ToString(),
                             Name = name,
                             MaxSupply = totalSupply,
                             Type = AssetType.NEP5,
@@ -677,15 +711,15 @@ namespace StateOfNeo.Server.Actors
                 }
                 else
                 {
-                    Log.Information($@"Notification of type - {type} has been thrown by contract - {contractHash}
+                    Log.Information($@"Notification of type - {type} has been thrown by contract - {item.ScriptHash}
                         This is for tx = {transaction.Hash.ToString()}");
                 }
 
-                this.state.Contracts.SetOrAddNotificationsForContract(contractHash.ToString(), contractHash.ToString(), blockTime.ToUnixTimestamp(), type, notificationStringArray);
+                this.state.Contracts.SetOrAddNotificationsForContract(item.ScriptHash.ToString(), item.ScriptHash.ToString(), blockTime.ToUnixTimestamp(), type, notificationStringArray);
                 this.notificationHub
                     .Clients
-                    .Group(contractHash.ToString())
-                    .SendAsync("contract", this.state.Contracts.GetNotificationsFor(contractHash.ToString()));
+                    .Group(item.ScriptHash.ToString())
+                    .SendAsync("contract", this.state.Contracts.GetNotificationsFor(item.ScriptHash.ToString()));
                 this.notificationHub
                     .Clients
                     .All
