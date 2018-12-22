@@ -53,6 +53,8 @@ namespace StateOfNeo.Services
             this.GetTotalGasAndNeoTxCount();
             this.GetTotalNep5TxCount();
 
+            this.db.SaveChanges();
+
             this.db.Dispose();
 
             stopwatch.Stop();
