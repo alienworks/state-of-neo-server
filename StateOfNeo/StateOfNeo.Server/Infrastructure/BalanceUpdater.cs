@@ -31,7 +31,7 @@ namespace StateOfNeo.Server.Infrastructure
             this.Run();
         }
 
-        public void Run(uint start = 0, uint end = 3117429)
+        public void Run(uint start = 593_072, uint end = 3117429)
         {
             for (uint i = start; i < end; i++)
             {
@@ -45,7 +45,7 @@ namespace StateOfNeo.Server.Infrastructure
 
                     for (int j = 0; j < transaction.Inputs.Length; j++)
                     {
-                        var input = transaction.Inputs[i];
+                        var input = transaction.Inputs[j];
                         var fromPublicAddress = transaction.References[input].ScriptHash.ToAddress();
                         var fromAddress = this.GetAddress(fromPublicAddress);
                         fromAddress.LastTransactionOn = blockTime;
@@ -65,7 +65,7 @@ namespace StateOfNeo.Server.Infrastructure
 
                     for (int j = 0; j < transaction.Outputs.Length; j++)
                     {
-                        var output = transaction.Outputs[i];
+                        var output = transaction.Outputs[j];
                         var toPublicAddress = output.ScriptHash.ToAddress();
                         var toAddress = this.GetAddress(toPublicAddress);
                         toAddress.LastTransactionOn = blockTime;
@@ -74,7 +74,7 @@ namespace StateOfNeo.Server.Infrastructure
                         var assetHash = output.AssetId.ToString();
                         var asset = this.GetAsset(assetHash);
 
-                        var ta = this.GetTransactedAsset(toPublicAddress, transaction.Hash.ToString(), assetHash);
+                        var ta = this.GetTransactedAssetTo(toPublicAddress, transaction.Hash.ToString(), assetHash);
                         ta.Amount = amount;
 
                         var toBalance = this.GetBalance(assetHash, toPublicAddress);
@@ -205,7 +205,7 @@ namespace StateOfNeo.Server.Infrastructure
         private Data.Models.Transactions.TransactedAsset GetTransactedAsset(string fromAddress, string transactionHash, string assetHash)
         {
             var result = this.db.TransactedAssets
-                .Where(x => x.AssetHash == assetHash && x.FromAddressPublicAddress == fromAddress && x.TransactionHash == transactionHash)
+                .Where(x => x.AssetHash == assetHash && x.FromAddressPublicAddress == fromAddress && x.InGlobalTransactionHash == transactionHash)
                 .FirstOrDefault();
 
             if (result == null)
@@ -214,7 +214,21 @@ namespace StateOfNeo.Server.Infrastructure
             }
 
             return result;
-        } 
+        }
+
+        private Data.Models.Transactions.TransactedAsset GetTransactedAssetTo(string toAddress, string transactionHash, string assetHash)
+        {
+            var result = this.db.TransactedAssets
+                .Where(x => x.AssetHash == assetHash && x.ToAddressPublicAddress == toAddress && x.OutGlobalTransactionHash == transactionHash)
+                .FirstOrDefault();
+
+            if (result == null)
+            {
+
+            }
+
+            return result;
+        }
 
         private Data.Models.Asset GetAsset(string hash)
         {
@@ -324,7 +338,7 @@ namespace StateOfNeo.Server.Infrastructure
                 contractHash = new UInt160(engine.CurrentContext.ScriptHash);
             }
 
-            this.EnsureSmartContractCreated(contractHash, db, blockTime.ToUnixTimestamp());
+            //this.EnsureSmartContractCreated(contractHash, db, blockTime.ToUnixTimestamp());
 
             foreach (var item in result.Notifications)
             {
