@@ -77,7 +77,7 @@ namespace StateOfNeo.Services.Address
                 .AsQueryable();
 
             return query
-                .OrderByDescending(x => x.LastTransactionOn)
+                .OrderByDescending(x => x.LastTransactionStamp)
                 .ProjectTo<AddressListViewModel>()
                 .ToPagedList(page, pageSize);
         }

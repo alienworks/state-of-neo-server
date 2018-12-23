@@ -15,16 +15,37 @@ namespace StateOfNeo.Server.Hubs
 
         public override async Task OnConnectedAsync()
         {
-            await this.Clients.Caller.SendAsync("header", this.state.MainStats.GetHeaderStats());
-            // Blocks
-            await this.Clients.All.SendAsync("total-block-count", this.state.MainStats.GetTotalBlocksCount());
-            await this.Clients.All.SendAsync("total-block-time", this.state.MainStats.GetTotalBlocksTimesCount());
-            await this.Clients.All.SendAsync("total-block-size", this.state.MainStats.GetTotalBlocksSizesCount());
+            await this.InitInfo("caller");
+        }
 
-            await this.Clients.Caller.SendAsync("tx-count", this.state.MainStats.GetTotalTxCount());
-            await this.Clients.Caller.SendAsync("address-count", this.state.MainStats.GetTotalAddressCount());
-            await this.Clients.Caller.SendAsync("assets-count", this.state.MainStats.GetTotalAssetsCount());
-            await this.Clients.Caller.SendAsync("total-claimed", this.state.MainStats.GetTotalClaimed());
+        public async Task InitInfo(string type = null)
+        {
+            if (type == "clients")
+            {
+                await this.InitInfoByType(this.Clients.All);
+            }
+            else if (type == "caller")
+            {
+                await this.InitInfoByType(this.Clients.Caller);
+            }
+            else
+            {
+                await this.InitInfoByType(this.Clients.All);
+            }
+        }
+
+        public async Task InitInfoByType(IClientProxy proxy)
+        {
+            await proxy.SendAsync("header", this.state.MainStats.GetHeaderStats());
+            await proxy.SendAsync("total-block-count", this.state.MainStats.GetTotalBlocksCount());
+            await proxy.SendAsync("total-block-time", this.state.MainStats.GetTotalBlocksTimesCount());
+            await proxy.SendAsync("total-block-size", this.state.MainStats.GetTotalBlocksSizesCount());
+            await proxy.SendAsync("tx-count", this.state.MainStats.GetTotalTxCount());
+            await proxy.SendAsync("total-claimed", this.state.MainStats.GetTotalClaimed());
+            await proxy.SendAsync("gas-neo-tx-count", this.state.MainStats.GetTotalGasAndNeoTxCount());
+            await proxy.SendAsync("nep-5-tx-count", this.state.MainStats.GetTotalNep5TxCount());
+            await proxy.SendAsync("address-count", this.state.MainStats.GetTotalAddressCount());
+            await proxy.SendAsync("assets-count", this.state.MainStats.GetTotalAssetsCount());
         }
     }
 }

@@ -41,13 +41,19 @@ namespace StateOfNeo.Services
                 this.db.SaveChanges();
             }
 
-            this.GetTotalTxCount();
-            this.GetTotalAddressCount();
-            this.GetTotalAssetsCount();
-            this.GetTotalClaimed();
             this.GetTotalBlocksCount();
             this.GetTotalBlocksTimesCount();
             this.GetTotalBlocksSizesCount();
+
+            this.GetTotalAddressCount();
+            this.GetTotalAssetsCount();
+
+            this.GetTotalClaimed();
+            this.GetTotalTxCount();
+            this.GetTotalGasAndNeoTxCount();
+            this.GetTotalNep5TxCount();
+
+            this.db.SaveChanges();
 
             this.db.Dispose();
 
@@ -75,7 +81,7 @@ namespace StateOfNeo.Services
 
         public long GetTotalTxCount()
         {
-            if (this.TotalStats.TransactionsCount == null) this.TotalStats.TransactionsCount = this.db.Transactions.Count();
+            if (this.TotalStats.TransactionsCount == null) this.TotalStats.TransactionsCount = this.GetTxCountByTypes();
             return this.TotalStats.TransactionsCount.Value;
         }
 
@@ -97,7 +103,7 @@ namespace StateOfNeo.Services
 
         public int GetTotalAssetsCount()
         {
-            if (this.TotalStats.AssetsCount == null) this.TotalStats.AssetsCount = this.db.Assets.Count();
+            if (this.TotalStats.AssetsCount == null) this.TotalStats.AssetsCount = this.db.Assets.Count(x => x.GlobalType.HasValue);
             return this.TotalStats.AssetsCount.Value;
         }
 
@@ -156,6 +162,44 @@ namespace StateOfNeo.Services
         public void AddToTotalBlocksSizesCount(int value)
         {
             this.TotalStats.BlocksSizes = this.GetTotalBlocksSizesCount() + value;
+        }
+
+        public long GetTotalGasAndNeoTxCount()
+        {
+            if (this.TotalStats.NeoGasTxCount == null) this.TotalStats.NeoGasTxCount = this.GetTxCountByTypes(new AssetType[] { AssetType.GAS, AssetType.NEO });
+            return this.TotalStats.NeoGasTxCount.Value;
+        }
+        
+        public void AddToTotalNeoGasTxCount(int value)
+        {
+            this.TotalStats.NeoGasTxCount = this.GetTotalGasAndNeoTxCount() + value;
+        }
+
+        public long GetTotalNep5TxCount()
+        {
+            if (this.TotalStats.Nep5TxCount == null) this.TotalStats.Nep5TxCount = this.GetTxCountByTypes(new AssetType[] { AssetType.NEP5 });
+            return this.TotalStats.Nep5TxCount.Value;
+        }
+
+        public void AddToTotalNep5TxCount(int value)
+        {
+            this.TotalStats.Nep5TxCount = this.GetTotalNep5TxCount() + value;
+        }
+        
+        private int GetTxCountByTypes(AssetType[] types = null)
+        {
+            if (types == null || types.Length == 0)
+            {
+                return this.db.Transactions.Count();
+            }
+
+            var assets = this.db.TransactedAssets
+                .Where(x => types.Contains(x.AssetType))
+                .Select(x => x.AssetType == AssetType.NEP5 ? x.TransactionHash : x.OutGlobalTransactionHash ?? x.InGlobalTransactionHash)
+                .Distinct()
+                .Count();
+
+            return assets;
         }
     }
 }

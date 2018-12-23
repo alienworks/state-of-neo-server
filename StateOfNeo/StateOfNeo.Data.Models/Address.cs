@@ -25,6 +25,8 @@ namespace StateOfNeo.Data.Models
 
         public DateTime LastTransactionOn { get; set; }
 
+        public long LastTransactionStamp { get; set; }
+
         public int TransactionsCount { get; set; }
 
         [InverseProperty(nameof(TransactedAsset.FromAddress))]

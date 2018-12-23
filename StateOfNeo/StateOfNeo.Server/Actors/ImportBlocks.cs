@@ -93,6 +93,11 @@ namespace StateOfNeo.Server.Actors
         private bool CheckMaxOnImportHeight(uint currentImportBlockHeight) =>
             this.maxOnImportHeight == 0 || this.maxOnImportHeight >= currentImportBlockHeight;
 
+        public override void Configure()
+        {
+
+        }
+
         protected override bool OnMessage(object message)
         {
             if (!(message is string[] args)) return false;

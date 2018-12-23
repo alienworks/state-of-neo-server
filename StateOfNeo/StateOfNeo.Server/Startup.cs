@@ -68,6 +68,7 @@ namespace StateOfNeo.Server
 
             services.AddSingleton<IMainStatsState, MainStatsState>();
             services.AddSingleton<IStateService, StateService>();
+        //    services.AddSingleton(new BalanceUpdater(this.Configuration.GetSection("ConnectionStrings").GetSection("DefaultConnection").Value));
 
             // Infrastructure
             services.AddScoped<NodeCache>();

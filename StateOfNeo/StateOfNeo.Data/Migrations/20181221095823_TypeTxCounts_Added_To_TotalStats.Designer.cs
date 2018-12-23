@@ -3,15 +3,17 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using StateOfNeo.Data;
 
 namespace StateOfNeo.Data.Migrations
 {
     [DbContext(typeof(StateOfNeoContext))]
-    partial class StateOfNeoContextModelSnapshot : ModelSnapshot
+    [Migration("20181221095823_TypeTxCounts_Added_To_TotalStats")]
+    partial class TypeTxCounts_Added_To_TotalStats
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -29,8 +31,6 @@ namespace StateOfNeo.Data.Migrations
                     b.Property<DateTime>("FirstTransactionOn");
 
                     b.Property<DateTime>("LastTransactionOn");
-
-                    b.Property<long>("LastTransactionStamp");
 
                     b.Property<int>("TransactionsCount");
 
@@ -51,8 +51,7 @@ namespace StateOfNeo.Data.Migrations
 
                     b.Property<string>("AssetHash");
 
-                    b.Property<decimal>("Balance")
-                        .HasColumnType("decimal(36, 8)");
+                    b.Property<float>("Balance");
 
                     b.Property<DateTime>("CreatedOn");
 
@@ -235,7 +234,7 @@ namespace StateOfNeo.Data.Migrations
 
                     b.Property<long?>("Count");
 
-                    b.Property<long>("Timestamp");
+                    b.Property<long>("TimeStamp");
 
                     b.Property<int>("Type");
 
@@ -277,13 +276,15 @@ namespace StateOfNeo.Data.Migrations
 
                     b.Property<double?>("Longitude");
 
+                    b.Property<int?>("MemoryPool");
+
                     b.Property<string>("Net");
+
+                    b.Property<int?>("Peers");
 
                     b.Property<string>("Protocol");
 
                     b.Property<long>("SecondsOnline");
-
-                    b.Property<string>("Service");
 
                     b.Property<string>("SuccessUrl");
 
@@ -337,7 +338,8 @@ namespace StateOfNeo.Data.Migrations
 
                     b.Property<int>("NodeId");
 
-                    b.Property<decimal?>("Peers");
+                    b.Property<decimal>("Peers")
+                        .HasColumnType("decimal(36, 8)");
 
                     b.Property<long>("Timestamp");
 
@@ -377,43 +379,6 @@ namespace StateOfNeo.Data.Migrations
                     b.HasIndex("NodeId");
 
                     b.ToTable("NodeStatusUpdates");
-                });
-
-            modelBuilder.Entity("StateOfNeo.Data.Models.SmartContract", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
-
-                    b.Property<string>("Author");
-
-                    b.Property<DateTime>("CreatedOn");
-
-                    b.Property<string>("Description");
-
-                    b.Property<string>("Email");
-
-                    b.Property<bool>("HasDynamicInvoke");
-
-                    b.Property<bool>("HasStorage");
-
-                    b.Property<string>("Hash");
-
-                    b.Property<string>("InputParameters");
-
-                    b.Property<string>("Name");
-
-                    b.Property<bool>("Payable");
-
-                    b.Property<byte>("ReturnType");
-
-                    b.Property<long>("Timestamp");
-
-                    b.Property<string>("Version");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("SmartContracts");
                 });
 
             modelBuilder.Entity("StateOfNeo.Data.Models.TotalStats", b =>

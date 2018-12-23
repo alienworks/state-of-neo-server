@@ -31,6 +31,22 @@ namespace StateOfNeo.ViewModels.Chart
         {
             List<long> periods = new List<long>();
 
+            var lastPeriod = default(DateTime);
+            if (this.UnitOfTime == UnitOfTime.Hour)
+            {
+                lastPeriod = new DateTime(this.StartDate.Value.Year, this.StartDate.Value.Month, this.StartDate.Value.Day, this.StartDate.Value.Hour, 0, 0);
+            }
+            else if (this.UnitOfTime == UnitOfTime.Day)
+            {
+                lastPeriod = new DateTime(this.StartDate.Value.Year, this.StartDate.Value.Month, this.StartDate.Value.Day);
+            }
+            else if (this.UnitOfTime == UnitOfTime.Month)
+            {
+                lastPeriod = new DateTime(this.StartDate.Value.Year, this.StartDate.Value.Month, 1);
+            }
+
+            periods.Add(((DateTimeOffset)lastPeriod).ToUnixTimeSeconds());
+
             for (int i = 1; i <= this.EndPeriod - 1; i++)
             {
                 var end = default(DateTime);
@@ -49,22 +65,6 @@ namespace StateOfNeo.ViewModels.Chart
 
                 periods.Add(((DateTimeOffset)end).ToUnixTimeSeconds());
             }
-
-            var lastPeriod = default(DateTime);
-            if (this.UnitOfTime == UnitOfTime.Hour)
-            {
-                lastPeriod=new DateTime(this.StartDate.Value.Year, this.StartDate.Value.Month, this.StartDate.Value.Day, this.StartDate.Value.Hour, 0, 0).AddHours(1);
-            }
-            else if (this.UnitOfTime == UnitOfTime.Day)
-            {
-                lastPeriod = new DateTime(this.StartDate.Value.Year, this.StartDate.Value.Month, this.StartDate.Value.Day).AddDays(1);
-            }
-            else if (this.UnitOfTime == UnitOfTime.Month)
-            {
-                lastPeriod = new DateTime(this.StartDate.Value.Year, this.StartDate.Value.Month, 1).AddMonths(1);
-            }
-
-            periods.Add(((DateTimeOffset)lastPeriod).ToUnixTimeSeconds());
 
             return periods;
         }

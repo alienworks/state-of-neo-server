@@ -29,7 +29,7 @@ namespace StateOfNeo.Common
 
         public string GetFullUrl(string urlOrIp)
         {
-            return $@"{this.Type}:/{urlOrIp}:{this.Port}";
+            return $@"{this.Type}://{urlOrIp}:{this.Port}";
         }
     }
 }
