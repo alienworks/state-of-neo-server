@@ -23,11 +23,10 @@ namespace StateOfNeo.Data.Models
         public string Url { get; set; }
         public string SuccessUrl { get; set; }
         public string Net { get; set; }
-
         public int? Height { get; set; }
-        public int? Peers { get; set; }
-        public int? MemoryPool { get; set; }
+
         public string Version { get; set; }
+        public string Service { get; set; }
         public NodeAddressType Type { get; set; }
         public string Locale { get; set; }
         public string Location { get; set; }

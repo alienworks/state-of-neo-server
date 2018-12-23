@@ -6,7 +6,7 @@
 
         public int Latency { get; set; }
 
-        public decimal Peers { get; set; }
+        public decimal? Peers { get; set; }
 
         public int NodeId { get; set; }
 
