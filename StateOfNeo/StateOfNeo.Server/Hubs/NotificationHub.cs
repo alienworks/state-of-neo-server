@@ -20,7 +20,12 @@ namespace StateOfNeo.Server.Hubs
 
         public override async Task OnConnectedAsync()
         {
-            await this.Clients.Caller.SendAsync("all", 
+            await this.InitInfo();
+        }
+
+        public async Task InitInfo(string key = null)
+        {
+            await this.Clients.Caller.SendAsync("all",
                 this.state.Contracts.GetNotificationsFor(NotificationConstants.AllNotificationsKey));
         }
 
