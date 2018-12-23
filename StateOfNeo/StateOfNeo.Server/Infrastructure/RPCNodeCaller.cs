@@ -138,18 +138,23 @@ namespace StateOfNeo.Server.Infrastructure
                 }
                 else
                 {
-                    foreach (var portWithType in this.netSettings.GetPorts())
+                    var ports = this.netSettings.GetPorts();
+                    foreach (var portWithType in ports)
                     {
+                        var triedUrl = default(string);
                         if (!string.IsNullOrEmpty(node.Url))
                         {
-                            response = await RpcCaller.SendRPCCall(HttpMethod.Post, portWithType.GetFullUrl(node.Url), rpcRequest);
+                            triedUrl = portWithType.GetFullUrl(node.Url);
+                            response = await RpcCaller.SendRPCCall(HttpMethod.Post, triedUrl, rpcRequest);
                         }
                         else
                         {
-                            response = await RpcCaller.SendRPCCall(HttpMethod.Post, portWithType.GetFullUrl(node.NodeAddresses.FirstOrDefault().Ip), rpcRequest);
+                            triedUrl = portWithType.GetFullUrl(node.NodeAddresses.FirstOrDefault().Ip);
+                            response = await RpcCaller.SendRPCCall(HttpMethod.Post, triedUrl, rpcRequest);
                         }
 
                         if (response != null && response.IsSuccessStatusCode)
+                            node.SuccessUrl = triedUrl;
                             break;
                     }
                 }
