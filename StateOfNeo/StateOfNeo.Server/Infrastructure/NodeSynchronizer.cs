@@ -3,6 +3,8 @@ using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using StateOfNeo.Common;
+using StateOfNeo.Common.Constants;
+using StateOfNeo.Common.Http;
 using StateOfNeo.Data;
 using StateOfNeo.Data.Models;
 using StateOfNeo.Server.Cache;
@@ -10,6 +12,7 @@ using StateOfNeo.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace StateOfNeo.Server.Infrastructure
@@ -23,14 +26,15 @@ namespace StateOfNeo.Server.Infrastructure
         private readonly IOptions<NetSettings> netsettings;
         public List<Node> CachedDbNodes;
 
-        public NodeSynchronizer(NodeCache nodeCache,
-            StateOfNeoContext ctx,
+        public NodeSynchronizer(
+            NodeCache nodeCache,
             RPCNodeCaller rPCNodeCaller,
             LocationCaller locationCaller,
-            IOptions<NetSettings> netsettings)
+            IOptions<NetSettings> netsettings,
+            IOptions<DbSettings> dbSettings)
         {
             this.nodeCache = nodeCache;
-            this.ctx = ctx;
+            this.ctx = StateOfNeoContext.Create(dbSettings.Value.DefaultConnection);
             this.rPCNodeCaller = rPCNodeCaller;
             this.locationCaller = locationCaller;
             this.netsettings = netsettings;
@@ -44,9 +48,9 @@ namespace StateOfNeo.Server.Infrastructure
             this.CachedDbNodes = this.ctx.Nodes
                 .Include(n => n.NodeAddresses)
                 .Where(n => n.Net.ToLower() == this.netsettings.Value.Net.ToLower())
-                .Where(x => x.Type == NodeAddressType.RPC && string.IsNullOrEmpty(x.SuccessUrl) == false)
+                .Where(x => x.SuccessUrl != null)
                 .ToList();
-        
+
         public async Task Init()
         {
             await this.UpdateNodesInformation();
@@ -107,36 +111,82 @@ namespace StateOfNeo.Server.Infrastructure
             var dbNodes = this.ctx.Nodes
                     .Include(n => n.NodeAddresses)
                     .Where(n => n.Net.ToLower() == netsettings.Value.Net.ToLower())
+                    .Where(n => n.SuccessUrl == null)
+                    //.Where(n => n.Type != NodeAddressType.REST)
                     .ToList();
 
             foreach (var dbNode in dbNodes)
             {
-                if (dbNode.Type != NodeAddressType.REST)
+                if (dbNode.Type == NodeAddressType.REST)
+                {
+                    if (dbNode.Service == NodeCallsConstants.NeoScan)
+                    {
+                        var heightResponse = await HttpRequester.MakeRestCall<HeightResponseObject>($@"{dbNode.Url}get_height", HttpMethod.Get);
+
+                        if (heightResponse != null)
+                        {
+                            dbNode.SuccessUrl = dbNode.Url;
+                            dbNode.Height = heightResponse.Height;
+
+                            var result = await this.locationCaller.UpdateNode(dbNode, dbNode.NodeAddresses.First().Ip);
+
+                            if (result)
+                            {
+                                this.ctx.Nodes.Update(dbNode);
+                                this.ctx.SaveChanges();
+                            }
+                        }
+                    }
+                    else if (dbNode.Service == NodeCallsConstants.NeoNotification)
+                    {
+                        var versionResponse = await HttpRequester.MakeRestCall<NeoNotificationVersionResponse>($@"{dbNode.Url}version", HttpMethod.Get);
+
+                        if (versionResponse != null)
+                        {
+                            dbNode.SuccessUrl = dbNode.Url;
+                            dbNode.Version = versionResponse.Version;
+                            dbNode.Height = versionResponse.Height;
+
+                            var result = await this.locationCaller.UpdateNode(dbNode, dbNode.NodeAddresses.First().Ip);
+
+                            if (result)
+                            {
+                                this.ctx.Nodes.Update(dbNode);
+                                this.ctx.SaveChanges();
+                            }
+                        }
+                    }
+                }
+                else if (dbNode.Type == NodeAddressType.RPC)
                 {
                     var oldSuccessUrl = dbNode.SuccessUrl;
                     var newHeight = await this.rPCNodeCaller.GetNodeHeight(dbNode);
+
                     if (newHeight != null)
                     {
-                        dbNode.Type = NodeAddressType.RPC;
-                        dbNode.Height = newHeight;
-
                         var newVersion = await this.rPCNodeCaller.GetNodeVersion(dbNode);
-                        dbNode.Version = newVersion;
 
-                        await this.locationCaller.UpdateNodeLocation(dbNode.Id);
-                        //var peers = await _rPCNodeCaller.GetNodePeers(dbNode);
-                        //if (peers != null)
-                        //{
-                        //    dbNode.Peers = peers.Connected.Count();
-                        //}
-                        
-                        if (string.IsNullOrEmpty(dbNode.Net))
+                        if (newVersion != null)
                         {
-                            dbNode.Net = netsettings.Value.Net;
-                        }
+                            dbNode.Version = newVersion;
+                            dbNode.Height = newHeight;
 
-                        this.ctx.Nodes.Update(dbNode);
-                        this.ctx.SaveChanges();
+                            var result = await this.locationCaller.UpdateNode(dbNode, dbNode.NodeAddresses.First().Ip);
+
+                            if (result)
+                            {
+                                if (string.IsNullOrEmpty(dbNode.Net))
+                                {
+                                    dbNode.Net = netsettings.Value.Net;
+                                }
+
+                                this.ctx.Nodes.Update(dbNode);
+                                this.ctx.SaveChanges();
+                            }
+
+                            this.ctx.Nodes.Update(dbNode);
+                            this.ctx.SaveChanges();
+                        }
                     }
                 }
             }

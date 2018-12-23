@@ -1,7 +1,9 @@
 ﻿using Akka.Actor;
 using Microsoft.EntityFrameworkCore;
 using Neo.Ledger;
+using StateOfNeo.Common.Constants;
 using StateOfNeo.Common.Extensions;
+using StateOfNeo.Common.Http;
 using StateOfNeo.Data;
 using StateOfNeo.Data.Models;
 using StateOfNeo.Server.Infrastructure;
@@ -9,8 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Net.Http;
 using static Neo.Ledger.Blockchain;
 
 namespace StateOfNeo.Server.Actors
@@ -19,12 +20,15 @@ namespace StateOfNeo.Server.Actors
     {
         private const string LatencyCacheType = "latency";
         private const string PeersCacheType = "peers";
+        private const int MinutesPerAudit = 15;
 
         private readonly string connectionString;
         private readonly string net;
         private readonly RPCNodeCaller nodeCaller;
 
         private Dictionary<string, Dictionary<int, ICollection<long>>> NodesAuditCache { get; set; }
+        private long? lastUpdateStamp = null;
+        private long? totalSecondsElapsed = null;
 
         public NodePersister(IActorRef blockchain, string connectionString, string net, RPCNodeCaller nodeCaller)
         {
@@ -43,8 +47,11 @@ namespace StateOfNeo.Server.Actors
         {
             if (message is PersistCompleted m)
             {
-                if (m.Block.Index % 300 == 0)
+                if (this.lastUpdateStamp == null ||
+                    this.lastUpdateStamp.Value.ToUnixDate().AddMinutes(MinutesPerAudit) <= m.Block.Timestamp.ToUnixDate())
                 {
+                    if (this.lastUpdateStamp == null) this.lastUpdateStamp = m.Block.Timestamp;
+
                     var optionsBuilder = new DbContextOptionsBuilder<StateOfNeoContext>();
                     optionsBuilder.UseSqlServer(this.connectionString, opts => opts.CommandTimeout((int)TimeSpan.FromMinutes(10).TotalSeconds));
                     var db = new StateOfNeoContext(optionsBuilder.Options);
@@ -59,7 +66,7 @@ namespace StateOfNeo.Server.Actors
 
                     foreach (var node in nodes)
                     {
-                        var audit = this.NodeAudit(node, m.Block.Timestamp, (m.Block.Timestamp.ToUnixDate() - previousBlockTime).TotalSeconds);
+                        var audit = this.NodeAudit(node, m.Block);
 
                         if (audit != null)
                         {
@@ -70,15 +77,18 @@ namespace StateOfNeo.Server.Actors
                         db.Nodes.Update(node);
                         db.SaveChanges();
                     }
+
+                    this.lastUpdateStamp = m.Block.Timestamp;
+                    this.totalSecondsElapsed = null;
                 }
             }
         }
 
-        private void UpdateNodeTimes(Node node, uint timestamp, double secondsOnline)
+        private void UpdateNodeTimes(Node node, Neo.Network.P2P.Payloads.Block block)
         {
             if (!node.FirstRuntime.HasValue)
             {
-                node.FirstRuntime = timestamp;
+                node.FirstRuntime = block.Timestamp;
             }
 
             if (!node.LatestRuntime.HasValue)
@@ -88,9 +98,19 @@ namespace StateOfNeo.Server.Actors
             }
             else
             {
-                node.SecondsOnline += (long)secondsOnline;
-                node.LatestRuntime = timestamp;
+                node.SecondsOnline += this.GetTotalSecondsElapsed(block.Timestamp);
+                node.LatestRuntime = block.Timestamp;
             }
+        }
+
+        private long GetTotalSecondsElapsed(long blockStamp)
+        {
+            if (this.totalSecondsElapsed == null)
+            {
+                this.totalSecondsElapsed = (long)(blockStamp.ToUnixDate() - this.lastUpdateStamp.Value.ToUnixDate()).TotalSeconds;
+            }
+
+            return this.totalSecondsElapsed.Value;
         }
 
         private void UpdateCache(string auditType, int nodeId, long latency)
@@ -110,46 +130,89 @@ namespace StateOfNeo.Server.Actors
             }
         }
 
-        private double GetAuditValue(string auditType, int nodeId)
+        private double? GetAuditValue(string auditType, int nodeId)
         {
-            var result = this.NodesAuditCache[auditType][nodeId].Average();
-            this.NodesAuditCache[auditType][nodeId].Clear();
+            double? result = null;
+
+            if (this.NodesAuditCache.ContainsKey(auditType) && this.NodesAuditCache[auditType].ContainsKey(nodeId))
+            {
+                result = this.NodesAuditCache[auditType][nodeId].Average();
+                this.NodesAuditCache[auditType][nodeId].Clear();
+            }
 
             return result;
         }
 
-        private NodeAudit NodeAudit(Node node, uint blockStamp, double secondsSinceLastBlock)
+        private NodeAudit NodeAudit(Node node, Neo.Network.P2P.Payloads.Block block)
         {
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
-            var height = this.nodeCaller.GetNodeHeight(node).GetAwaiter().GetResult();
-            stopwatch.Stop();
+
+            int? height = null;
+            if (node.Type == StateOfNeo.Common.NodeAddressType.REST)
+            {
+                if (node.Service == NodeCallsConstants.NeoScan)
+                {
+                    var heightResponse = HttpRequester.MakeRestCall<HeightResponseObject>($@"{node.Url}get_height", HttpMethod.Get)
+                        .GetAwaiter()
+                        .GetResult();
+
+                    if (heightResponse != null)
+                    {
+                        height = heightResponse.Height;
+                    }
+                }
+                else if (node.Service == NodeCallsConstants.NeoNotification)
+                {
+                    var versionResponse = HttpRequester.MakeRestCall<NeoNotificationVersionResponse>($@"{node.Url}version", HttpMethod.Get)
+                        .GetAwaiter()
+                        .GetResult();
+
+                    if (versionResponse != null)
+                    {
+                        height = versionResponse.Height;
+                    }
+                }
+            }
+            else
+            {
+                height = this.nodeCaller.GetNodeHeight(node).GetAwaiter().GetResult();
+            }
 
             if (height.HasValue)
             {
                 node.Height = height.Value;
-                this.UpdateNodeTimes(node, blockStamp, secondsSinceLastBlock);
+                this.UpdateNodeTimes(node, block);
                 this.UpdateCache(LatencyCacheType, node.Id, stopwatch.ElapsedMilliseconds);
 
-                var peers = this.nodeCaller.GetNodePeers(node).GetAwaiter().GetResult();
-                if (peers != null)
+                if (node.Type == StateOfNeo.Common.NodeAddressType.RPC)
                 {
-                    node.Peers = peers.Connected.Count();
-                    this.UpdateCache(PeersCacheType, node.Id, peers.Connected.Count());
+                    var peers = this.nodeCaller.GetNodePeers(node).GetAwaiter().GetResult();
+                    if (peers != null)
+                    {
+                        this.UpdateCache(PeersCacheType, node.Id, peers.Connected.Count());
+                    }
                 }
 
-                if (node.LastAudit == null || node.LastAudit.Value.ToUnixDate().AddHours(1) < blockStamp.ToUnixDate())
+                if (node.LastAudit == null || node.LastAudit.Value.ToUnixDate().AddHours(1) < block.Timestamp.ToUnixDate())
                 {
+                    decimal? peers = null;
+                    var peersValue = this.GetAuditValue(PeersCacheType, node.Id);
+                    if (peersValue != null)
+                    {
+                        peers = (decimal)peersValue.Value;
+                    }
+
                     var audit = new NodeAudit
                     {
                         NodeId = node.Id,
-                        Peers = (decimal)this.GetAuditValue(PeersCacheType, node.Id),
+                        Peers = peers,
                         Latency = (int)this.GetAuditValue(LatencyCacheType, node.Id),
                         CreatedOn = DateTime.UtcNow,
-                        Timestamp = blockStamp
+                        Timestamp = block.Timestamp
                     };
 
-                    node.LastAudit = blockStamp;
+                    node.LastAudit = block.Timestamp;
                     return audit;
                 }
             }

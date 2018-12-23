@@ -44,8 +44,8 @@ namespace StateOfNeo.Services
         public IEnumerable<ChartStatsViewModel> PeersChart(ChartFilterViewModel filter, int nodeId)
         {
             return this.Filter<NodeAudit>(filter,
-                x => new ValueExtractionModel { Size = x.Peers, Timestamp = x.Timestamp },
-                x => x.NodeId == nodeId);
+                x => new ValueExtractionModel { Size = x.Peers.Value, Timestamp = x.Timestamp },
+                x => x.NodeId == nodeId && x.Peers.HasValue);
         }
 
         public async Task<bool> GetWsStatusAsync(int nodeId)

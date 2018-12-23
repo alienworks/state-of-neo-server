@@ -38,7 +38,7 @@ namespace StateOfNeo.Server.Infrastructure
             }
         }
 
-        public async Task UpdateNodeLocation(int nodeId)
+        public async Task<bool> UpdateNodeLocation(int nodeId)
         {
             var node = this.ctx.Nodes
                 .Include(n => n.NodeAddresses)
@@ -51,13 +51,15 @@ namespace StateOfNeo.Server.Infrastructure
                     var result = await this.UpdateNode(node, address.Ip);
                     if (result)
                     {
-                        return;
+                        return true;
                     }
                 }
             }
+
+            return false;
         }
 
-        private async Task<bool> UpdateNode(Node node, string ip)
+        public async Task<bool> UpdateNode(Node node, string ip)
         {
             try
             {
@@ -68,13 +70,14 @@ namespace StateOfNeo.Server.Infrastructure
                     if (response.IsSuccessStatusCode)
                     {
                         var responseText = await response.Content.ReadAsStringAsync();
-                        var responseOject = JsonConvert.DeserializeObject<LocationModel>(responseText);
+                        var responseOject = JsonConvert.DeserializeObject<IpCheckModel>(responseText);
 
-                        node.FlagUrl = responseOject.Flag;
+                        node.FlagUrl = responseOject.Location.Flag;
                         node.Location = responseOject.CountryName;
                         node.Latitude = responseOject.Latitude;
                         node.Longitude = responseOject.Longitude;
-                        
+                        node.Locale = responseOject.Location.Languages.FirstOrDefault().Code;
+
                         return true;
                     }
                 }
@@ -94,7 +97,7 @@ namespace StateOfNeo.Server.Infrastructure
             {
                 using (var http = new HttpClient())
                 {
-                    var req = new HttpRequestMessage(HttpMethod.Get, $"https://ipapi.co/{ip}/json");
+                    var req = new HttpRequestMessage(HttpMethod.Get, $"http://api.ipstack.com/{ip}?access_key=86e45b940f615f26bba14dde0a002bc3");
                     response = await http.SendAsync(req);
                 }
             }

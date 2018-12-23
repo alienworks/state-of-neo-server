@@ -12,6 +12,7 @@ using StateOfNeo.Data;
 using StateOfNeo.Server.Actors.Notifications;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -31,8 +32,11 @@ namespace StateOfNeo.Server.Infrastructure
             this.Run();
         }
 
-        public void Run(uint start = 593_072, uint end = 3117429)
+        public void Run(uint start = 664_316, uint end = 3117429)
         {
+            Stopwatch sw = Stopwatch.StartNew();
+            sw.Start();
+
             for (uint i = start; i < end; i++)
             {
                 var hash = Blockchain.Singleton.GetBlockHash(i);
@@ -113,7 +117,17 @@ namespace StateOfNeo.Server.Infrastructure
 
                 if (this.db.ChangeTracker.Entries().Count() > 10_000)
                 {
+                    Log.Information($"{nameof(this.db.ChangeTracker)} entries > 10_000 next is save changes | for block - {i}");
+
                     this.db.SaveChanges();
+
+                    Log.Information($"Save changes done!");
+                    sw.Stop();
+                    Log.Information($"Took {sw.ElapsedMilliseconds} ms for this iteration");
+
+                    sw.Reset();
+                    sw.Start();
+
                     this.db.Dispose();
 
                     this.db = StateOfNeoContext.Create(this.connectionString);
