@@ -103,7 +103,7 @@ namespace StateOfNeo.Services
 
         public int GetTotalAssetsCount()
         {
-            if (this.TotalStats.AssetsCount == null) this.TotalStats.AssetsCount = this.db.Assets.Count();
+            if (this.TotalStats.AssetsCount == null) this.TotalStats.AssetsCount = this.db.Assets.Count(x => x.GlobalType.HasValue);
             return this.TotalStats.AssetsCount.Value;
         }
 

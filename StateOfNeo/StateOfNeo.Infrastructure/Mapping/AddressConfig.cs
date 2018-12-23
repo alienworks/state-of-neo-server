@@ -17,7 +17,7 @@ namespace StateOfNeo.Infrastructure.Mapping
                 .ForMember(x => x.Address, opt => opt.MapFrom(x => x.PublicAddress))
                 .ForMember(x => x.Created, opt => opt.MapFrom(x => x.FirstTransactionOn))
                 .ForMember(x => x.Transactions, opt => opt.MapFrom(x => x.TransactionsCount))
-                .ForMember(x => x.LastTransactionTime, opt => opt.MapFrom(x => x.LastTransactionOn))
+                .ForMember(x => x.LastTransactionTime, opt => opt.MapFrom(x => x.LastTransactionOn.ToLocalTime()))
                 .ReverseMap();
 
             cfg.CreateMap<AddressAssetBalance, AddressAssetViewModel>()
@@ -27,7 +27,7 @@ namespace StateOfNeo.Infrastructure.Mapping
             cfg.CreateMap<Address, AddressDetailsViewModel>()
                 .ForMember(x => x.Address, opt => opt.MapFrom(x => x.PublicAddress))
                 .ForMember(x => x.Created, opt => opt.MapFrom(x => x.FirstTransactionOn))
-                .ForMember(x => x.LastTransactionTime, opt => opt.MapFrom(x => x.LastTransactionOn))
+                .ForMember(x => x.LastTransactionTime, opt => opt.MapFrom(x => x.LastTransactionOn.ToLocalTime()))
                 .ReverseMap();
         }
     }
