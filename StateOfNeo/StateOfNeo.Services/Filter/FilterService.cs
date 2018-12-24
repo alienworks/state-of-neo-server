@@ -50,7 +50,7 @@ namespace StateOfNeo.Services
                     UnitOfTime = chartFilter.UnitOfTime,
                     Value = projection == null ? x.Count() : x.Sum(z => z.Size) / x.Count()
                 })
-                .OrderBy(x => x.StartDate)
+                .OrderByDescending(x => x.StartDate)
                 .Take(chartFilter.EndPeriod)
                 .ToList();
 
