@@ -16,9 +16,9 @@ namespace StateOfNeo.Common.Extensions
         public static DateTime ToUnixDate(this uint timestamp) =>
             new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).AddSeconds(timestamp);
 
-        public static bool IsOlderThan(this long timestamp, UnitOfTime unitOfTime)
+        public static bool IsPeriodOver(this long timestamp, UnitOfTime unitOfTime)
         {
-            var date = ToUnixDate(timestamp);
+            var date = timestamp.ToUnixDate();
             var now = DateTime.UtcNow;
             if (unitOfTime == UnitOfTime.Hour)
             {
@@ -34,6 +34,26 @@ namespace StateOfNeo.Common.Extensions
             }
 
             return false;
+        }
+
+        public static long ToStartOfPeriod(this long timestamp, UnitOfTime unitOfTime)
+        {
+            var date = timestamp.ToUnixDate();
+            DateTime result = default(DateTime);
+            if (unitOfTime == UnitOfTime.Month)
+            {
+                result = new DateTime(date.Year, date.Month, 1);
+            }
+            else if (unitOfTime == UnitOfTime.Day)
+            {
+                result = new DateTime(date.Year, date.Month, date.Day);
+            }
+            else if (unitOfTime == UnitOfTime.Hour)
+            {
+                result = new DateTime(date.Year, date.Month, date.Day, date.Hour, 0, 0);
+            }
+
+            return result.ToUnixTimestamp();
         }
 
         public static decimal ToDecimal(this BigInteger source, int precision = 8) => 

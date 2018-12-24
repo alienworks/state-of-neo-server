@@ -37,5 +37,23 @@ namespace StateOfNeo.Common.Extensions
 
             return false;
         }
+
+        public static DateTime GetPeriodStart(this DateTime date, UnitOfTime unitOfTime)
+        {
+            if (unitOfTime == UnitOfTime.Hour)
+            {
+                return new DateTime(date.Year, date.Month, date.Day, date.Hour, 0, 0);
+            }
+            else if (unitOfTime == UnitOfTime.Day)
+            {
+                return new DateTime(date.Year, date.Month, date.Day);
+            }
+            else if (unitOfTime == UnitOfTime.Month)
+            {
+                return new DateTime(date.Year, date.Month, 1);
+            }
+
+            return default(DateTime);
+        }
     }
 }

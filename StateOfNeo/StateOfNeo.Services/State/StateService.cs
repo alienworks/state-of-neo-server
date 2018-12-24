@@ -212,21 +212,29 @@ namespace StateOfNeo.Services
                     UnitOfTime = filter.UnitOfTime
                 });
 
-                if (endStamp.IsOlderThan(filter.UnitOfTime))
-                {
-                    this.db.ChartEntries.Add(new Data.Models.ChartEntry
-                    {
-                        UnitOfTime = filter.UnitOfTime,
-                        Timestamp = endStamp,
-                        Type = ChartEntryType.BlockSizes,
-                        AccumulatedValue = sum,
-                        Value = count
-                    });
-
-                    this.db.SaveChanges();
-                }
+                var exists = this.db.ChartEntries.Any(
+                    x =>
+                        x.Timestamp == endStamp
+                        && x.Type == ChartEntryType.BlockSizes
+                        && x.UnitOfTime == filter.UnitOfTime);
 
                 latestBlockDate = endStamp;
+
+                if (exists || !endStamp.IsPeriodOver(filter.UnitOfTime))
+                {
+                    continue;
+                }
+                
+                this.db.ChartEntries.Add(new Data.Models.ChartEntry
+                {
+                    UnitOfTime = filter.UnitOfTime,
+                    Timestamp = endStamp,
+                    Type = ChartEntryType.BlockSizes,
+                    AccumulatedValue = sum,
+                    Value = count
+                });
+
+                this.db.SaveChanges();
             }
 
             return result;
@@ -256,22 +264,30 @@ namespace StateOfNeo.Services
                     StartDate = DateOrderFilter.GetDateTime(endStamp, filter.UnitOfTime),
                     UnitOfTime = filter.UnitOfTime
                 });
-
-                if (endStamp.IsOlderThan(filter.UnitOfTime))
-                {
-                    this.db.ChartEntries.Add(new Data.Models.ChartEntry
-                    {
-                        UnitOfTime = filter.UnitOfTime,
-                        Timestamp = endStamp,
-                        Type = ChartEntryType.BlockTimes,
-                        AccumulatedValue = (decimal)sum,
-                        Value = count
-                    });
-
-                    this.db.SaveChanges();
-                }
-
+                
+                var exists = this.db.ChartEntries.Any(
+                    x =>
+                        x.Timestamp == endStamp
+                        && x.Type == ChartEntryType.BlockTimes
+                        && x.UnitOfTime == filter.UnitOfTime);
+                
                 latestBlockDate = endStamp;
+
+                if (exists || !endStamp.IsPeriodOver(filter.UnitOfTime))
+                {
+                    continue;
+                }
+                
+                this.db.ChartEntries.Add(new Data.Models.ChartEntry
+                {
+                    UnitOfTime = filter.UnitOfTime,
+                    Timestamp = endStamp,
+                    Type = ChartEntryType.BlockTimes,
+                    AccumulatedValue = (decimal)sum,
+                    Value = count
+                });
+
+                this.db.SaveChanges();          
             }
 
             return result;
@@ -286,20 +302,22 @@ namespace StateOfNeo.Services
 
             var result = this.GetChartEntries(filter.UnitOfTime, ChartEntryType.CreatedAddresses);
             var query = this.db.Addresses
-                .Where(x =>
+                .Where(x => 
                     x.FirstTransactionOn >= filter.GetEndPeriod()
-                    && !result.Any(r => r.StartDate >= x.FirstTransactionOn));
+                    && !result.Any(r => r.Timestamp == x.FirstTransactionOn.GetPeriodStart(filter.UnitOfTime).ToUnixTimestamp()));
 
             var newEntries = new List<ChartStatsViewModel>();
             if (filter.UnitOfTime == UnitOfTime.Hour)
             {
-                newEntries = query.ToList().GroupBy(x => new
-                {
-                    x.FirstTransactionOn.Year,
-                    x.FirstTransactionOn.Month,
-                    x.FirstTransactionOn.Day,
-                    x.FirstTransactionOn.Hour
-                })
+                newEntries = query
+                    .ToList()
+                    .GroupBy(x => new
+                    {
+                        x.FirstTransactionOn.Year,
+                        x.FirstTransactionOn.Month,
+                        x.FirstTransactionOn.Day,
+                        x.FirstTransactionOn.Hour
+                    })
                     .Select(x => new ChartStatsViewModel
                     {
                         StartDate = new DateTime(x.Key.Year, x.Key.Month, x.Key.Day, x.Key.Hour, 0, 0),
@@ -314,12 +332,14 @@ namespace StateOfNeo.Services
             }
             else if (filter.UnitOfTime == UnitOfTime.Day)
             {
-                newEntries = query.ToList().GroupBy(x => new
-                {
-                    x.FirstTransactionOn.Year,
-                    x.FirstTransactionOn.Month,
-                    x.FirstTransactionOn.Day
-                })
+                newEntries = query
+                    .ToList()
+                    .GroupBy(x => new
+                    {
+                        x.FirstTransactionOn.Year,
+                        x.FirstTransactionOn.Month,
+                        x.FirstTransactionOn.Day
+                    })
                     .Select(x => new ChartStatsViewModel
                     {
                         StartDate = new DateTime(x.Key.Year, x.Key.Month, x.Key.Day),
@@ -334,11 +354,13 @@ namespace StateOfNeo.Services
             }
             else if (filter.UnitOfTime == UnitOfTime.Month)
             {
-                newEntries = query.ToList().GroupBy(x => new
-                {
-                    x.FirstTransactionOn.Year,
-                    x.FirstTransactionOn.Month
-                })
+                newEntries = query
+                    .ToList()
+                    .GroupBy(x => new
+                    {
+                        x.FirstTransactionOn.Year,
+                        x.FirstTransactionOn.Month
+                    })
                     .Select(x => new ChartStatsViewModel
                     {
                         StartDate = new DateTime(x.Key.Year, x.Key.Month, 1),
@@ -354,18 +376,26 @@ namespace StateOfNeo.Services
 
             foreach (var entry in newEntries)
             {
-                if (entry.Timestamp.IsOlderThan(filter.UnitOfTime))
-                {
-                    this.db.ChartEntries.Add(new Data.Models.ChartEntry
-                    {
-                        UnitOfTime = filter.UnitOfTime,
-                        Timestamp = entry.Timestamp,
-                        Type = ChartEntryType.CreatedAddresses,
-                        Value = entry.Value
-                    });
+                var exists = this.db.ChartEntries.Any(
+                    x => 
+                        x.Timestamp == entry.Timestamp 
+                        && x.Type == ChartEntryType.CreatedAddresses 
+                        && x.UnitOfTime == entry.UnitOfTime);
 
-                    this.db.SaveChanges();
+                if (exists)
+                {
+                    continue;
                 }
+
+                this.db.ChartEntries.Add(new Data.Models.ChartEntry
+                {
+                    UnitOfTime = filter.UnitOfTime,
+                    Timestamp = entry.Timestamp,
+                    Type = ChartEntryType.CreatedAddresses,
+                    Value = entry.Value
+                });
+
+                this.db.SaveChanges();
             }
 
             return result;
@@ -388,19 +418,27 @@ namespace StateOfNeo.Services
                     StartDate = DateOrderFilter.GetDateTime(periods[i], filter.UnitOfTime),
                     UnitOfTime = filter.UnitOfTime
                 });
+                
+                var exists = this.db.ChartEntries.Any(
+                    x =>
+                        x.Timestamp == periods[i]
+                        && x.Type == ChartEntryType.Transactions
+                        && x.UnitOfTime == filter.UnitOfTime);
 
-                if (periods[i].IsOlderThan(filter.UnitOfTime))
+                if (exists || !periods[i].IsPeriodOver(filter.UnitOfTime))
                 {
-                    this.db.ChartEntries.Add(new Data.Models.ChartEntry
-                    {
-                        UnitOfTime = filter.UnitOfTime,
-                        Timestamp = periods[i],
-                        Type = ChartEntryType.Transactions,
-                        Value = count
-                    });
-
-                    this.db.SaveChanges();
+                    continue;
                 }
+                
+                this.db.ChartEntries.Add(new Data.Models.ChartEntry
+                {
+                    UnitOfTime = filter.UnitOfTime,
+                    Timestamp = periods[i],
+                    Type = ChartEntryType.Transactions,
+                    Value = count
+                });
+
+                this.db.SaveChanges();                
             }
 
             return result.ToList();
