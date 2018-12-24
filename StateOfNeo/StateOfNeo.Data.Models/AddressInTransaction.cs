@@ -6,7 +6,7 @@ namespace StateOfNeo.Data.Models
     {
         public int Id { get; set; }
 
-        public decimal Amount { get; set; }
+        public float Amount { get; set; }
 
         public string AddressPublicAddress { get; set; }
 

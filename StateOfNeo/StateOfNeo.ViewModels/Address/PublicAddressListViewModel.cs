@@ -8,6 +8,6 @@ namespace StateOfNeo.ViewModels.Address
     {
         public string Address { get; set; }
 
-        public decimal Balance { get; set; }
+        public float Balance { get; set; }
     }
 }
