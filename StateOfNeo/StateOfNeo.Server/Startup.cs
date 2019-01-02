@@ -68,7 +68,8 @@ namespace StateOfNeo.Server
 
             services.AddSingleton<IMainStatsState, MainStatsState>();
             services.AddSingleton<IStateService, StateService>();
-        //    services.AddSingleton(new BalanceUpdater(this.Configuration.GetSection("ConnectionStrings").GetSection("DefaultConnection").Value));
+            //services.AddSingleton<BalanceUpdater>(); 
+            services.AddSingleton<BlockchainBalances>();
 
             // Infrastructure
             services.AddScoped<NodeCache>();
@@ -107,6 +108,7 @@ namespace StateOfNeo.Server
             IOptions<ImportBlocksSettings> importSettings,
             IHubContext<StatsHub> statsHub,
             IHubContext<NotificationHub> notificationHub, 
+            BlockchainBalances blockChainBalances,
             RPCNodeCaller nodeCaller,
             IStateService state)
         {
@@ -117,6 +119,7 @@ namespace StateOfNeo.Server
                 state,
                 statsHub,
                 notificationHub,
+                blockChainBalances,
                 netSettings.Value.Net));
 
             //new ImportBlocks(importSettings.Value.MaxOnImportHeight);
