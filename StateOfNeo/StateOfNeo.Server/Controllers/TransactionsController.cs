@@ -119,12 +119,12 @@ namespace StateOfNeo.Server.Controllers
             return this.Ok(result);
         }
 
-        [HttpGet("[action]")]
-        [ResponseCache(Duration = CachingConstants.Hour)]
-        public IActionResult AveragePer([FromQuery]UnitOfTime unit = UnitOfTime.Day)
-        {
-            return this.Ok(this.transactions.AveragePer(unit));
-        }
+        //[HttpGet("[action]")]
+        //[ResponseCache(Duration = CachingConstants.Hour)]
+        //public IActionResult AveragePer([FromQuery]UnitOfTime unit = UnitOfTime.Day)
+        //{
+        //    return this.Ok(this.transactions.AveragePer(unit));
+        //}
 
         [HttpGet("[action]")]
         public IActionResult Total()
