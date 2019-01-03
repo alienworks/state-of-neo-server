@@ -19,6 +19,7 @@ using StateOfNeo.Data.Models;
 using StateOfNeo.Data.Models.Transactions;
 using StateOfNeo.Server.Actors.Notifications;
 using StateOfNeo.Server.Hubs;
+using StateOfNeo.Server.Infrastructure;
 using StateOfNeo.Services;
 using StateOfNeo.ViewModels;
 using System;
@@ -48,7 +49,9 @@ namespace StateOfNeo.Server.Actors
         private readonly IHubContext<StatsHub> statsHub;
         private readonly IHubContext<NotificationHub> notificationHub;
         private IStateService state;
+        private readonly BlockchainBalances blockchainBalancesRecalculator;
         private DateTime genesisTime = GenesisBlock.Timestamp.ToUnixDate();
+        private bool balancesRecalculated = false;
 
         private readonly ICollection<Data.Models.Asset> pendingAssets = new List<Data.Models.Asset>();
         private readonly ICollection<Data.Models.SmartContract> pendingSmartContracts = new List<Data.Models.SmartContract>();
@@ -61,6 +64,7 @@ namespace StateOfNeo.Server.Actors
             IStateService state,
             IHubContext<StatsHub> statsHub,
             IHubContext<NotificationHub> notificationHub,
+            BlockchainBalances blockChainBalancesRecalculator,
             string net)
         {
             this.connectionString = connectionString;
@@ -68,6 +72,7 @@ namespace StateOfNeo.Server.Actors
             this.notificationHub = notificationHub;
             this.net = net;
             this.state = state;
+            this.blockchainBalancesRecalculator = blockChainBalancesRecalculator;
 
             blockchain.Tell(new Register());
         }
@@ -76,11 +81,12 @@ namespace StateOfNeo.Server.Actors
             IActorRef blockchain,
             string connectionString,
             IStateService state,
-            IHubContext<StatsHub> statsHub,
+            IHubContext<StatsHub> statsHub, 
             IHubContext<NotificationHub> notificationHub,
+            BlockchainBalances blockChainBalances,
             string net) =>
                 Akka.Actor.Props.Create(() =>
-                    new BlockPersister(blockchain, connectionString, state, statsHub, notificationHub, net));
+                    new BlockPersister(blockchain, connectionString, state, statsHub, notificationHub, blockChainBalances, net));
 
         protected override void OnReceive(object message)
         {
@@ -784,11 +790,17 @@ namespace StateOfNeo.Server.Actors
             db.SaveChanges();
 
             this.EmitStatsInfo();
-            
+
             this.pendingAddresses.Clear();
             this.pendingAssets.Clear();
             this.pendingBalances.Clear();
             this.pendingSmartContracts.Clear();
+
+            if (Blockchain.Singleton.Height == block.Height && !balancesRecalculated)
+            {
+                this.blockchainBalancesRecalculator.Run();
+                this.balancesRecalculated = true;
+            }
         }
 
         private void EmitStatsInfo()

@@ -11,5 +11,7 @@ namespace StateOfNeo.ViewModels.Transaction
         public string FromAddress { get; set; }
 
         public string ToAddress { get; set; }
+
+        public string Name { get; set; }
     }
 }

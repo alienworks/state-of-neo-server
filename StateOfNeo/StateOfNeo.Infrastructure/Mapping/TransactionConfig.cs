@@ -24,6 +24,7 @@ namespace StateOfNeo.Infrastructure.Mapping
             cfg.CreateMap<TransactedAsset, TransactedAssetViewModel>()
                 .ForMember(x => x.FromAddress, opt => opt.MapFrom(x => x.FromAddressPublicAddress))
                 .ForMember(x => x.ToAddress, opt => opt.MapFrom(x => x.ToAddressPublicAddress))
+                .ForMember(x => x.Name, opt => opt.MapFrom(x => x.Asset.Name))
                 .ReverseMap();
 
             cfg.CreateMap<TransactionAttribute, TransactionAttributeViewModel>()
