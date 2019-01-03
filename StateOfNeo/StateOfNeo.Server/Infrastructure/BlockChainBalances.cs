@@ -33,7 +33,6 @@ namespace StateOfNeo.Server.Infrastructure
         {
             var addresses = this.db.Addresses
                 .OrderByDescending(x => x.CreatedOn)
-                .Skip(744837)
                 .Select(x => x.PublicAddress)
                 .ToList();
             var contracts = this.db.SmartContracts.ToList();
