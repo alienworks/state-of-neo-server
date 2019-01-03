@@ -2,7 +2,9 @@
 using StateOfNeo.Common.Constants;
 using StateOfNeo.Common.Enums;
 using StateOfNeo.Common.Extensions;
+using StateOfNeo.Data;
 using StateOfNeo.Server.Actors;
+using StateOfNeo.Server.Infrastructure;
 using StateOfNeo.Services;
 using StateOfNeo.Services.Address;
 using StateOfNeo.ViewModels.Address;
@@ -15,18 +17,24 @@ namespace StateOfNeo.Server.Controllers
         private readonly IAddressService addresses;
         private readonly IPaginatingService paginating;
         private readonly IStateService state;
+        private readonly StateOfNeoContext db;
 
-        public AddressController(IAddressService addresses, IPaginatingService paginating, IStateService state)
+        public AddressController(IAddressService addresses,
+            IPaginatingService paginating,
+            IStateService state,
+            StateOfNeoContext db)
         {
             this.addresses = addresses;
             this.paginating = paginating;
             this.state = state;
+            this.db = db;
         }
 
         [HttpGet("[action]/{address}")]
         public IActionResult Get(string address)
         {
-            var result = this.addresses.Find<AddressDetailsViewModel>(address);
+            //var result = this.addresses.Find<AddressDetailsViewModel>(address);
+            var result = AutoMapper.Mapper.Map<AddressDetailsViewModel>(BlockchainBalances.GetAddressAssets(address, this.db));
             if (result == null)
             {
                 return this.BadRequest("Invalid address.");
@@ -76,7 +84,7 @@ namespace StateOfNeo.Server.Controllers
             int result = this.addresses.CreatedAddressesCountForLast(unit);
             return this.Ok(result);
         }
-        
+
         [HttpPost("[action]")]
         [ResponseCache(Duration = CachingConstants.Hour)]
         public IActionResult Chart([FromBody]ChartFilterViewModel filter)
@@ -85,7 +93,7 @@ namespace StateOfNeo.Server.Controllers
             var result = this.state.GetAddressesChart(filter.UnitOfTime, filter.EndPeriod);
             return this.Ok(result);
         }
-        
+
         [HttpPost("[action]")]
         [ResponseCache(Duration = CachingConstants.Hour)]
         public IActionResult AssetChart([FromBody]ChartFilterViewModel filter, string assetHash)
