@@ -51,7 +51,8 @@ namespace StateOfNeo.Data.Migrations
 
                     b.Property<string>("AssetHash");
 
-                    b.Property<float>("Balance");
+                    b.Property<decimal>("Balance")
+                        .HasColumnType("decimal(36, 8)");
 
                     b.Property<DateTime>("CreatedOn");
 
@@ -98,7 +99,8 @@ namespace StateOfNeo.Data.Migrations
 
                     b.Property<string>("AddressPublicAddress");
 
-                    b.Property<float>("Amount");
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(36, 8)");
 
                     b.Property<string>("AssetHash");
 

@@ -68,7 +68,7 @@ namespace StateOfNeo.Server
 
             services.AddSingleton<IMainStatsState, MainStatsState>();
             services.AddSingleton<IStateService, StateService>();
-            //services.AddSingleton(new BalanceUpdater(this.Configuration.GetSection("ConnectionStrings").GetSection("DefaultConnection").Value));
+        //    services.AddSingleton(new BalanceUpdater(this.Configuration.GetSection("ConnectionStrings").GetSection("DefaultConnection").Value));
 
             // Infrastructure
             services.AddScoped<NodeCache>();
@@ -106,7 +106,7 @@ namespace StateOfNeo.Server
             IOptions<NetSettings> netSettings,
             IOptions<ImportBlocksSettings> importSettings,
             IHubContext<StatsHub> statsHub,
-            IHubContext<NotificationHub> notificationHub,
+            IHubContext<NotificationHub> notificationHub, 
             RPCNodeCaller nodeCaller,
             IStateService state)
         {

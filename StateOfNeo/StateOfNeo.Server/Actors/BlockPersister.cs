@@ -338,7 +338,7 @@ namespace StateOfNeo.Server.Actors
                     fromAddress.LastTransactionOn = blockTime;
                     fromAddress.LastTransactionStamp = block.Timestamp;
                     var fromBalance = this.GetBalance(db, asset.Hash, fromAddress.PublicAddress);
-                    fromBalance.Balance -= (float)ta.Amount;
+                    fromBalance.Balance -= ta.Amount;
                     this.AdjustTransactedAmount(transactedAmounts, assetHash, fromPublicAddress, -ta.Amount);
 
                     transaction.GlobalIncomingAssets.Add(ta);
@@ -367,7 +367,7 @@ namespace StateOfNeo.Server.Actors
                     toAddress.LastTransactionOn = blockTime;
                     toAddress.LastTransactionStamp = block.Timestamp;
                     var toBalance = this.GetBalance(db, asset.Hash, toAddress.PublicAddress);
-                    toBalance.Balance += (float)ta.Amount;
+                    toBalance.Balance += ta.Amount;
                     this.AdjustTransactedAmount(transactedAmounts, assetHash, toPublicAddress, ta.Amount);
 
                     transaction.GlobalOutgoingAssets.Add(ta);
@@ -413,7 +413,7 @@ namespace StateOfNeo.Server.Actors
                             AddressPublicAddress = addressTransaction.Key,
                             AssetHash = assetTransactions.Key,
                             TransactionHash = transaction.Hash,
-                            Amount = (float)addressTransaction.Value,
+                            Amount = addressTransaction.Value,
                             CreatedOn = DateTime.UtcNow,
                             Timestamp = block.Timestamp
                         };
@@ -657,7 +657,7 @@ namespace StateOfNeo.Server.Actors
                         var fromAddressInTransaction = new AddressInTransaction
                         {
                             AddressPublicAddress = fromAddress.PublicAddress,
-                            Amount = (float)ta.Amount,
+                            Amount = ta.Amount,
                             AssetHash = asset.Hash,
                             CreatedOn = DateTime.UtcNow,
                             Timestamp = blockTime.ToUnixTimestamp(),
@@ -686,7 +686,7 @@ namespace StateOfNeo.Server.Actors
                         var toAddressInTransaction = new AddressInTransaction
                         {
                             AddressPublicAddress = toAddress.PublicAddress,
-                            Amount = (float)ta.Amount,
+                            Amount = ta.Amount,
                             AssetHash = asset.Hash,
                             CreatedOn = DateTime.UtcNow,
                             Timestamp = blockTime.ToUnixTimestamp(),
@@ -711,7 +711,7 @@ namespace StateOfNeo.Server.Actors
 
                     var fromBalance = this.GetBalance(db, asset.Hash, from);
                     fromBalance.TransactionsCount++;
-                    fromBalance.Balance -= (float)ta.Amount;
+                    fromBalance.Balance -= ta.Amount;
                     if (fromBalance.Balance < 0)
                     {
                         fromBalance.Balance = -1;
@@ -719,7 +719,7 @@ namespace StateOfNeo.Server.Actors
 
                     var toBalance = this.GetBalance(db, asset.Hash, to);
                     toBalance.TransactionsCount++;
-                    toBalance.Balance += (float)ta.Amount;
+                    toBalance.Balance += ta.Amount;
                 }
                 else
                 {
@@ -1034,7 +1034,7 @@ namespace StateOfNeo.Server.Actors
                 CreatedOn = DateTime.UtcNow,
                 Address = toAddress,
                 Asset = neo,
-                Balance = (float)transactedAsset.Amount,
+                Balance = transactedAsset.Amount,
                 TransactionsCount = 1
             };
 
