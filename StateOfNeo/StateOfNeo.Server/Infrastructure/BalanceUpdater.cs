@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Neo;
 using Neo.Ledger;
 using Neo.Network.P2P.Payloads;
@@ -23,21 +24,25 @@ namespace StateOfNeo.Server.Infrastructure
     {
         private StateOfNeoContext db;
         private readonly string connectionString;
-        private readonly ICollection<Data.Models.SmartContract> pendingSmartContracts = new List<Data.Models.SmartContract>();
 
-        public BalanceUpdater(string connectionString)
+        private readonly ICollection<Data.Models.Address> pendingAddresses = new List<Data.Models.Address>();
+        private readonly ICollection<Data.Models.SmartContract> pendingSmartContracts = new List<Data.Models.SmartContract>();
+        private readonly ICollection<Data.Models.AddressAssetBalance> pendingBalances = new List<Data.Models.AddressAssetBalance>();
+
+        public BalanceUpdater(IOptions<DbSettings> dbSettings)
         {
-            this.connectionString = connectionString;
+            this.connectionString = dbSettings.Value.DefaultConnection;
             this.db = StateOfNeoContext.Create(this.connectionString);
 
             this.Run();
         }
 
-        public void Run(uint start = 664_316, uint end = 3117429)
+        public void Run(uint start = 1_726_388, uint end = 3117429)
         {
             Stopwatch sw = Stopwatch.StartNew();
             sw.Start();
 
+            Log.Information($"BALANCE UPDATER STARTED FROM {start}");
             for (uint i = start; i < end; i++)
             {
                 var hash = Blockchain.Singleton.GetBlockHash(i);
@@ -52,7 +57,7 @@ namespace StateOfNeo.Server.Infrastructure
                     {
                         var input = transaction.Inputs[j];
                         var fromPublicAddress = transaction.References[input].ScriptHash.ToAddress();
-                        var fromAddress = this.GetAddress(fromPublicAddress);
+                        var fromAddress = this.GetAddress(fromPublicAddress, block.Timestamp.ToUnixDate());
                         fromAddress.LastTransactionOn = blockTime;
                         fromAddress.LastTransactionStamp = blockTime.ToUnixTimestamp();
 
@@ -73,7 +78,7 @@ namespace StateOfNeo.Server.Infrastructure
                     {
                         var output = transaction.Outputs[j];
                         var toPublicAddress = output.ScriptHash.ToAddress();
-                        var toAddress = this.GetAddress(toPublicAddress);
+                        var toAddress = this.GetAddress(toPublicAddress, block.Timestamp.ToUnixDate());
                         toAddress.LastTransactionOn = blockTime;
                         toAddress.LastTransactionStamp = blockTime.ToUnixTimestamp();
 
@@ -89,7 +94,7 @@ namespace StateOfNeo.Server.Infrastructure
 
                         this.AdjustTransactedAmount(transactedAmounts, assetHash, toPublicAddress, ta.Amount);
                     }
-                    
+
                     foreach (var assetTransactions in transactedAmounts)
                     {
                         var asset = this.GetAsset(assetTransactions.Key);
@@ -100,7 +105,7 @@ namespace StateOfNeo.Server.Infrastructure
 
                         foreach (var addressTransaction in assetTransactions.Value)
                         {
-                            var address = this.GetAddress(addressTransaction.Key);
+                            var address = this.GetAddress(addressTransaction.Key, block.Timestamp.ToUnixDate());
                             address.TransactionsCount++;
 
                             var addressInAssetTransaction = this.GetAddressInAssetTransaction(addressTransaction.Key, assetInTransaction.Id);
@@ -136,6 +141,7 @@ namespace StateOfNeo.Server.Infrastructure
                     this.db = StateOfNeoContext.Create(this.connectionString);
 
                     this.pendingSmartContracts.Clear();
+                    this.pendingAddresses.Clear();
                 }
             }
 
@@ -221,11 +227,11 @@ namespace StateOfNeo.Server.Infrastructure
 
             return result;
         }
-        
+
         private Data.Models.Transactions.TransactedAsset GetNepTransactedAsset(string fromAddress, string toAddress, string transactionHash, string assetHash)
         {
             var result = this.db.TransactedAssets
-                .Where(x => x.AssetHash == assetHash 
+                .Where(x => x.AssetHash == assetHash
                     && x.FromAddressPublicAddress == fromAddress && x.TransactionHash == transactionHash
                     && x.ToAddressPublicAddress == toAddress)
                 .FirstOrDefault();
@@ -301,10 +307,10 @@ namespace StateOfNeo.Server.Infrastructure
             }
 
             return result;
-        }    
+        }
 
         private Data.Models.AddressAssetBalance GetBalance(string hash, string address)
-        { 
+        {
             var result = this.db.AddressBalances
                 .Include(x => x.Asset)
                 .Where(x => x.Asset.Hash == hash && x.AddressPublicAddress == address)
@@ -315,7 +321,7 @@ namespace StateOfNeo.Server.Infrastructure
                 result = new Data.Models.AddressAssetBalance
                 {
                     AddressPublicAddress = address,
-                    AssetHash = hash                    
+                    AssetHash = hash
                 };
 
                 this.db.AddressBalances.Add(result);
@@ -324,7 +330,7 @@ namespace StateOfNeo.Server.Infrastructure
             return result;
         }
 
-        private Data.Models.Address GetAddress(string address)
+        private Data.Models.Address GetAddress(string address, DateTime blockTime)
         {
             var result = this.db.Addresses
                 .Include(x => x.Balances)
@@ -334,7 +340,23 @@ namespace StateOfNeo.Server.Infrastructure
 
             if (result == null)
             {
+                result = pendingAddresses.FirstOrDefault(x => x.PublicAddress == address);
+            }
 
+            if (result == null)
+            {
+                result = new Data.Models.Address
+                {
+                    PublicAddress = address,
+                    CreatedOn = DateTime.UtcNow,
+                    FirstTransactionOn = blockTime,
+                    LastTransactionOn = blockTime,
+                    LastTransactionStamp = blockTime.ToUnixTimestamp(),
+                };
+
+                Log.Warning($"New address found : {address} time {result.LastTransactionStamp}");
+                db.Addresses.Add(result);
+                pendingAddresses.Add(result);
             }
 
             return result;
@@ -514,7 +536,14 @@ namespace StateOfNeo.Server.Infrastructure
 
                     if (from != null)
                     {
-                        var fromAddress = this.GetAddress(from);
+                        var prevPendingAddressesCount = this.pendingAddresses.Count;
+                        var fromAddress = this.GetAddress(from, blockTime);
+
+                        if (prevPendingAddressesCount != this.pendingAddresses.Count)
+                        {
+                            Log.Warning($"{item.ScriptHash} NEP-5 token {name} / {symbol} invalid To address. Tx {transaction.Hash}");
+                        }
+
                         fromAddress.LastTransactionOn = blockTime;
                         fromAddress.LastTransactionStamp = blockTime.ToUnixTimestamp();
                         fromAddress.TransactionsCount++;
@@ -529,7 +558,14 @@ namespace StateOfNeo.Server.Infrastructure
 
                     if (to != null)
                     {
-                        var toAddress = this.GetAddress(to);
+                        var prevPendingAddressesCount = this.pendingAddresses.Count;
+                        var toAddress = this.GetAddress(to, blockTime);
+
+                        if (prevPendingAddressesCount != this.pendingAddresses.Count)
+                        {
+                            Log.Warning($"{item.ScriptHash} NEP-5 token {name} / {symbol} invalid To address. Tx {transaction.Hash}");
+                        }
+
                         toAddress.LastTransactionOn = blockTime;
                         toAddress.LastTransactionStamp = blockTime.ToUnixTimestamp();
                         toAddress.TransactionsCount++;
