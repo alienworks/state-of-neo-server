@@ -3,15 +3,17 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using StateOfNeo.Data;
 
 namespace StateOfNeo.Data.Migrations
 {
     [DbContext(typeof(StateOfNeoContext))]
-    partial class StateOfNeoContextModelSnapshot : ModelSnapshot
+    [Migration("20181224022145_ServerNeededFloatForBalancesToBeRan")]
+    partial class ServerNeededFloatForBalancesToBeRan
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -51,8 +53,7 @@ namespace StateOfNeo.Data.Migrations
 
                     b.Property<string>("AssetHash");
 
-                    b.Property<decimal>("Balance")
-                        .HasColumnType("decimal(36, 8)");
+                    b.Property<float>("Balance");
 
                     b.Property<DateTime>("CreatedOn");
 
@@ -98,9 +99,8 @@ namespace StateOfNeo.Data.Migrations
                         .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
                     b.Property<string>("AddressPublicAddress");
-                    
-                    b.Property<decimal>("Amount")
-                        .HasColumnType("decimal(36, 8)");
+
+                    b.Property<float>("Amount");
 
                     b.Property<string>("AssetHash");
 
