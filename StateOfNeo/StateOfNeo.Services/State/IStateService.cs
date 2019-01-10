@@ -4,6 +4,8 @@ using StateOfNeo.ViewModels.Hub;
 using System.Collections.Generic;
 using StateOfNeo.ViewModels.Chart;
 using System;
+using StateOfNeo.ViewModels.Address;
+using X.PagedList;
 
 namespace StateOfNeo.Services
 {
@@ -28,5 +30,8 @@ namespace StateOfNeo.Services
 
         ICollection<ChartStatsViewModel> GetBlockTransactionsChart(UnitOfTime unitOfTime, int count);
         void AddBlockTransactions(int transactions, DateTime time);
+
+        void AddActiveAddress(IEnumerable<AddressListViewModel> addresses);
+        IPagedList<AddressListViewModel> GetAddressesPage(int page = 1, int pageSize = 10);
     }
 }

@@ -46,8 +46,16 @@ namespace StateOfNeo.Server.Controllers
         [HttpGet("[action]")]
         public IActionResult List(int page = 1, int pageSize = 10)
         {
-            var result = this.addresses.GetPage(page, pageSize);
-            return this.Ok(result.ToListResult());
+            if (page * pageSize <= StateService.CachedAddressesCount)
+            {
+                var result = this.state.GetAddressesPage(page, pageSize);
+                return this.Ok(result.ToListResult());
+            }
+            else
+            {
+                var result = this.addresses.GetPage(page, pageSize);
+                return this.Ok(result.ToListResult());
+            }
         }
 
         [HttpGet("[action]")]

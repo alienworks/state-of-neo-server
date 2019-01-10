@@ -16,14 +16,19 @@ using System.Diagnostics;
 using Serilog;
 using Neo.Ledger;
 using Neo;
+using StateOfNeo.ViewModels.Address;
+using X.PagedList;
 
 namespace StateOfNeo.Services
 {
     public class StateService : IStateService
     {
+        public const int CachedAddressesCount = 500;
+
         private Dictionary<string, Dictionary<UnitOfTime, ICollection<ChartStatsViewModel>>> charts = new Dictionary<string, Dictionary<UnitOfTime, ICollection<ChartStatsViewModel>>>();
         private ICollection<ChartStatsViewModel> transactionTypes = new List<ChartStatsViewModel>();
         private DateTime? transactionTypesLastUpdate;
+        private List<AddressListViewModel> addresses;
 
         private long? lastBlockTime;
         private readonly StateOfNeoContext db;
@@ -43,6 +48,7 @@ namespace StateOfNeo.Services
 
             this.GetLatestTimestamp();
             this.LoadTransactionTypes();
+            this.LoadLastActiveAddresses();
 
             this.LoadTransactionsMainChart();
             this.LoadCreatedAddressesMainChart();
@@ -110,6 +116,23 @@ namespace StateOfNeo.Services
             this.AddChartValues("blockTransactions", 1, time, UnitOfTime.Day, transactions);
             this.AddChartValues("blockTransactions", 1, time, UnitOfTime.Month, transactions);
         }
+
+        public void AddActiveAddress(IEnumerable<AddressListViewModel> addresses)
+        {
+            foreach (var item in addresses)
+            {
+                this.addresses.RemoveAll(x => x.Address == item.Address);
+                this.addresses.Add(item);
+            }
+
+            this.addresses = this.addresses
+                .OrderByDescending(x => x.LastTransactionTime)
+                .Take(StateService.CachedAddressesCount)
+                .ToList();
+        }
+
+        public IPagedList<AddressListViewModel> GetAddressesPage(int page = 1, int pageSize = 10) =>
+            this.addresses.AsQueryable().ToPagedList(page, pageSize);
 
         public void AddAddresses(int count, DateTime time)
         {
@@ -184,6 +207,16 @@ namespace StateOfNeo.Services
             blockTimes[UnitOfTime.Hour] = this.GetBlockTimesStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Hour, EndPeriod = 36 });
             blockTimes[UnitOfTime.Day] = this.GetBlockTimesStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Day, EndPeriod = 36 });
             blockTimes[UnitOfTime.Month] = this.GetBlockTimesStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Month, EndPeriod = 36 });
+        }
+
+        private void LoadLastActiveAddresses()
+        {
+            this.addresses = this.db.Addresses
+                .Include(x => x.AddressesInAssetTransactions)
+                .OrderByDescending(x => x.LastTransactionStamp)
+                .ProjectTo<AddressListViewModel>()
+                .Take(StateService.CachedAddressesCount)
+                .ToList();
         }
 
         private ICollection<ChartStatsViewModel> GetBlockSizesStats(ChartFilterViewModel filter)
