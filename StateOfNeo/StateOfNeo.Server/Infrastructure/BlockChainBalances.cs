@@ -82,8 +82,7 @@ namespace StateOfNeo.Server.Infrastructure
                 .ToList();
 
             var addressAccount = db.Addresses
-                .Include(x => x.Balances)
-                .Include("Balances.Asset")
+                .Include(x => x.Balances).ThenInclude(x => x.Asset)
                 .FirstOrDefault(x => x.PublicAddress == address);
 
             if (addressAccount != null && addressAccount.Balances.Count > 0)

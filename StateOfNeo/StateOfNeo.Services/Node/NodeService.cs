@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using X.PagedList;
 
 using WebSocket4Net;
+using Microsoft.EntityFrameworkCore;
 
 namespace StateOfNeo.Services
 {
@@ -23,6 +24,19 @@ namespace StateOfNeo.Services
         {
             this.netSettings = netSettings.Value;
         }
+
+        public T Get<T>(int id) =>
+            this.db.Nodes
+                .Where(x => x.Id == id)
+                .ProjectTo<T>()
+                .FirstOrDefault();
+
+        public IEnumerable<T> GetNodes<T>() =>
+            this.db.Nodes
+                .Include(n => n.NodeAddresses)
+                .Where(n => n.Net.ToLower() == this.netSettings.Net.ToLower())
+                .Where(x => x.SuccessUrl != null)
+                .ProjectTo<T>();
 
         public async Task<IPagedList<T>> GetPage<T>(int page = 1, int pageSize = 10)
         {
@@ -55,7 +69,7 @@ namespace StateOfNeo.Services
                 .Select(x => $"ws://{x.Url}:10334")
                 .FirstOrDefault();
 
-            var websocket = new WebSocket(nodeUrl);            
+            var websocket = new WebSocket(nodeUrl);
             await websocket.OpenAsync();
 
             while (websocket.State == WebSocketState.Connecting) { }

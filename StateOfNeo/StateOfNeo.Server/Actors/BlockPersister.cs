@@ -796,11 +796,11 @@ namespace StateOfNeo.Server.Actors
             this.pendingBalances.Clear();
             this.pendingSmartContracts.Clear();
 
-            if (Blockchain.Singleton.Height == block.Height && !balancesRecalculated)
-            {
-                this.blockchainBalancesRecalculator.Run();
-                this.balancesRecalculated = true;
-            }
+            //if (Blockchain.Singleton.Height == block.Height && !balancesRecalculated)
+            //{
+            //    this.blockchainBalancesRecalculator.Run();
+            //    this.balancesRecalculated = true;
+            //}
         }
 
         private void EmitStatsInfo()
