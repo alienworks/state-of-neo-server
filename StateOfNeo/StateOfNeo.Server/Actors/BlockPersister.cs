@@ -22,12 +22,11 @@ using StateOfNeo.Server.Hubs;
 using StateOfNeo.Server.Infrastructure;
 using StateOfNeo.Services;
 using StateOfNeo.ViewModels;
+using StateOfNeo.ViewModels.Address;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Numerics;
-using System.Threading;
 using static Neo.Ledger.Blockchain;
 
 namespace StateOfNeo.Server.Actors
@@ -85,8 +84,8 @@ namespace StateOfNeo.Server.Actors
             IHubContext<NotificationHub> notificationHub,
             BlockchainBalances blockChainBalances,
             string net) =>
-                Akka.Actor.Props.Create(() =>
-                    new BlockPersister(blockchain, connectionString, state, statsHub, notificationHub, blockChainBalances, net));
+                Akka.Actor.Props.Create(
+                    () => new BlockPersister(blockchain, connectionString, state, statsHub, notificationHub, blockChainBalances, net));
 
         protected override void OnReceive(object message)
         {
@@ -321,6 +320,7 @@ namespace StateOfNeo.Server.Actors
                 }
 
                 var transactedAmounts = new Dictionary<string, Dictionary<string, decimal>>();
+                var activeAddresses = new List<AddressListViewModel>();
                 for (int i = 0; i < item.Inputs.Length; i++)
                 {
                     var input = item.Inputs[i];
@@ -348,6 +348,9 @@ namespace StateOfNeo.Server.Actors
                     this.AdjustTransactedAmount(transactedAmounts, assetHash, fromPublicAddress, -ta.Amount);
 
                     transaction.GlobalIncomingAssets.Add(ta);
+
+                    var activeAddress = Mapper.Map<AddressListViewModel>(fromAddress);
+                    activeAddresses.Add(activeAddress);
                 }
 
                 for (int i = 0; i < item.Outputs.Length; i++)
@@ -377,6 +380,9 @@ namespace StateOfNeo.Server.Actors
                     this.AdjustTransactedAmount(transactedAmounts, assetHash, toPublicAddress, ta.Amount);
 
                     transaction.GlobalOutgoingAssets.Add(ta);
+
+                    var activeAddress = Mapper.Map<AddressListViewModel>(toAddress);
+                    activeAddresses.Add(activeAddress);
 
                     if (transaction.Type == Neo.Network.P2P.Payloads.TransactionType.ClaimTransaction)
                     {
@@ -429,6 +435,7 @@ namespace StateOfNeo.Server.Actors
                 }
 
                 block.Transactions.Add(transaction);
+                this.state.AddActiveAddress(activeAddresses);
             }
 
             this.state.AddBlockSize(block.Size, blockTime);
