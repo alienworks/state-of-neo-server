@@ -7,7 +7,9 @@ using StateOfNeo.Data.Models;
 using StateOfNeo.Server.Infrastructure;
 using StateOfNeo.Services;
 using StateOfNeo.ViewModels.Asset;
+using System.Linq;
 using System.Threading.Tasks;
+using X.PagedList;
 
 namespace StateOfNeo.Server.Controllers
 {
@@ -15,6 +17,8 @@ namespace StateOfNeo.Server.Controllers
     {
         private readonly IPaginatingService paginating;
         private readonly IAssetService assets;
+
+        public string GlobalConstants { get; private set; }
 
         public AssetsController(IPaginatingService paginating, IAssetService assets)
         {
@@ -47,7 +51,7 @@ namespace StateOfNeo.Server.Controllers
             var result = await this.paginating.GetPage<Asset, AssetListViewModel>(
                 page,
                 pageSize,
-                null,
+                x => x.Hash == AssetConstants.NeoAssetId || x.Hash == AssetConstants.GasAssetId,
                 x => global == true ? x.GlobalType != null : x.GlobalType == null);
 
             if (!global)
