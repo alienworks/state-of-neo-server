@@ -12,6 +12,7 @@ namespace StateOfNeo.Services
         T Find<T>(string hash);
         int Count(AssetType[] types);
         int TxCount(AssetType[] types);
+        int AddressCount(string hash, UnitOfTime unitOfTime = UnitOfTime.None, bool active = false);
 
         IEnumerable<ChartStatsViewModel> TokenChart();
     }

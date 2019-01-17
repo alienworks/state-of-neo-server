@@ -1,6 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using AutoMapper.QueryableExtensions;
+using Microsoft.EntityFrameworkCore;
 using StateOfNeo.Common.Enums;
 using StateOfNeo.Data;
 using StateOfNeo.Data.Models;
@@ -63,6 +65,28 @@ namespace StateOfNeo.Services
                 .ToList();
 
             return result;
+        }
+
+        public int AddressCount(string hash, UnitOfTime unitOfTime = UnitOfTime.None, bool active = false)
+        {
+            if (unitOfTime == UnitOfTime.Month)
+            {
+                var date = DateTime.UtcNow.AddMonths(-1);
+                if (active)
+                {
+                    return this.db.AddressBalances
+                        .Include(x => x.Address)
+                        .Count(x => x.AssetHash == hash && x.Address.FirstTransactionOn >= date);
+                }
+                else
+                {
+                    return this.db.AddressBalances
+                        .Include(x => x.Address)
+                        .Count(x => x.AssetHash == hash && x.Address.LastTransactionOn >= date);
+                }
+            }
+
+            return this.db.AddressBalances.Count(x => x.AssetHash == hash);
         }
     }
 }
