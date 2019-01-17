@@ -18,17 +18,20 @@ using Neo.Ledger;
 using Neo;
 using StateOfNeo.ViewModels.Address;
 using X.PagedList;
+using StateOfNeo.ViewModels.Transaction;
 
 namespace StateOfNeo.Services
 {
     public class StateService : IStateService
     {
         public const int CachedAddressesCount = 500;
+        public const int CachedTransactionsCount = 500;
 
         private Dictionary<string, Dictionary<UnitOfTime, ICollection<ChartStatsViewModel>>> charts = new Dictionary<string, Dictionary<UnitOfTime, ICollection<ChartStatsViewModel>>>();
         private ICollection<ChartStatsViewModel> transactionTypes = new List<ChartStatsViewModel>();
         private DateTime? transactionTypesLastUpdate;
         private List<AddressListViewModel> addresses;
+        private List<TransactionListViewModel> transactions;
 
         private long? lastBlockTime;
         private readonly StateOfNeoContext db;
@@ -49,6 +52,7 @@ namespace StateOfNeo.Services
             this.GetLatestTimestamp();
             this.LoadTransactionTypes();
             this.LoadLastActiveAddresses();
+            this.LoadLastTransactions();
 
             this.LoadTransactionsMainChart();
             this.LoadCreatedAddressesMainChart();
@@ -117,22 +121,6 @@ namespace StateOfNeo.Services
             this.AddChartValues("blockTransactions", 1, time, UnitOfTime.Month, transactions);
         }
 
-        public void AddActiveAddress(IEnumerable<AddressListViewModel> addresses)
-        {
-            foreach (var item in addresses)
-            {
-                this.addresses.RemoveAll(x => x.Address == item.Address);
-                this.addresses.Add(item);
-            }
-
-            this.addresses = this.addresses
-                .OrderByDescending(x => x.LastTransactionTime)
-                .Take(StateService.CachedAddressesCount)
-                .ToList();
-        }
-
-        public IPagedList<AddressListViewModel> GetAddressesPage(int page = 1, int pageSize = 10) =>
-            this.addresses.AsQueryable().ToPagedList(page, pageSize);
 
         public void AddAddresses(int count, DateTime time)
         {
@@ -160,6 +148,48 @@ namespace StateOfNeo.Services
             }
 
             return this.transactionTypes;
+        }
+
+        public void AddActiveAddress(IEnumerable<AddressListViewModel> addresses)
+        {
+            foreach (var item in addresses)
+            {
+                this.addresses.RemoveAll(x => x.Address == item.Address);
+                this.addresses.Add(item);
+            }
+
+            this.addresses = this.addresses
+                .OrderByDescending(x => x.LastTransactionTime)
+                .Take(StateService.CachedAddressesCount)
+                .ToList();
+        }
+
+        public IPagedList<AddressListViewModel> GetAddressesPage(int page = 1, int pageSize = 10) =>
+            this.addresses.AsQueryable().ToPagedList(page, pageSize);
+
+        public void AddToTransactionsList(TransactionListViewModel tx)
+        {
+            this.transactions.Add(tx);
+            this.EnsureTransactionsList();
+        }
+
+        public void AddToTransactionsList(IEnumerable<TransactionListViewModel> txs)
+        {
+            this.transactions.AddRange(txs);
+            this.EnsureTransactionsList();
+        }
+
+        public IPagedList<TransactionListViewModel> GetTransactionsPage(int page = 1, int pageSize = 10) =>
+            this.transactions.AsQueryable().OrderByDescending(x => x.Timestamp).ToPagedList(page, pageSize);
+
+        private void EnsureTransactionsList()
+        {
+            if (this.transactions.Count > StateService.CachedTransactionsCount)
+            {
+                this.transactions = this.transactions
+                    .TakeLast(StateService.CachedTransactionsCount)
+                    .ToList();
+            }
         }
 
         public void LoadTransactionTypes()
@@ -219,6 +249,15 @@ namespace StateOfNeo.Services
                 .ToList();
         }
 
+        private void LoadLastTransactions()
+        {
+            this.transactions = this.db.Transactions
+                .OrderByDescending(x => x.Timestamp)
+                .ProjectTo<TransactionListViewModel>()
+                .Take(StateService.CachedTransactionsCount)
+                .ToList();
+        }
+
         private ICollection<ChartStatsViewModel> GetBlockSizesStats(ChartFilterViewModel filter)
         {
             long latestBlockDate = this.GetLatestTimestamp();
@@ -257,7 +296,7 @@ namespace StateOfNeo.Services
                 {
                     continue;
                 }
-                
+
                 this.db.ChartEntries.Add(new Data.Models.ChartEntry
                 {
                     UnitOfTime = filter.UnitOfTime,
@@ -297,20 +336,20 @@ namespace StateOfNeo.Services
                     StartDate = DateOrderFilter.GetDateTime(endStamp, filter.UnitOfTime),
                     UnitOfTime = filter.UnitOfTime
                 });
-                
+
                 var exists = this.db.ChartEntries.Any(
                     x =>
                         x.Timestamp == endStamp
                         && x.Type == ChartEntryType.BlockTimes
                         && x.UnitOfTime == filter.UnitOfTime);
-                
+
                 latestBlockDate = endStamp;
 
                 if (exists || !endStamp.IsPeriodOver(filter.UnitOfTime))
                 {
                     continue;
                 }
-                
+
                 this.db.ChartEntries.Add(new Data.Models.ChartEntry
                 {
                     UnitOfTime = filter.UnitOfTime,
@@ -320,7 +359,7 @@ namespace StateOfNeo.Services
                     Value = count
                 });
 
-                this.db.SaveChanges();          
+                this.db.SaveChanges();
             }
 
             return result;
@@ -335,7 +374,7 @@ namespace StateOfNeo.Services
 
             var result = this.GetChartEntries(filter.UnitOfTime, ChartEntryType.CreatedAddresses);
             var query = this.db.Addresses
-                .Where(x => 
+                .Where(x =>
                     x.FirstTransactionOn >= filter.GetEndPeriod()
                     && !result.Any(r => r.Timestamp == x.FirstTransactionOn.GetPeriodStart(filter.UnitOfTime).ToUnixTimestamp()));
 
@@ -410,9 +449,9 @@ namespace StateOfNeo.Services
             foreach (var entry in newEntries)
             {
                 var exists = this.db.ChartEntries.Any(
-                    x => 
-                        x.Timestamp == entry.Timestamp 
-                        && x.Type == ChartEntryType.CreatedAddresses 
+                    x =>
+                        x.Timestamp == entry.Timestamp
+                        && x.Type == ChartEntryType.CreatedAddresses
                         && x.UnitOfTime == entry.UnitOfTime);
 
                 if (exists)
@@ -436,7 +475,7 @@ namespace StateOfNeo.Services
 
         private ICollection<ChartStatsViewModel> GetTransactionsStats(ChartFilterViewModel filter)
         {
-            filter.StartDate =  this.lastBlockTime.Value.ToUnixDate();
+            filter.StartDate = this.lastBlockTime.Value.ToUnixDate();
             filter.StartStamp = this.lastBlockTime.Value;
 
             var result = this.GetChartEntries(filter.UnitOfTime, ChartEntryType.Transactions);
@@ -451,7 +490,7 @@ namespace StateOfNeo.Services
                     StartDate = DateOrderFilter.GetDateTime(periods[i], filter.UnitOfTime),
                     UnitOfTime = filter.UnitOfTime
                 });
-                
+
                 var exists = this.db.ChartEntries.Any(
                     x =>
                         x.Timestamp == periods[i]
@@ -462,7 +501,7 @@ namespace StateOfNeo.Services
                 {
                     continue;
                 }
-                
+
                 this.db.ChartEntries.Add(new Data.Models.ChartEntry
                 {
                     UnitOfTime = filter.UnitOfTime,
@@ -471,7 +510,7 @@ namespace StateOfNeo.Services
                     Value = count
                 });
 
-                this.db.SaveChanges();                
+                this.db.SaveChanges();
             }
 
             return result.ToList();

@@ -73,9 +73,25 @@ namespace StateOfNeo.Server.Controllers
                 return this.Ok(res.ToListResult());
             }
 
-            var result = this.transactions.GetPageTransactions<TransactionListViewModel>(page, pageSize, blockHash);
+            if (!string.IsNullOrEmpty(blockHash))
+            {
+                var result = this.transactions.GetPageTransactions<TransactionListViewModel>(page, pageSize, blockHash);
 
-            return this.Ok(result.ToListResult());
+                return this.Ok(result.ToListResult());
+            }
+
+            if (page * pageSize <= StateService.CachedTransactionsCount)
+            {
+                var result = this.state.GetTransactionsPage(page, pageSize);
+
+                return this.Ok(result.ToListResult());
+            }
+            else
+            {
+                var result = this.transactions.GetPageTransactions<TransactionListViewModel>(page, pageSize);
+
+                return this.Ok(result.ToListResult());
+            }
         }
 
         [HttpPost("[action]")]
