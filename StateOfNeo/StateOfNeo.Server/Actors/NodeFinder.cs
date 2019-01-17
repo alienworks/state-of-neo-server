@@ -180,7 +180,7 @@ namespace StateOfNeo.Server.Actors
                 SuccessUrl = successUrl,
                 Type = type,
                 Net = netSettings.Net,
-                Url = ip,
+                Url = ip.ToMatchedIp(),
                 Service = service
             };
 
