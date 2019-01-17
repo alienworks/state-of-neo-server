@@ -25,14 +25,10 @@ namespace StateOfNeo.Server.Infrastructure
     public class RPCNodeCaller
     {
         private readonly NetSettings netSettings;
-        private readonly IHubContext<NodeHub> nodeHub;
         private uint BlockCount = 0;
 
-        public RPCNodeCaller(
-            IHubContext<NodeHub> nodeHub,
-            IOptions<NetSettings> netSettings)
+        public RPCNodeCaller(IOptions<NetSettings> netSettings)
         {
-            this.nodeHub = nodeHub;
             this.netSettings = netSettings.Value;
         }
 
@@ -83,8 +79,6 @@ namespace StateOfNeo.Server.Infrastructure
 
             db.Nodes.Update(node);
             await db.SaveChangesAsync();
-
-            await this.nodeHub.Clients.All.SendAsync("NodeInfo", node.SuccessUrl);
         }
 
         public async Task<int?> GetNodeHeight(Node node)
@@ -155,7 +149,7 @@ namespace StateOfNeo.Server.Infrastructure
 
                         if (response != null && response.IsSuccessStatusCode)
                             node.SuccessUrl = triedUrl;
-                            break;
+                        break;
                     }
                 }
 
@@ -170,7 +164,7 @@ namespace StateOfNeo.Server.Infrastructure
             {
 
             }
-            
+
             return default(T);
         }
     }

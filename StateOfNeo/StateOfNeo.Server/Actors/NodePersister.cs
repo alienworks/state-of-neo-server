@@ -60,6 +60,7 @@ namespace StateOfNeo.Server.Actors
                     var previousBlockTime = previousBlock.Timestamp.ToUnixDate();
 
                     var nodes = db.Nodes
+                        .Include(x => x.NodeAddresses)
                         .Include(x => x.Audits)
                         .Where(x => x.Net == this.net && x.SuccessUrl != null)
                         .ToList();

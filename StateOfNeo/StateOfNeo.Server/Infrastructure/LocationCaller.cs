@@ -34,7 +34,7 @@ namespace StateOfNeo.Server.Infrastructure
             {
                 var node = this.ctx.Nodes
                     .FirstOrDefault(n => n.Id == address.NodeId);
-                await this.UpdateNode(node, address.Ip);
+                await UpdateNode(node, address.Ip);
             }
         }
 
@@ -48,7 +48,7 @@ namespace StateOfNeo.Server.Infrastructure
             {
                 foreach (var address in node.NodeAddresses)
                 {
-                    var result = await this.UpdateNode(node, address.Ip);
+                    var result = await UpdateNode(node, address.Ip);
                     if (result)
                     {
                         return true;
@@ -59,14 +59,14 @@ namespace StateOfNeo.Server.Infrastructure
             return false;
         }
 
-        public async Task<bool> UpdateNode(Node node, string ip)
+        public static async Task<bool> UpdateNode(Node node, string ip)
         {
             try
             {
                 if (node.Latitude == null || node.Longitude == null)
                 {
 
-                    var response = await this.CheckIpCall(ip);
+                    var response = await CheckIpCall(ip);
                     if (response.IsSuccessStatusCode)
                     {
                         var responseText = await response.Content.ReadAsStringAsync();
@@ -90,7 +90,7 @@ namespace StateOfNeo.Server.Infrastructure
             return false;
         }
 
-        private async Task<HttpResponseMessage> CheckIpCall(string ip)
+        private static async Task<HttpResponseMessage> CheckIpCall(string ip)
         {
             HttpResponseMessage response;
             try

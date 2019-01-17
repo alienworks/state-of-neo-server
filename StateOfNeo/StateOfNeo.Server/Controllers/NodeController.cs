@@ -14,6 +14,7 @@ using StateOfNeo.Services;
 using StateOfNeo.ViewModels.Chart;
 using Serilog;
 using StateOfNeo.Common.Constants;
+using StateOfNeo.Common.RPC;
 
 namespace StateOfNeo.Server.Controllers
 {
@@ -21,16 +22,13 @@ namespace StateOfNeo.Server.Controllers
     public class NodeController : BaseApiController
     {
         private readonly NodeCache nodeCache;
-        private readonly NodeSynchronizer nodeSynchronizer;
         private readonly INodeService nodeService;
 
         public NodeController(
             NodeCache nodeCache,
-            NodeSynchronizer nodeSynchronizer,
             INodeService nodeService)
         {
             this.nodeCache = nodeCache;
-            this.nodeSynchronizer = nodeSynchronizer;
             this.nodeService = nodeService;
         }
 
@@ -39,7 +37,7 @@ namespace StateOfNeo.Server.Controllers
         {
             try
             {
-                var nodes = this.nodeSynchronizer.GetCachedNodesAs<NodeViewModel>().ToList();
+                var nodes = this.nodeService.GetNodes<NodeViewModel>();
                 return Ok(nodes);
             }
             catch (System.Exception ex)
@@ -53,7 +51,7 @@ namespace StateOfNeo.Server.Controllers
         {
             try
             {
-                await this.nodeSynchronizer.Init();
+                //await this.nodeSynchronizer.Init();
                 return Ok();
             }
             catch (System.Exception ex)
@@ -68,7 +66,7 @@ namespace StateOfNeo.Server.Controllers
         {
             try
             {
-                var node = this.nodeSynchronizer.GetCachedNodesAs<NodeDetailsViewModel>().ToList().FirstOrDefault(x => x.Id == id);
+                var node = this.nodeService.Get<NodeDetailsViewModel>(id);
                 return Ok(node);
             }
             catch (System.Exception ex)
@@ -146,6 +144,26 @@ namespace StateOfNeo.Server.Controllers
         {
             var status = await this.nodeService.GetWsStatusAsync(nodeId);
             return this.Ok(status);
+        }
+
+        [HttpGet("[action]")]
+        public async Task<IActionResult> GetRPCNodes()
+        {
+            return this.Ok(this.nodeCache.PeersCollected);
+        }
+
+        [HttpPost("[action]")]
+        public async Task<IActionResult> AddRPCNodes(RPCPeer[] peers)
+        {
+            if (peers != null)
+            {
+                foreach (var peer in peers)
+                {
+                    this.nodeCache.AddPeer(peer);
+                }
+            }
+
+            return this.Ok();
         }
     }
 }

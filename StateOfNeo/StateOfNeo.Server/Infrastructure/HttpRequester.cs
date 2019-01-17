@@ -7,6 +7,8 @@ namespace StateOfNeo.Server.Infrastructure
 {
     public class HttpRequester
     {
+
+
         public static async Task<T> MakeRestCall<T>(string url, HttpMethod method)
         {
             try

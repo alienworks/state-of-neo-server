@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Neo;
 using StateOfNeo.Common.Constants;
 using StateOfNeo.Common.Enums;
 using StateOfNeo.Common.Extensions;
@@ -9,6 +10,9 @@ using StateOfNeo.Services;
 using StateOfNeo.Services.Address;
 using StateOfNeo.ViewModels.Address;
 using StateOfNeo.ViewModels.Chart;
+using System.Collections.Generic;
+using System.Linq;
+using X.PagedList;
 
 namespace StateOfNeo.Server.Controllers
 {
@@ -49,12 +53,50 @@ namespace StateOfNeo.Server.Controllers
             if (page * pageSize <= StateService.CachedAddressesCount)
             {
                 var result = this.state.GetAddressesPage(page, pageSize);
+
+                this.UpdateNeoAndGasBalances(result);
+
                 return this.Ok(result.ToListResult());
             }
             else
             {
                 var result = this.addresses.GetPage(page, pageSize);
+
+                this.UpdateNeoAndGasBalances(result);
+
                 return this.Ok(result.ToListResult());
+            }
+        }
+
+        private void UpdateNeoAndGasBalances(IEnumerable<AddressListViewModel> result)
+        {
+            var resultList = result.ToList();
+            for (int i = 0; i < resultList.Count; i++)
+            {
+                var balancesFromSnapshot = BlockchainBalances.GetGlobalAssets(resultList[i].Address);
+                var balancesList = resultList[i].Balances.ToList();
+
+                for (int j = 0; j < balancesList.Count; j++)
+                {
+                    if (balancesList[j].Name.ToLower() == "gas")
+                    {
+                        var gasKey = UInt256.Parse(AssetConstants.GasAssetId);
+                        if (balancesFromSnapshot != null && balancesFromSnapshot.ContainsKey(gasKey))
+                        {
+                            var balance = balancesFromSnapshot[gasKey];
+                            balancesList[j].Balance = (decimal)balance;
+                        }
+                    }
+                    else if (balancesList[j].Name.ToLower() == "neo")
+                    {
+                        var neoKey = UInt256.Parse(AssetConstants.NeoAssetId);
+                        if (balancesFromSnapshot != null && balancesFromSnapshot.ContainsKey(neoKey))
+                        {
+                            var balance = balancesFromSnapshot[neoKey];
+                            balancesList[j].Balance = (decimal)balance;
+                        }
+                    }
+                }
             }
         }
 
@@ -62,6 +104,9 @@ namespace StateOfNeo.Server.Controllers
         public IActionResult TopNeo()
         {
             var result = this.addresses.TopOneHundredNeo();
+
+            this.UpdateNeoAndGasBalances(result);
+
             return this.Ok(result);
         }
 
@@ -69,6 +114,9 @@ namespace StateOfNeo.Server.Controllers
         public IActionResult TopGas()
         {
             var result = this.addresses.TopOneHundredGas();
+
+            this.UpdateNeoAndGasBalances(result);
+
             return this.Ok(result);
         }
 

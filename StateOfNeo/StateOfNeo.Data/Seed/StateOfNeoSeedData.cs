@@ -15,23 +15,24 @@ namespace StateOfNeo.Data.Seed
 {
     public class StateOfNeoSeedData
     {
-        private readonly StateOfNeoContext _ctx;
-        private readonly IOptions<NetSettings> _netSettings;
+        private readonly StateOfNeoContext db;
+        private readonly IOptions<NetSettings> netSettings;
 
         public StateOfNeoSeedData(StateOfNeoContext ctx, IOptions<NetSettings> netSettings)
         {
-            _ctx = ctx;
-            _netSettings = netSettings;
+            db = ctx;
+            this.netSettings = netSettings;
         }
 
         public void Init()
         {
-            SeedNodes();
+            this.SeedNodes();
+            this.SeedAddresses();
         }
 
         private void SeedNodes()
         {
-            if (!_ctx.Nodes.Any())
+            if (!db.Nodes.Any())
             {
                 SeedNodesByNetType(NetConstants.MAIN_NET);
                 SeedNodesByNetType(NetConstants.TEST_NET);
@@ -55,8 +56,8 @@ namespace StateOfNeo.Data.Seed
                     Version = node.Version,
                     Service = node.Service
                 };
-                _ctx.Nodes.Add(newNode);
-                _ctx.SaveChanges();
+                db.Nodes.Add(newNode);
+                db.SaveChanges();
 
                 RegisterIpAddresses(newNode.Id, node);
             }
@@ -64,15 +65,36 @@ namespace StateOfNeo.Data.Seed
 
         private void RegisterIpAddresses(int nodeId, NodeViewModel node)
         {
-            var newAddress = new NodeAddress
+            foreach (var ip in node.Ips)
             {
-                Ip = node.Ip,
-                Port = node.Port,
-                NodeId = nodeId,
-                Type = Enum.Parse<NodeAddressType>(node.Type)
-            };
-            _ctx.NodeAddresses.Add(newAddress);
-            _ctx.SaveChanges();
+                var newAddress = new NodeAddress
+                {
+                    Ip = ip,
+                    Port = node.Port,
+                    NodeId = nodeId,
+                    Type = Enum.Parse<NodeAddressType>(node.Type)
+                };
+                db.NodeAddresses.Add(newAddress);
+                db.SaveChanges();
+            }
+        }
+
+        private void SeedAddresses()
+        {
+            if (!this.db.NodeAddresses.Any() && this.db.Nodes.Any())
+            {
+                var mainNodes = ((JArray)JsonConvert.DeserializeObject(File.ReadAllText($@"seed-{NetConstants.MAIN_NET.ToLower()}.json"))).ToObject<List<NodeViewModel>>();
+                var dbNodes = this.db.Nodes.Where(x => x.Net == NetConstants.MAIN_NET).ToList();
+
+                for (int i = 0; i < dbNodes.Count; i++)
+                {
+                    var mainNode = mainNodes.FirstOrDefault(x => x.Url.Equals(dbNodes[i].Url));
+                    if (mainNode != null)
+                    {
+                        this.RegisterIpAddresses(dbNodes[i].Id, mainNode);
+                    }
+                }
+            }
         }
     }
 }

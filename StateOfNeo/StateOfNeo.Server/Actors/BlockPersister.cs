@@ -23,6 +23,7 @@ using StateOfNeo.Server.Infrastructure;
 using StateOfNeo.Services;
 using StateOfNeo.ViewModels;
 using StateOfNeo.ViewModels.Address;
+using StateOfNeo.ViewModels.Transaction;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -785,6 +786,13 @@ namespace StateOfNeo.Server.Actors
         {
             var currentStats = Mapper.Map<HeaderStatsViewModel>(block);
             currentStats.TransactionCount = transactions;
+
+            var transactionsList = block.Transactions
+                .AsQueryable()
+                .ProjectTo<TransactionListViewModel>()
+                .ToList();
+
+            this.state.AddToTransactionsList(transactionsList);
 
             this.state.MainStats.SetHeaderStats(currentStats);
             this.state.MainStats.AddToTotalTxCount(transactions);
