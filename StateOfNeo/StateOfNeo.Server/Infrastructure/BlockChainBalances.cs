@@ -61,7 +61,34 @@ namespace StateOfNeo.Server.Infrastructure
             }
         }
 
+        public static IDictionary<UInt256, Fixed8> GetGlobalAssets(string address)
+        {
+            var accHash = address.ToScriptHash();
+            var account = Blockchain.Singleton.GetSnapshot().Accounts.TryGet(accHash);
 
+            if (account != null)
+            {
+                return account.Balances;
+            }
+
+            return null;
+        }
+
+        static public BigInteger GetTotalSupply(string hash)
+        {
+            UInt160 script_hash = UInt160.Parse(hash);
+            byte[] script;
+            using (ScriptBuilder sb = new ScriptBuilder())
+            {
+                sb.EmitAppCall(script_hash, "totalSupply");
+                script = sb.ToArray();
+            }
+
+            ApplicationEngine engine = ApplicationEngine.Run(script);
+            BigInteger amount = engine.ResultStack.Pop().GetBigInteger();
+
+            return amount;
+        }
 
         static public Address GetAddressAssets(string address, StateOfNeoContext db, bool update = false)
         {
