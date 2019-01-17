@@ -150,7 +150,12 @@ namespace StateOfNeo.Server
             app.UseCors(builder =>
             {
                 builder
-                    .WithOrigins("http://stateofneo.io", "https://stateofneo.io", "http://localhost:4200")
+                    .WithOrigins(
+                        "http://stateofneo.io", 
+                        "http://www.stateofneo.io", 
+                        "https://stateofneo.io",
+                        "https://www.stateofneo.io",
+                        "http://localhost:4200")
                     .AllowAnyMethod()
                     .AllowAnyHeader()
                     .AllowCredentials();
