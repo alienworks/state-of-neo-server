@@ -13,6 +13,9 @@ using X.PagedList;
 
 using WebSocket4Net;
 using Microsoft.EntityFrameworkCore;
+using System.Threading;
+using System;
+using Serilog;
 
 namespace StateOfNeo.Services
 {
@@ -69,13 +72,30 @@ namespace StateOfNeo.Services
                 .Select(x => $"ws://{x.Url}:10334")
                 .FirstOrDefault();
 
-            var websocket = new WebSocket(nodeUrl);
-            await websocket.OpenAsync();
+            var websocket = new System.Net.WebSockets.ClientWebSocket();
+            await websocket.ConnectAsync(new System.Uri(nodeUrl), CancellationToken.None);
 
-            while (websocket.State == WebSocketState.Connecting) { }
-            var success = websocket.State == WebSocketState.Open;
+            //Thread.Sleep(1000);
+            var success = websocket.State == System.Net.WebSockets.WebSocketState.Open;
 
-            await websocket.CloseAsync();
+            try
+            {
+                await websocket.CloseAsync(System.Net.WebSockets.WebSocketCloseStatus.NormalClosure, null, CancellationToken.None);
+            }
+            catch (Exception e)
+            {
+                Log.Error("WS connection CloseAsync() ", e);
+            }
+            finally
+            {
+                websocket.Dispose();
+            }
+            //await websocket.OpenAsync();
+
+            //while (websocket.State == WebSocketState.Connecting) { }
+            //var success = websocket.State == WebSocketState.Open;
+
+            //await websocket.CloseAsync();
             return success;
         }
     }
