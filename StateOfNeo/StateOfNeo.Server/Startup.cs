@@ -65,6 +65,7 @@ namespace StateOfNeo.Server
             services.AddScoped<IAssetService, AssetService>();
             services.AddScoped<ITransactionService, TransactionService>();
             services.AddScoped<IAddressService, AddressService>();
+            services.AddScoped<ISearchService, SearchService>();
 
             services.AddSingleton<IMainStatsState, MainStatsState>();
             services.AddSingleton<IStateService, StateService>();
@@ -121,8 +122,6 @@ namespace StateOfNeo.Server
                 notificationHub,
                 blockChainBalances,
                 netSettings.Value.Net));
-
-            //new ImportBlocks(importSettings.Value.MaxOnImportHeight);
 
             Program.NeoSystem.ActorSystem.ActorOf(NodePersister.Props(
                 Program.NeoSystem.Blockchain,

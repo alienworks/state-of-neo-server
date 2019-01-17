@@ -1,6 +1,7 @@
 ﻿using Neo;
 using Neo.Cryptography;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -44,6 +45,11 @@ namespace StateOfNeo.Common
             //if (data[0] != Settings.Default.AddressVersion)
             //    throw new FormatException();
             return new UInt160(data.Skip(1).ToArray());
+        }
+
+        public static KeyValuePair<string, string> ToKeyValueWithKey(this string value, string key)
+        {
+            return new KeyValuePair<string, string>(key, value);
         }
     }
 }
