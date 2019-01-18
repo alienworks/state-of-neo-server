@@ -25,8 +25,8 @@ namespace StateOfNeo.Services
 {
     public class StateService : IStateService
     {
-        public const int CachedAddressesCount = 500;
-        public const int CachedTransactionsCount = 500;
+        public const int CachedAddressesCount = 1500;
+        public const int CachedTransactionsCount = 1500;
 
         private Dictionary<string, Dictionary<UnitOfTime, ICollection<ChartStatsViewModel>>> charts = new Dictionary<string, Dictionary<UnitOfTime, ICollection<ChartStatsViewModel>>>();
         private ICollection<ChartStatsViewModel> transactionTypes = new List<ChartStatsViewModel>();
@@ -121,7 +121,6 @@ namespace StateOfNeo.Services
             this.AddChartValues("blockTransactions", 1, time, UnitOfTime.Day, transactions);
             this.AddChartValues("blockTransactions", 1, time, UnitOfTime.Month, transactions);
         }
-
 
         public void AddAddresses(int count, DateTime time)
         {
@@ -265,10 +264,25 @@ namespace StateOfNeo.Services
         private void LoadLastTransactions()
         {
             this.transactions = this.db.Transactions
+                .Where(x => x.Type == TransactionType.ClaimTransaction 
+                    || x.Type == TransactionType.MinerTransaction 
+                    || x.Type == TransactionType.ContractTransaction 
+                    || x.Type == TransactionType.InvocationTransaction)
                 .OrderByDescending(x => x.Timestamp)
                 .ProjectTo<TransactionListViewModel>()
                 .Take(StateService.CachedTransactionsCount)
                 .ToList();
+
+            var rarelyUsedTransactions = this.db.Transactions
+                .Where(x => x.Type != TransactionType.ClaimTransaction
+                    && x.Type != TransactionType.MinerTransaction
+                    && x.Type != TransactionType.ContractTransaction
+                    && x.Type != TransactionType.InvocationTransaction)
+                .OrderByDescending(x => x.Timestamp)
+                .ProjectTo<TransactionListViewModel>();
+
+            this.transactions.AddRange(rarelyUsedTransactions);
+            this.transactions = this.transactions.OrderByDescending(x => x.Timestamp).ToList();
         }
 
         private ICollection<ChartStatsViewModel> GetBlockSizesStats(ChartFilterViewModel filter)

@@ -87,7 +87,7 @@ namespace StateOfNeo.Server.Controllers
                 return this.Ok(result.ToListResult());
             }
 
-            if (page * pageSize <= StateService.CachedTransactionsCount && this.GetTransactionsFromCache(type))
+            if (page * pageSize <= StateService.CachedTransactionsCount)
             {
                 var result = this.state.GetTransactionsPage(page, pageSize, type);
                 return this.Ok(result.ToListResult());
@@ -157,21 +157,6 @@ namespace StateOfNeo.Server.Controllers
         public IActionResult TotalClaimed()
         {
             return this.Ok(this.state.MainStats.GetTotalClaimed());
-        }
-
-        private bool GetTransactionsFromCache(string type)
-        {
-            if (string.IsNullOrEmpty(type))
-            {
-                return true;
-            }
-
-            var txType = Enum.Parse<TransactionType>(type);
-
-            return txType == TransactionType.ClaimTransaction 
-                || txType == TransactionType.ContractTransaction 
-                || txType == TransactionType.InvocationTransaction 
-                || txType == TransactionType.MinerTransaction;
         }
     }
 }
