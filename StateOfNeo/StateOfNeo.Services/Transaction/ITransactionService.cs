@@ -10,7 +10,7 @@ namespace StateOfNeo.Services.Transaction
     {
         T Find<T>(string hash);
 
-        IPagedList<T> GetPageTransactions<T>(int page = 1, int pageSize = 10, string blockHash = null);
+        IPagedList<T> GetPageTransactions<T>(int page = 1, int pageSize = 10, string blockHash = null, string type = null);
         
         IPagedList<TransactionListViewModel> TransactionsForAddress(string address, int page = 1, int pageSize = 10);
         IPagedList<TransactionListViewModel> TransactionsForAsset(string asset, int page = 1, int pageSize = 10);

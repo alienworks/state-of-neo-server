@@ -1,7 +1,6 @@
 ﻿using AutoMapper.QueryableExtensions;
 using Microsoft.Extensions.Options;
 using StateOfNeo.Common;
-using StateOfNeo.Common.Extensions;
 using StateOfNeo.Common.Helpers.Models;
 using StateOfNeo.Data;
 using StateOfNeo.Data.Models;

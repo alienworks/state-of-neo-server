@@ -56,7 +56,13 @@ namespace StateOfNeo.Server.Controllers
         }
 
         [HttpGet("[action]")]
-        public async Task<IActionResult> List(int page = 1, int pageSize = 10, string blockHash = null, string address = null, string asset = null)
+        public async Task<IActionResult> List(
+            int page = 1, 
+            int pageSize = 10, 
+            string blockHash = null, 
+            string address = null, 
+            string asset = null,
+            string type = null)
         {
             if (!string.IsNullOrEmpty(address))
             {
@@ -73,7 +79,7 @@ namespace StateOfNeo.Server.Controllers
                 return this.Ok(res.ToListResult());
             }
 
-            var result = this.transactions.GetPageTransactions<TransactionListViewModel>(page, pageSize, blockHash);
+            var result = this.transactions.GetPageTransactions<TransactionListViewModel>(page, pageSize, blockHash, type);
 
             return this.Ok(result.ToListResult());
         }

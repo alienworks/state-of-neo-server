@@ -41,7 +41,7 @@ namespace StateOfNeo.Services.Transaction
                 .ProjectTo<TransactionListViewModel>()
                 .ToPagedList(page, pageSize);
 
-        public IPagedList<T> GetPageTransactions<T>(int page = 1, int pageSize = 10, string blockHash = null)
+        public IPagedList<T> GetPageTransactions<T>(int page = 1, int pageSize = 10, string blockHash = null, string type = null)
         {
             var query = this.db.Transactions
                 .OrderByDescending(x => x.Timestamp)
@@ -50,6 +50,12 @@ namespace StateOfNeo.Services.Transaction
             if (!string.IsNullOrEmpty(blockHash))
             {
                 query = query.Where(x => x.BlockId == blockHash);
+            }
+
+            if (!string.IsNullOrEmpty(type))
+            {
+                var txType = Enum.Parse<TransactionType>(type);
+                query = query.Where(x => x.Type == txType);
             }
 
             return query
