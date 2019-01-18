@@ -18,8 +18,6 @@ namespace StateOfNeo.ViewModels.Asset
         public int TransactionsCount2 { get; set; }
         public int TransactionsCount3 { get; set; }
 
-        public int AddressesCount { get; set; }
-
         public int NewAddressesLastMonth { get; set; }
 
         public int ActiveAddressesLastMonth { get; set; }

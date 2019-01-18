@@ -62,6 +62,7 @@ namespace StateOfNeo.Server
             services.AddScoped<IAssetService, AssetService>();
             services.AddScoped<ITransactionService, TransactionService>();
             services.AddScoped<IAddressService, AddressService>();
+            services.AddScoped<ISearchService, SearchService>();
 
             services.AddSingleton<IMainStatsState, MainStatsState>();
             services.AddSingleton<IStateService, StateService>();
@@ -69,8 +70,7 @@ namespace StateOfNeo.Server
             services.AddSingleton<BlockchainBalances>();
 
             // Infrastructure
-            services.AddScoped<NodeCache>();
-            services.AddScoped<NodeSynchronizer>();
+            services.AddSingleton<NodeCache>();
             services.AddScoped<RPCNodeCaller>();
             services.AddScoped<PeersEngine>();
             services.AddScoped<LocationCaller>();
@@ -107,6 +107,7 @@ namespace StateOfNeo.Server
             IHubContext<NotificationHub> notificationHub, 
             BlockchainBalances blockChainBalances,
             RPCNodeCaller nodeCaller,
+            NodeCache nodeCache,
             IStateService state)
         {
             var connectionString = this.Configuration.GetConnectionString("DefaultConnection");
@@ -119,13 +120,17 @@ namespace StateOfNeo.Server
                 blockChainBalances,
                 netSettings.Value.Net));
 
-            //new ImportBlocks(importSettings.Value.MaxOnImportHeight);
-
             Program.NeoSystem.ActorSystem.ActorOf(NodePersister.Props(
                 Program.NeoSystem.Blockchain,
                 connectionString,
                 netSettings.Value.Net,
                 nodeCaller));
+
+            Program.NeoSystem.ActorSystem.ActorOf(NodeFinder.Props(
+                 Program.NeoSystem.Blockchain,
+                 connectionString,
+                 netSettings.Value,
+                 nodeCache));
 
             //    Program.NeoSystem.ActorSystem.ActorOf(NotificationsListener.Props(Program.NeoSystem.Blockchain, connectionString));
 
@@ -152,7 +157,6 @@ namespace StateOfNeo.Server
             app.UseSignalR(routes =>
             {
                 routes.MapHub<StatsHub>("/hubs/stats");
-                routes.MapHub<NodeHub>("/hubs/node");
                 routes.MapHub<NotificationHub>("/hubs/notification");
             });
 

@@ -24,6 +24,6 @@
         public string Net { get; set; }
 
         public override int GetHashCode() => 
-            (this.Ip + this.Protocol + this.Port).GetHashCode();
+            (this.Url).GetHashCode();
     }
 }

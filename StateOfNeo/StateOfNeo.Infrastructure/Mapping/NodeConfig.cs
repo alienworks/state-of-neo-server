@@ -10,11 +10,11 @@ namespace StateOfNeo.Infrastructure.Mapping
         public static void InitMap(IMapperConfigurationExpression cfg)
         {
             cfg.CreateMap<Node, NodeViewModel>()
-                .ForMember(x => x.Ip,
+                .ForMember(x => x.Ips,
                     y => y.MapFrom(
                         z => z.NodeAddresses.Any()
-                            ? z.NodeAddresses.Select(na => na.Ip).First()
-                            : ""));
+                            ? z.NodeAddresses.Select(na => na.Ip).ToArray()
+                            : new string[] { "" }));
 
             cfg.CreateMap<Node, NodeDetailsViewModel>();
             cfg.CreateMap<Node, NodeViewModel>();

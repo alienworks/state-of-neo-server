@@ -1,6 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using StateOfNeo.Common.Enums;
+using System.Numerics;
 
 namespace StateOfNeo.ViewModels.Asset
 {
@@ -10,6 +9,8 @@ namespace StateOfNeo.ViewModels.Asset
 
         public string Hash { get; set; }
 
-        public long TotalSupply { get; set; }
+        public BigInteger TotalSupply { get; set; }
+
+        public AssetType Type { get; set; }
     }
 }

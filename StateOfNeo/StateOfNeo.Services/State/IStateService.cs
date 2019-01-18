@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using StateOfNeo.ViewModels.Chart;
 using System;
 using StateOfNeo.ViewModels.Address;
+using StateOfNeo.ViewModels.Transaction;
 using X.PagedList;
 
 namespace StateOfNeo.Services
@@ -33,5 +34,9 @@ namespace StateOfNeo.Services
 
         void AddActiveAddress(IEnumerable<AddressListViewModel> addresses);
         IPagedList<AddressListViewModel> GetAddressesPage(int page = 1, int pageSize = 10);
+
+        void AddToTransactionsList(TransactionListViewModel tx);
+        void AddToTransactionsList(IEnumerable<TransactionListViewModel> txs);
+        IPagedList<TransactionListViewModel> GetTransactionsPage(int page = 1, int pageSize = 10, string type = null);
     }
 }

@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Neo.Network.P2P.Payloads;
 using Serilog;
 using StateOfNeo.Common.Constants;
 using StateOfNeo.Common.Enums;
@@ -8,6 +9,7 @@ using StateOfNeo.Services;
 using StateOfNeo.Services.Transaction;
 using StateOfNeo.ViewModels.Chart;
 using StateOfNeo.ViewModels.Transaction;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -61,7 +63,7 @@ namespace StateOfNeo.Server.Controllers
             int pageSize = 10, 
             string blockHash = null, 
             string address = null, 
-            string asset = null,
+            string asset = null, 
             string type = null)
         {
             if (!string.IsNullOrEmpty(address))
@@ -79,9 +81,22 @@ namespace StateOfNeo.Server.Controllers
                 return this.Ok(res.ToListResult());
             }
 
-            var result = this.transactions.GetPageTransactions<TransactionListViewModel>(page, pageSize, blockHash, type);
+            if (!string.IsNullOrEmpty(blockHash))
+            {
+                var result = this.transactions.GetPageTransactions<TransactionListViewModel>(page, pageSize, blockHash);
+                return this.Ok(result.ToListResult());
+            }
 
-            return this.Ok(result.ToListResult());
+            if (page * pageSize <= StateService.CachedTransactionsCount && this.GetTransactionsFromCache(type))
+            {
+                var result = this.state.GetTransactionsPage(page, pageSize, type);
+                return this.Ok(result.ToListResult());
+            }
+            else
+            {
+                var result = this.transactions.GetPageTransactions<TransactionListViewModel>(page, pageSize, type: type);
+                return this.Ok(result.ToListResult());
+            }
         }
 
         [HttpPost("[action]")]
@@ -142,6 +157,21 @@ namespace StateOfNeo.Server.Controllers
         public IActionResult TotalClaimed()
         {
             return this.Ok(this.state.MainStats.GetTotalClaimed());
+        }
+
+        private bool GetTransactionsFromCache(string type)
+        {
+            if (string.IsNullOrEmpty(type))
+            {
+                return true;
+            }
+
+            var txType = Enum.Parse<TransactionType>(type);
+
+            return txType == TransactionType.ClaimTransaction 
+                || txType == TransactionType.ContractTransaction 
+                || txType == TransactionType.InvocationTransaction 
+                || txType == TransactionType.MinerTransaction;
         }
     }
 }
