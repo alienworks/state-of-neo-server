@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Neo.Network.P2P.Payloads;
 using Serilog;
+using StateOfNeo.Common;
 using StateOfNeo.Common.Constants;
 using StateOfNeo.Common.Enums;
 using StateOfNeo.Common.Extensions;
@@ -8,6 +10,7 @@ using StateOfNeo.Services;
 using StateOfNeo.Services.Transaction;
 using StateOfNeo.ViewModels.Chart;
 using StateOfNeo.ViewModels.Transaction;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -56,7 +59,13 @@ namespace StateOfNeo.Server.Controllers
         }
 
         [HttpGet("[action]")]
-        public async Task<IActionResult> List(int page = 1, int pageSize = 10, string blockHash = null, string address = null, string asset = null)
+        public async Task<IActionResult> List(
+            int page = 1, 
+            int pageSize = 10, 
+            string blockHash = null, 
+            string address = null, 
+            string asset = null, 
+            string type = null)
         {
             if (!string.IsNullOrEmpty(address))
             {
@@ -76,20 +85,31 @@ namespace StateOfNeo.Server.Controllers
             if (!string.IsNullOrEmpty(blockHash))
             {
                 var result = this.transactions.GetPageTransactions<TransactionListViewModel>(page, pageSize, blockHash);
-
                 return this.Ok(result.ToListResult());
             }
 
             if (page * pageSize <= StateService.CachedTransactionsCount)
             {
-                var result = this.state.GetTransactionsPage(page, pageSize);
+                var data = this.state.GetTransactionsPage(page, pageSize, type);
+                var result = data.ToListResult();
 
-                return this.Ok(result.ToListResult());
+                if (string.IsNullOrEmpty(type))
+                {
+                    var extended = PagedListMetadataExtended.FromParent(result.MetaData);
+
+                    var pages = extended.TotalItemCount % pageSize == 0 ? extended.TotalItemCount / pageSize : extended.TotalItemCount / pageSize + 1;
+
+                    extended.TotalItemCount = (int)this.state.MainStats.TotalStats.TransactionsCount;
+                    extended.PageCount = pages;
+
+                    result.MetaData = extended;
+                }
+
+                return this.Ok(result);
             }
             else
             {
-                var result = this.transactions.GetPageTransactions<TransactionListViewModel>(page, pageSize);
-
+                var result = this.transactions.GetPageTransactions<TransactionListViewModel>(page, pageSize, type: type);                
                 return this.Ok(result.ToListResult());
             }
         }

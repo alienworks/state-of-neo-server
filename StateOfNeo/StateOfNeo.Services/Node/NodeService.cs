@@ -1,7 +1,6 @@
 ﻿using AutoMapper.QueryableExtensions;
 using Microsoft.Extensions.Options;
 using StateOfNeo.Common;
-using StateOfNeo.Common.Extensions;
 using StateOfNeo.Common.Helpers.Models;
 using StateOfNeo.Data;
 using StateOfNeo.Data.Models;
@@ -74,13 +73,12 @@ namespace StateOfNeo.Services
                 .FirstOrDefault();
 
             var websocket = new System.Net.WebSockets.ClientWebSocket();
-            await websocket.ConnectAsync(new System.Uri(nodeUrl), CancellationToken.None);
-
-            //Thread.Sleep(1000);
-            var success = websocket.State == System.Net.WebSockets.WebSocketState.Open;
+            var success = false;
 
             try
             {
+                await websocket.ConnectAsync(new System.Uri(nodeUrl), CancellationToken.None);
+                success = websocket.State == System.Net.WebSockets.WebSocketState.Open;
                 await websocket.CloseAsync(System.Net.WebSockets.WebSocketCloseStatus.NormalClosure, null, CancellationToken.None);
             }
             catch (Exception e)
@@ -91,12 +89,7 @@ namespace StateOfNeo.Services
             {
                 websocket.Dispose();
             }
-            //await websocket.OpenAsync();
 
-            //while (websocket.State == WebSocketState.Connecting) { }
-            //var success = websocket.State == WebSocketState.Open;
-
-            //await websocket.CloseAsync();
             return success;
         }
     }

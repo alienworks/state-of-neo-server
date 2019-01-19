@@ -37,6 +37,6 @@ namespace StateOfNeo.Services
 
         void AddToTransactionsList(TransactionListViewModel tx);
         void AddToTransactionsList(IEnumerable<TransactionListViewModel> txs);
-        IPagedList<TransactionListViewModel> GetTransactionsPage(int page = 1, int pageSize = 10);
+        IPagedList<TransactionListViewModel> GetTransactionsPage(int page = 1, int pageSize = 10, string type = null);
     }
 }

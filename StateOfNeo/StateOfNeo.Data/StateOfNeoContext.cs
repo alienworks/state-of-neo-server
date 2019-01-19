@@ -37,7 +37,6 @@ namespace StateOfNeo.Data
         public DbSet<RegisterTransaction> RegisterTransactions { get; set; }
         public DbSet<StateTransaction> StateTransactions { get; set; }
         public DbSet<StateDescriptor> StateDescriptors { get; set; }
-
         public DbSet<ChartEntry> ChartEntries { get; set; }
         public DbSet<TotalStats> TotalStats { get; set; }
         public DbSet<SmartContract> SmartContracts { get; set; }
