@@ -23,6 +23,7 @@ namespace StateOfNeo.Data
         public DbSet<AssetInTransaction> AssetsInTransactions { get; set; }
         public DbSet<Block> Blocks { get; set; }
         public DbSet<Node> Nodes { get; set; }
+        public DbSet<Peer> Peers { get; set; }
         public DbSet<NodeAddress> NodeAddresses { get; set; }
         public DbSet<NodeStatus> NodeStatusUpdates { get; set; }
         public DbSet<NodeAudit> NodeAudits { get; set; }

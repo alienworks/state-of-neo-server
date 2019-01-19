@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
+using Serilog;
 using StateOfNeo.Common;
 using StateOfNeo.Data;
 using StateOfNeo.Data.Models;
@@ -57,6 +58,26 @@ namespace StateOfNeo.Server.Infrastructure
             }
 
             return false;
+        }
+
+        public static async Task<IpCheckModel> GetIpLocation(string ip)
+        {
+            IpCheckModel result = null;
+            try
+            {
+                var response = await CheckIpCall(ip);
+                if (response.IsSuccessStatusCode)
+                {
+                    var responseText = await response.Content.ReadAsStringAsync();
+                    result = JsonConvert.DeserializeObject<IpCheckModel>(responseText);
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warning($"Couldn't get location for ip : {ip}", e);
+            }
+
+            return result;
         }
 
         public static async Task<bool> UpdateNode(Node node, string ip)
