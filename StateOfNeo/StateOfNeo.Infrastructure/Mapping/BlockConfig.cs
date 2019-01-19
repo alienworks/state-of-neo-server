@@ -17,6 +17,7 @@ namespace StateOfNeo.Infrastructure.Mapping
 
             cfg.CreateMap<Block, BlockDetailsViewModel>()
                 .ForMember(x => x.SecondsFromPreviousBlock, y => y.MapFrom(z => z.TimeInSeconds))
+                .ForMember(x => x.CollectedFees, opt => opt.MapFrom(x => x.Transactions.Sum(t => t.NetworkFee)))
                 .ReverseMap();
 
             cfg.CreateMap<Block, BlockListViewModel>()

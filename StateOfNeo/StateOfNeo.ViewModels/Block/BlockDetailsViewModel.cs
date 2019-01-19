@@ -23,6 +23,10 @@ namespace StateOfNeo.ViewModels.Block
 
         public double SecondsFromPreviousBlock { get; set; }
 
+        public decimal CollectedFees { get; set; }
+
+        public int TransactionsCount { get; set; }
+
         public DateTime FinalizedAt => this.Timestamp.ToUnixDate();
     }
 }
