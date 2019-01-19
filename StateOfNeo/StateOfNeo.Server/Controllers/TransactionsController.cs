@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Neo.Network.P2P.Payloads;
 using Serilog;
+using StateOfNeo.Common;
 using StateOfNeo.Common.Constants;
 using StateOfNeo.Common.Enums;
 using StateOfNeo.Common.Extensions;
@@ -89,12 +90,22 @@ namespace StateOfNeo.Server.Controllers
 
             if (page * pageSize <= StateService.CachedTransactionsCount)
             {
-                var result = this.state.GetTransactionsPage(page, pageSize, type);
-                return this.Ok(result.ToListResult());
+                var data = this.state.GetTransactionsPage(page, pageSize, type);
+                var result = data.ToListResult();
+                var extended = PagedListMetadataExtended.FromParent(result.MetaData);
+
+                var pages = extended.TotalItemCount % pageSize == 0 ? extended.TotalItemCount / pageSize : extended.TotalItemCount / pageSize + 1;
+
+                extended.TotalItemCount = (int)this.state.MainStats.TotalStats.TransactionsCount;
+                extended.PageCount = pages;
+
+                result.MetaData = extended;
+
+                return this.Ok(result);
             }
             else
             {
-                var result = this.transactions.GetPageTransactions<TransactionListViewModel>(page, pageSize, type: type);
+                var result = this.transactions.GetPageTransactions<TransactionListViewModel>(page, pageSize, type: type);                
                 return this.Ok(result.ToListResult());
             }
         }
