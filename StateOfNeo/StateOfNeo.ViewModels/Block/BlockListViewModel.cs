@@ -1,4 +1,6 @@
-﻿using StateOfNeo.Common.Extensions;
+﻿using Neo;
+using Neo.Wallets;
+using StateOfNeo.Common.Extensions;
 using System;
 
 namespace StateOfNeo.ViewModels.Block
@@ -10,6 +12,8 @@ namespace StateOfNeo.ViewModels.Block
         public double TimeInSeconds { get; set; }
 
         public string Validator { get; set; }
+
+        public string ValidatorAddress => UInt160.Parse(this.Validator).ToAddress();
 
         public decimal CollectedFees { get; set; }
 

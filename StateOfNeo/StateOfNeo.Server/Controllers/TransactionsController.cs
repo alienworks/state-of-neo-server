@@ -92,14 +92,18 @@ namespace StateOfNeo.Server.Controllers
             {
                 var data = this.state.GetTransactionsPage(page, pageSize, type);
                 var result = data.ToListResult();
-                var extended = PagedListMetadataExtended.FromParent(result.MetaData);
 
-                var pages = extended.TotalItemCount % pageSize == 0 ? extended.TotalItemCount / pageSize : extended.TotalItemCount / pageSize + 1;
+                if (string.IsNullOrEmpty(type))
+                {
+                    var extended = PagedListMetadataExtended.FromParent(result.MetaData);
 
-                extended.TotalItemCount = (int)this.state.MainStats.TotalStats.TransactionsCount;
-                extended.PageCount = pages;
+                    var pages = extended.TotalItemCount % pageSize == 0 ? extended.TotalItemCount / pageSize : extended.TotalItemCount / pageSize + 1;
 
-                result.MetaData = extended;
+                    extended.TotalItemCount = (int)this.state.MainStats.TotalStats.TransactionsCount;
+                    extended.PageCount = pages;
+
+                    result.MetaData = extended;
+                }
 
                 return this.Ok(result);
             }
