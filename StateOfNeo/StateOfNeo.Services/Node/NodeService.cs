@@ -36,10 +36,11 @@ namespace StateOfNeo.Services
 
         public IEnumerable<T> GetNodes<T>() =>
             this.db.Nodes
-                .Include(n => n.NodeAddresses)
-                .Where(n => n.Net.ToLower() == this.netSettings.Net.ToLower())
+                .Include(x => x.NodeAddresses)
+                .Where(x => x.Net.ToLower() == this.netSettings.Net.ToLower())
                 .Where(x => x.SuccessUrl != null)
-                .ProjectTo<T>();
+                .ProjectTo<T>()
+                .ToList();
 
         public async Task<IPagedList<T>> GetPage<T>(int page = 1, int pageSize = 10)
         {

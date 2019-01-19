@@ -16,7 +16,11 @@ namespace StateOfNeo.Infrastructure.Mapping
                             ? z.NodeAddresses.Select(na => na.Ip).ToArray()
                             : new string[] { "" }));
 
-            cfg.CreateMap<Node, NodeDetailsViewModel>();
+            cfg.CreateMap<Node, NodeDetailsViewModel>().ForMember(x => x.Ips,
+                    y => y.MapFrom(
+                        z => z.NodeAddresses.Any()
+                            ? z.NodeAddresses.Select(na => na.Ip).ToArray()
+                            : new string[] { "" }));
             cfg.CreateMap<Node, NodeViewModel>();
             cfg.CreateMap<Node, NodeListViewModel>().ReverseMap();
         }
