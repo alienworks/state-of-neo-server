@@ -23,7 +23,6 @@
 
         public string Net { get; set; }
 
-        public override int GetHashCode() => 
-            (this.Url).GetHashCode();
+        public override int GetHashCode() => this.Url.GetHashCode();
     }
 }

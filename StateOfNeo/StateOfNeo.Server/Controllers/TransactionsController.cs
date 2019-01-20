@@ -12,6 +12,7 @@ using StateOfNeo.ViewModels.Chart;
 using StateOfNeo.ViewModels.Transaction;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace StateOfNeo.Server.Controllers
