@@ -2,7 +2,6 @@
 using StateOfNeo.Data.Models;
 using StateOfNeo.ViewModels;
 using StateOfNeo.ViewModels.Block;
-using System;
 using System.Linq;
 
 namespace StateOfNeo.Infrastructure.Mapping
@@ -13,6 +12,7 @@ namespace StateOfNeo.Infrastructure.Mapping
         {
             cfg.CreateMap<Block, HeaderStatsViewModel>()
                 .ForMember(x => x.TransactionCount, y => y.MapFrom(z => z.Transactions.Count))
+                .ForMember(x => x.CollectedFees, opt => opt.MapFrom(x => x.Transactions.Sum(t => t.NetworkFee)))
                 .ReverseMap();
 
             cfg.CreateMap<Block, BlockDetailsViewModel>()

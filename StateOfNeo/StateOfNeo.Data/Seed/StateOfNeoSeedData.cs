@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Options;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using StateOfNeo.Common;
@@ -26,13 +27,44 @@ namespace StateOfNeo.Data.Seed
 
         public void Init()
         {
+            this.SeedPeers();
             this.SeedNodes();
             this.SeedAddresses();
         }
 
+        private void SeedPeers()
+        {
+            if (!this.db.Peers.Any())
+            {
+                var nodes = this.db.Nodes.Include(x => x.NodeAddresses).ToList();
+
+                foreach (var node in nodes)
+                {
+                    foreach (var address in node.NodeAddresses)
+                    {
+                        if (!this.db.Peers.Any(x => x.Ip == address.Ip))
+                        {
+                            var newPeer = new Peer
+                            {
+                                Ip = address.Ip,
+                                FlagUrl = node.FlagUrl,
+                                Latitude = node.Latitude,
+                                Longitude = node.Longitude,
+                                Locale = node.Locale,
+                                Location = node.Location
+                            };
+
+                            this.db.Peers.Add(newPeer);
+                            this.db.SaveChanges();
+                        }
+                    }
+                }
+            }
+        }
+
         private void SeedNodes()
         {
-            if (!db.Nodes.Any())
+            if (!this.db.Nodes.Any())
             {
                 SeedNodesByNetType(NetConstants.MAIN_NET);
                 SeedNodesByNetType(NetConstants.TEST_NET);
@@ -56,8 +88,8 @@ namespace StateOfNeo.Data.Seed
                     Version = node.Version,
                     Service = node.Service
                 };
-                db.Nodes.Add(newNode);
-                db.SaveChanges();
+                this.db.Nodes.Add(newNode);
+                this.db.SaveChanges();
 
                 RegisterIpAddresses(newNode.Id, node);
             }
@@ -74,8 +106,8 @@ namespace StateOfNeo.Data.Seed
                     NodeId = nodeId,
                     Type = Enum.Parse<NodeAddressType>(node.Type)
                 };
-                db.NodeAddresses.Add(newAddress);
-                db.SaveChanges();
+                this.db.NodeAddresses.Add(newAddress);
+                this.db.SaveChanges();
             }
         }
 

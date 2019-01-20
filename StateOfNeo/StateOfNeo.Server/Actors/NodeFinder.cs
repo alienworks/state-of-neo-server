@@ -83,12 +83,37 @@ namespace StateOfNeo.Server.Actors
 
             foreach (var address in addresesesToCheck)
             {
-                HandleNewAddress(address, db);
+                this.HandleNewPeerIp(address.Address.ToMatchedIp(), db);
+                this.HandleNewAddress(address, db);
             }
 
             if (this.lastUpdateStamp == null) this.lastUpdateStamp = this.currentStamp;
 
             db.Dispose();
+        }
+
+        private void HandleNewPeerIp(string address, StateOfNeoContext db)
+        {
+            if (!db.Peers.Any(x => x.Ip == address))
+            {
+                var location = LocationCaller.GetIpLocation(address).GetAwaiter().GetResult();
+
+                if (location != null)
+                {
+                    var newPeer = new Peer
+                    {
+                        Ip = address,
+                        FlagUrl = location.Location.Flag,
+                        Locale = location.Location.Languages.FirstOrDefault().Code,
+                        Latitude = location.Latitude,
+                        Longitude = location.Longitude,
+                        Location = location.CountryName
+                    };
+
+                    db.Peers.Add(newPeer);
+                    db.SaveChanges();
+                }
+            }
         }
 
         private void HandleNewAddress(RPCPeer address, StateOfNeoContext db)
@@ -156,7 +181,8 @@ namespace StateOfNeo.Server.Actors
 
             if (newNode != null)
             {
-                var newNodeAddress = new NodeAddress {
+                var newNodeAddress = new NodeAddress
+                {
                     Ip = address.Address.ToMatchedIp(),
                     Node = newNode
                 };

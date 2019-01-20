@@ -32,12 +32,28 @@ namespace StateOfNeo.Server.Controllers
             this.nodeService = nodeService;
         }
 
+        [HttpGet("[action]/{id}")]
+        [ResponseCache(Duration = CachingConstants.Second)]
+        public async Task<IActionResult> Get(int id)
+        {
+            try
+            {
+                var node = this.nodeService.Get<NodeDetailsViewModel>(id);
+                return Ok(node);
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
         [HttpGet("[action]")]
         public async Task<IActionResult> Get()
         {
             try
             {
-                var nodes = this.nodeService.GetNodes<NodeViewModel>();
+                var nodes = this.nodeService.GetNodes<NodeDetailsViewModel>();
+                var listNodes = nodes.ToList();
                 return Ok(nodes);
             }
             catch (System.Exception ex)
@@ -53,21 +69,6 @@ namespace StateOfNeo.Server.Controllers
             {
                 //await this.nodeSynchronizer.Init();
                 return Ok();
-            }
-            catch (System.Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
-        }
-
-        [HttpGet("[action]/{id}")]
-        [ResponseCache(Duration = CachingConstants.Second)]
-        public async Task<IActionResult> Get(int id)
-        {
-            try
-            {
-                var node = this.nodeService.Get<NodeDetailsViewModel>(id);
-                return Ok(node);
             }
             catch (System.Exception ex)
             {

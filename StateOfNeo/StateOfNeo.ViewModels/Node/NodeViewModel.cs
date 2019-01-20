@@ -1,4 +1,6 @@
-﻿namespace StateOfNeo.ViewModels
+﻿using System.Collections.Generic;
+
+namespace StateOfNeo.ViewModels
 {
     public class NodeViewModel : NodeListViewModel
     {
