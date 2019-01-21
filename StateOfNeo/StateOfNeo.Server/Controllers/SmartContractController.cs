@@ -18,10 +18,23 @@ namespace StateOfNeo.Server.Controllers
             this.contracts = contracts;
         }
 
+        [HttpGet("[action]/{hash}")]
+        public IActionResult Get(string hash)
+        {
+            var result = this.contracts.Find(hash);
+            if (result == null)
+            {
+                return this.NotFound();
+            }
+
+            return this.Ok(result);
+        }
+
         [HttpGet("[action]")]
         public IActionResult GetAll()
         {
-            return Ok(this.contracts.GetAll<SmartContractListViewModel>());
+            var result = this.contracts.GetAll<SmartContractListViewModel>();
+            return this.Ok(result);
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using AutoMapper.QueryableExtensions;
 using StateOfNeo.Data;
+using StateOfNeo.ViewModels.Contracts;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,6 +17,12 @@ namespace StateOfNeo.Services
         {
             this.db = db;
         }
+
+        public SmartContractDetailsViewModel Find(string hash) =>
+            this.db.SmartContracts
+                .Where(x => x.Hash == hash)
+                .ProjectTo<SmartContractDetailsViewModel>()
+                .FirstOrDefault();
 
         public IEnumerable<T> GetAll<T>() => this.db.SmartContracts.ProjectTo<T>();
     }
