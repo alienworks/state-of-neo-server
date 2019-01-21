@@ -22,6 +22,7 @@ namespace StateOfNeo.Infrastructure.Mapping
 
             cfg.CreateMap<AddressAssetBalance, AddressAssetViewModel>()
                 .ForMember(x => x.Name, opt => opt.MapFrom(x => x.Asset.Name))
+                .ForMember(x => x.AssetType, opt => opt.MapFrom(x => x.Asset.Type.ToString()))
                 .ReverseMap();
 
             cfg.CreateMap<Address, AddressDetailsViewModel>()

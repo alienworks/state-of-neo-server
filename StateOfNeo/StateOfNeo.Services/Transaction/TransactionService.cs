@@ -1,6 +1,9 @@
 ﻿using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
+using Neo.Cryptography.ECC;
 using Neo.Network.P2P.Payloads;
+using Neo.SmartContract;
+using Neo.Wallets;
 using Serilog;
 using StateOfNeo.Common.Enums;
 using StateOfNeo.Common.Extensions;
@@ -29,6 +32,7 @@ namespace StateOfNeo.Services.Transaction
         public IPagedList<TransactionListViewModel> TransactionsForAddress(string address, int page = 1, int pageSize = 10) =>
             this.db.AddressesInTransactions
                 .Where(x => x.AddressPublicAddress == address)
+                .OrderByDescending(x => x.Timestamp)
                 .Select(x => x.Transaction)
                 .ProjectTo<TransactionListViewModel>()
                 .ToPagedList(page, pageSize);
@@ -96,37 +100,6 @@ namespace StateOfNeo.Services.Transaction
             stopwatch.Stop();
             Log.Information($"{this.GetType().FullName} - GetStats time - " + stopwatch.ElapsedMilliseconds);
             return result;
-
-            //this.ConfirmStartDateValue<Data.Models.Transactions.Transaction>(filter);
-            //var query = this.db.Set<Data.Models.Transactions.Transaction>().AsQueryable();
-            //IQueryable<IGrouping<long, Data.Models.Transactions.Transaction>> grouping = null;
-            //if (filter.UnitOfTime == UnitOfTime.Hour)
-            //{
-            //    grouping = query.GroupBy(x => x.HourlyStamp);
-            //}
-            //else if (filter.UnitOfTime == UnitOfTime.Day)
-            //{
-            //    grouping = query.GroupBy(x => x.DailyStamp);
-            //}
-            //else if (filter.UnitOfTime == UnitOfTime.Month)
-            //{
-            //    grouping = query.GroupBy(x => x.MonthlyStamp);
-            //}
-
-            //var result = grouping
-            //    .OrderByDescending(x => x.Key)
-            //    .Take(filter.EndPeriod)
-            //    .Select(x => new ChartStatsViewModel
-            //    {
-            //        StartDate = x.Key.ToUnixDate(),
-            //        UnitOfTime = filter.UnitOfTime,
-            //        Value = x.Count()
-            //    })
-            //    .ToList();
-
-            //result.Reverse();
-
-            //return result;
         }
 
         public IEnumerable<ChartStatsViewModel> GetTransactionsForAssetChart(ChartFilterViewModel filter, string assetHash)
@@ -163,12 +136,6 @@ namespace StateOfNeo.Services.Transaction
             stopwatch.Stop();
             Log.Information($"{this.GetType().FullName} - GetStats time - " + stopwatch.ElapsedMilliseconds);
             return result;
-
-            //return this.Filter<Data.Models.Transactions.Transaction>(
-            //      filter,
-            //      null,
-            //      x =>
-            //          );
         }
 
         public IEnumerable<ChartStatsViewModel> GetTransactionsForAddressChart(ChartFilterViewModel filter, string address) =>
