@@ -54,13 +54,14 @@ namespace StateOfNeo.Services
 
         public IEnumerable<ChartStatsViewModel> TokenChart()
         {
-            var result = this.db.TransactedAssets
-                .Where(x => x.AssetType == AssetType.NEP5)
-                .GroupBy(x => x.Asset.Name)
+            var result = this.db.Assets
+                .Where(x => x.Type == AssetType.NEP5)
+                .OrderByDescending(x => x.TransactionsCount)
+                .Take(20)
                 .Select(x => new ChartStatsViewModel
                 {
-                    Label = x.Key,
-                    Value = x.Count()
+                    Label = x.Name,
+                    Value = x.TransactionsCount
                 })
                 .ToList();
 
