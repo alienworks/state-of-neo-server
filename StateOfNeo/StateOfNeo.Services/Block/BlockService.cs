@@ -116,5 +116,10 @@ namespace StateOfNeo.Services.Block
         public double GetAvgBlockTime() => this.db.Blocks.Average(x => x.TimeInSeconds);
 
         public double GetAvgBlockSize() => this.db.Blocks.Average(x => x.Size);
+
+        public string NextBlockHash(int height) => this.db.Blocks
+            .Where(x => x.Height == height + 1)
+            .Select(x => x.Hash)
+            .FirstOrDefault();
     }
 }

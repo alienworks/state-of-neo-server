@@ -13,5 +13,7 @@ namespace StateOfNeo.Services.Block
         decimal GetAvgTxPerBlock();
         double GetAvgBlockTime();
         double GetAvgBlockSize();
+
+        string NextBlockHash(int height);
     }
 }

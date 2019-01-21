@@ -21,6 +21,8 @@ namespace StateOfNeo.ViewModels.Block
 
         public string PreviousBlockHash { get; set; }
 
+        public string NextBlockHash { get; set; }
+
         public double SecondsFromPreviousBlock { get; set; }
 
         public decimal CollectedFees { get; set; }

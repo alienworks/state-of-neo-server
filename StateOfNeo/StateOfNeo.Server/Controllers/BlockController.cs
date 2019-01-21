@@ -36,6 +36,8 @@ namespace StateOfNeo.Server.Controllers
                 return this.BadRequest("Invalid block hash");
             }
 
+            block.NextBlockHash = this.blocks.NextBlockHash(block.Height);
+
             return this.Ok(block);
         }
 
@@ -47,6 +49,8 @@ namespace StateOfNeo.Server.Controllers
             {
                 return this.BadRequest("Invalid block height");
             }
+
+            block.NextBlockHash = this.blocks.NextBlockHash(block.Height);
 
             return this.Ok(block);
         }
