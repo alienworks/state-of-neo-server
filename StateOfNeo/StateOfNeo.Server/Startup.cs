@@ -63,6 +63,7 @@ namespace StateOfNeo.Server
             services.AddScoped<ITransactionService, TransactionService>();
             services.AddScoped<IAddressService, AddressService>();
             services.AddScoped<ISearchService, SearchService>();
+            services.AddScoped<ISmartContractService, SmartContractService>();
 
             services.AddSingleton<IMainStatsState, MainStatsState>();
             services.AddSingleton<IStateService, StateService>();

@@ -1,5 +1,6 @@
 ﻿using Akka.Actor;
 using Microsoft.EntityFrameworkCore;
+using Serilog;
 using StateOfNeo.Common;
 using StateOfNeo.Common.Constants;
 using StateOfNeo.Common.Extensions;
@@ -12,6 +13,7 @@ using StateOfNeo.Server.Cache;
 using StateOfNeo.Server.Infrastructure;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
@@ -81,11 +83,18 @@ namespace StateOfNeo.Server.Actors
                 .Where(x => !dbNodeAddresses.Contains(x.Address.Trim()))
                 .ToList();
 
+            var sw = Stopwatch.StartNew();
+            var sessionId = Guid.NewGuid();
+            Log.Information($"PEERS CHECK Start: {DateTime.UtcNow}. SessionId: {sessionId}");
+
             foreach (var address in addresesesToCheck)
             {
                 this.HandleNewPeerIp(address.Address.ToMatchedIp(), db);
                 this.HandleNewAddress(address, db);
             }
+
+            sw.Stop();
+            Log.Information($"PEERS CHECK End: {sw.ElapsedMilliseconds}. SessionId: {sessionId}");
 
             if (this.lastUpdateStamp == null) this.lastUpdateStamp = this.currentStamp;
 
