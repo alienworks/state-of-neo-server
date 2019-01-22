@@ -17,6 +17,10 @@ using StateOfNeo.Common.Constants;
 using StateOfNeo.Common.RPC;
 using StateOfNeo.Data;
 using Neo.Wallets;
+using Neo.Cryptography.ECC;
+using Neo.SmartContract;
+using System.Collections.Generic;
+using StateOfNeo.Data.Models;
 
 namespace StateOfNeo.Server.Controllers
 {
@@ -175,26 +179,61 @@ namespace StateOfNeo.Server.Controllers
         [HttpPost("[action]")]
         public IActionResult CalculateConsensusFees()
         {
-            var blocks = this.db.Blocks.ToList();
-            var iteration = 0;
-            foreach (var block in blocks)
+            //var publicKeyStrings = new[] {
+            //    "025bdf3f181f53e9696227843950deb72dcd374ded17c057159513c3d0abe20b64",
+            //    "02df48f60e8f3e01c48ff40b9b7f1310d7a8b2a193188befe1c2e3df740e895093",
+            //    "024c7b7fb6c310fccf1ba33b082519d82964ea93868d676662d4a59ad548df0e7d",
+            //    "02ca0e27697b9c248f6f16e085fd0061e26f44da85b58ee835c110caa5ec3ba554",
+            //    "035e819642a8915a2572f972ddbdbe3042ae6437349295edce9bdc3b8884bbf9a3",
+            //    "03b209fd4f53a7170ea4444e0cb0a6bb6a53c2bd016926989cf85f9b0fba17a70c",
+            //    "03b8d9d5771d8f513aa0869b9cc8d50986403b78c6da36890638c3d46a5adce04a"
+            //};
+
+            //foreach (var item in publicKeyStrings)
+            //{
+            //    var publicKey = ECPoint.Parse(item, ECCurve.Secp256r1);
+            //    var publicKeyHash = Contract.CreateSignatureRedeemScript(publicKey).ToScriptHash();
+            //    var hashStr = publicKeyHash.ToString();
+            //    var address = publicKeyHash.ToAddress();
+
+            //    var validator = new Data.Models.ConsensusNode
+            //    {
+            //        PublicKeyHash = publicKeyHash.ToString(),
+            //        Address = address,
+            //        PublicKey = item
+            //    };
+
+            //    this.db.ConsensusNodes.Add(validator);
+            //}
+
+            //this.db.SaveChanges();
+
+            var blocks = this.db.Blocks
+                .OrderBy(x => x.Height)
+                .Select(x => new { Block = x, Fees = x.Transactions.Sum(z => z.SystemFee) })
+                .ToList();
+
+            var validators = new List<ConsensusNode>();
+            for (int i = 1; i < blocks.Count; i++)
             {
-                iteration++;
-                var validator = this.db.ConsensusNodes.FirstOrDefault(x => x.PublicKeyHash == block.Validator);
+                var previousHash = Neo.Ledger.Blockchain.Singleton.GetBlockHash((uint)i - 1);
+                var previousBlock = Neo.Ledger.Blockchain.Singleton.GetBlock(previousHash);
+                blocks[i].Block.Validator = previousBlock.NextConsensus.ToAddress();
+
+                var validator = validators.FirstOrDefault(x => x.Address == blocks[i].Block.Validator);
                 if (validator == null)
                 {
-                    validator = new Data.Models.ConsensusNode
+                    validator = new ConsensusNode
                     {
-                        PublicKeyHash = block.Validator,
-                        Address = Neo.UInt160.Parse(block.Validator).ToAddress()
+                        Address = blocks[i].Block.Validator
                     };
 
+                    validators.Add(validator);
                     this.db.ConsensusNodes.Add(validator);
+                    this.db.SaveChanges();
                 }
 
-                validator.CollectedFees += block.Transactions.Sum(x => x.NetworkFee);
-
-                if (iteration % 10_000 == 0)
+                if (i % 50_000 == 0)
                 {
                     this.db.SaveChanges();
                 }
