@@ -135,17 +135,26 @@ namespace StateOfNeo.Server.Actors
             {
                 var url = portWithType.GetFullUrl(address.Address.ToMatchedIp());
 
-                var rpcResult = RpcCaller.MakeRPCCall<RPCResponseBody<int>>(url, "getblockcount")
-                    .GetAwaiter()
-                    .GetResult();
-
-                if (rpcResult?.Result > 0)
+                try
                 {
-                    successUrl = url;
-                    newNode = this.CreateNodeOfAddress(address.Address,
-                        portWithType.Type,
-                        successUrl,
-                        NodeAddressType.RPC);
+                    var rpcResult = RpcCaller.MakeRPCCall<RPCResponseBody<int>>(url, "getblockcount")
+                        .GetAwaiter()
+                        .GetResult();
+
+
+                    if (rpcResult?.Result > 0)
+                    {
+                        successUrl = url;
+                        newNode = this.CreateNodeOfAddress(address.Address,
+                            portWithType.Type,
+                            successUrl,
+                            NodeAddressType.RPC);
+                        break;
+                    }
+                }
+                catch (Exception e)
+                {
+                    Log.Error($"Get blockcount parse error {e.Message}", e);
                     break;
                 }
             }
