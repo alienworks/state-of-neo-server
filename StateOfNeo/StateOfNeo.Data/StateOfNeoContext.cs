@@ -40,6 +40,7 @@ namespace StateOfNeo.Data
         public DbSet<ChartEntry> ChartEntries { get; set; }
         public DbSet<TotalStats> TotalStats { get; set; }
         public DbSet<SmartContract> SmartContracts { get; set; }
+        public DbSet<ConsensusNode> ConsensusNodes { get; set; }
 
         public static StateOfNeoContext Create(string connectionString)
         {
