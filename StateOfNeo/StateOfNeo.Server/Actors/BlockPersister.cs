@@ -140,18 +140,21 @@ namespace StateOfNeo.Server.Actors
 
         private Block PersistBlock(Neo.Network.P2P.Payloads.Block blockToPersist, StateOfNeoContext db)
         {
+            var previousHash = Blockchain.Singleton.GetBlockHash(blockToPersist.Header.Index - 1);
+            var previousBlock = Blockchain.Singleton.GetBlock(previousHash);
+
             var block = new Block
             {
                 Hash = blockToPersist.Hash.ToString(),
                 Height = (int)blockToPersist.Header.Index,
                 Size = blockToPersist.Size,
                 Timestamp = blockToPersist.Timestamp,
-                Validator = blockToPersist.Witness.ScriptHash.ToString(),
+                Validator = previousBlock.NextConsensus.ToAddress(),
                 CreatedOn = DateTime.UtcNow,
                 ConsensusData = blockToPersist.ConsensusData,
                 InvocationScript = blockToPersist.Witness.InvocationScript.ToHexString(),
                 VerificationScript = blockToPersist.Witness.VerificationScript.ToHexString(),
-                NextConsensusNodeAddress = blockToPersist.NextConsensus.ToString(),
+                NextConsensusNodeAddress = blockToPersist.NextConsensus.ToAddress(),
                 PreviousBlockHash = blockToPersist.PrevHash.ToString(),
                 TimeInSeconds = 20
             };
@@ -160,10 +163,7 @@ namespace StateOfNeo.Server.Actors
 
             if (block.Height > 0)
             {
-                var hash = Blockchain.Singleton.GetBlockHash((uint)block.Height - 1);
-                var previousBlock = Blockchain.Singleton.GetBlock(hash);
                 var previousBlockTime = previousBlock.Timestamp.ToUnixDate();
-
                 block.TimeInSeconds = (blockTime - previousBlockTime).TotalSeconds;
             }
 
