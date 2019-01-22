@@ -15,6 +15,8 @@ using StateOfNeo.ViewModels.Chart;
 using Serilog;
 using StateOfNeo.Common.Constants;
 using StateOfNeo.Common.RPC;
+using StateOfNeo.Data;
+using Neo.Wallets;
 
 namespace StateOfNeo.Server.Controllers
 {
@@ -23,11 +25,14 @@ namespace StateOfNeo.Server.Controllers
     {
         private readonly NodeCache nodeCache;
         private readonly INodeService nodeService;
+        private readonly StateOfNeoContext db;
 
         public NodeController(
+            StateOfNeoContext db,
             NodeCache nodeCache,
             INodeService nodeService)
         {
+            this.db = db;
             this.nodeCache = nodeCache;
             this.nodeService = nodeService;
         }
@@ -163,6 +168,39 @@ namespace StateOfNeo.Server.Controllers
                     this.nodeCache.AddPeer(peer);
                 }
             }
+
+            return this.Ok();
+        }
+
+        [HttpPost("[action]")]
+        public IActionResult CalculateConsensusFees()
+        {
+            var blocks = this.db.Blocks.ToList();
+            var iteration = 0;
+            foreach (var block in blocks)
+            {
+                iteration++;
+                var validator = this.db.ConsensusNodes.FirstOrDefault(x => x.PublicKeyHash == block.Validator);
+                if (validator == null)
+                {
+                    validator = new Data.Models.ConsensusNode
+                    {
+                        PublicKeyHash = block.Validator,
+                        Address = Neo.UInt160.Parse(block.Validator).ToAddress()
+                    };
+
+                    this.db.ConsensusNodes.Add(validator);
+                }
+
+                validator.CollectedFees += block.Transactions.Sum(x => x.NetworkFee);
+
+                if (iteration % 10_000 == 0)
+                {
+                    this.db.SaveChanges();
+                }
+            }
+
+            this.db.SaveChanges();
 
             return this.Ok();
         }
