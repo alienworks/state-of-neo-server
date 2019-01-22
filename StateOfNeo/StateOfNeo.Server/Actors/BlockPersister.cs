@@ -57,6 +57,7 @@ namespace StateOfNeo.Server.Actors
         private readonly ICollection<Data.Models.SmartContract> pendingSmartContracts = new List<Data.Models.SmartContract>();
         private readonly ICollection<Data.Models.Address> pendingAddresses = new List<Data.Models.Address>();
         private readonly ICollection<Data.Models.AddressAssetBalance> pendingBalances = new List<Data.Models.AddressAssetBalance>();
+        private readonly ICollection<ConsensusNode> pendingConsensusNodes = new List<ConsensusNode>();
 
         public BlockPersister(
             IActorRef blockchain,
@@ -168,6 +169,8 @@ namespace StateOfNeo.Server.Actors
 
             db.Blocks.Add(block);
 
+            var consensusNode = this.GetConsensusNode(db, block.Validator);
+
             foreach (var item in blockToPersist.Transactions)
             {
                 var newTxHash = item.Hash.ToString();
@@ -189,6 +192,7 @@ namespace StateOfNeo.Server.Actors
                     Timestamp = block.Timestamp
                 };
 
+                consensusNode.CollectedFees += transaction.NetworkFee;
                 block.Transactions.Add(transaction);
 
                 foreach (var attribute in item.Attributes)
@@ -438,6 +442,8 @@ namespace StateOfNeo.Server.Actors
                 block.Transactions.Add(transaction);
                 this.state.AddActiveAddress(activeAddresses);
             }
+
+
 
             this.state.AddBlockSize(block.Size, blockTime);
             this.state.AddBlockTime(block.TimeInSeconds, blockTime);
@@ -810,6 +816,7 @@ namespace StateOfNeo.Server.Actors
             this.pendingAssets.Clear();
             this.pendingBalances.Clear();
             this.pendingSmartContracts.Clear();
+            this.pendingConsensusNodes.Clear();
 
             //if (Blockchain.Singleton.Height == block.Height && !balancesRecalculated)
             //{
@@ -880,6 +887,25 @@ namespace StateOfNeo.Server.Actors
             }
 
             return balance;
+        }
+
+        private ConsensusNode GetConsensusNode(StateOfNeoContext db, string publicKeyHash)
+        {
+            var consensusNode = db.ConsensusNodes.FirstOrDefault(x => x.PublicKeyHash == publicKeyHash);
+
+            if (consensusNode == null)
+            {
+                consensusNode = new ConsensusNode
+                {
+                    PublicKeyHash = publicKeyHash,
+                    Address = UInt160.Parse(publicKeyHash).ToAddress()
+                };
+
+                db.ConsensusNodes.Add(consensusNode);
+                this.pendingConsensusNodes.Add(consensusNode);
+            }
+
+            return consensusNode;
         }
 
         private Data.Models.Address GetAddress(StateOfNeoContext db, string address, DateTime blockTime)
