@@ -889,16 +889,15 @@ namespace StateOfNeo.Server.Actors
             return balance;
         }
 
-        private ConsensusNode GetConsensusNode(StateOfNeoContext db, string publicKeyHash)
+        private ConsensusNode GetConsensusNode(StateOfNeoContext db, string address)
         {
-            var consensusNode = db.ConsensusNodes.FirstOrDefault(x => x.PublicKeyHash == publicKeyHash);
+            var consensusNode = db.ConsensusNodes.FirstOrDefault(x => x.Address == address);
 
             if (consensusNode == null)
             {
                 consensusNode = new ConsensusNode
                 {
-                    PublicKeyHash = publicKeyHash,
-                    Address = UInt160.Parse(publicKeyHash).ToAddress()
+                    Address = address
                 };
 
                 db.ConsensusNodes.Add(consensusNode);
