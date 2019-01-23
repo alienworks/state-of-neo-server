@@ -97,12 +97,12 @@ namespace StateOfNeo.Server.Controllers
                 if (string.IsNullOrEmpty(type))
                 {
                     var extended = PagedListMetadataExtended.FromParent(result.MetaData);
-
-                    var pages = extended.TotalItemCount % pageSize == 0 ? extended.TotalItemCount / pageSize : extended.TotalItemCount / pageSize + 1;
+                    var pages = extended.TotalItemCount % pageSize == 0 
+                        ? extended.TotalItemCount / pageSize 
+                        : extended.TotalItemCount / pageSize + 1;
 
                     extended.TotalItemCount = (int)this.state.MainStats.TotalStats.TransactionsCount;
                     extended.PageCount = pages;
-
                     result.MetaData = extended;
                 }
 
