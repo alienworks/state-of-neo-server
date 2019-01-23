@@ -47,6 +47,7 @@ namespace StateOfNeo.Server.Actors
         private readonly string connectionString;
         private readonly string net;
         private readonly IHubContext<StatsHub> statsHub;
+        private readonly IHubContext<TransactionsHub> txHub;
         private readonly IHubContext<NotificationHub> notificationHub;
         private IStateService state;
         private readonly BlockchainBalances blockchainBalancesRecalculator;
@@ -64,12 +65,14 @@ namespace StateOfNeo.Server.Actors
             string connectionString,
             IStateService state,
             IHubContext<StatsHub> statsHub,
+            IHubContext<TransactionsHub> txHub,
             IHubContext<NotificationHub> notificationHub,
             BlockchainBalances blockChainBalancesRecalculator,
             string net)
         {
             this.connectionString = connectionString;
             this.statsHub = statsHub;
+            this.txHub = txHub;
             this.notificationHub = notificationHub;
             this.net = net;
             this.state = state;
@@ -82,12 +85,21 @@ namespace StateOfNeo.Server.Actors
             IActorRef blockchain,
             string connectionString,
             IStateService state,
-            IHubContext<StatsHub> statsHub, 
+            IHubContext<StatsHub> statsHub,
+            IHubContext<TransactionsHub> txHub,
             IHubContext<NotificationHub> notificationHub,
             BlockchainBalances blockChainBalances,
             string net) =>
                 Akka.Actor.Props.Create(
-                    () => new BlockPersister(blockchain, connectionString, state, statsHub, notificationHub, blockChainBalances, net));
+                    () => new BlockPersister(
+                        blockchain,
+                        connectionString,
+                        state,
+                        statsHub,
+                        txHub,
+                        notificationHub,
+                        blockChainBalances,
+                        net));
 
         protected override void OnReceive(object message)
         {
@@ -385,6 +397,7 @@ namespace StateOfNeo.Server.Actors
                     this.AdjustTransactedAmount(transactedAmounts, assetHash, toPublicAddress, ta.Amount);
 
                     transaction.GlobalOutgoingAssets.Add(ta);
+                    transaction.Assets.Add(ta);
 
                     var activeAddress = Mapper.Map<AddressListViewModel>(toAddress);
                     activeAddresses.Add(activeAddress);
@@ -515,8 +528,8 @@ namespace StateOfNeo.Server.Actors
             {
                 engine.LoadScript(transaction.Script);
                 while (
-                    !engine.State.HasFlag(VMState.FAULT) 
-                    && engine.InvocationStack.Any() 
+                    !engine.State.HasFlag(VMState.FAULT)
+                    && engine.InvocationStack.Any()
                     && engine.CurrentContext.InstructionPointer != engine.CurrentContext.Script.Length)
                 {
                     var nextOpCode = engine.CurrentContext.NextInstruction;
@@ -548,7 +561,7 @@ namespace StateOfNeo.Server.Actors
 
                     var createdContracts = engine.Service
                         .GetFieldValue<Dictionary<UInt160, UInt160>>("ContractsCreated")
-                        .Select(x => x.Key)                        
+                        .Select(x => x.Key)
                         .ToList();
 
                     foreach (var item in createdContracts)
@@ -571,8 +584,8 @@ namespace StateOfNeo.Server.Actors
             foreach (var item in result.Notifications)
             {
                 var type = item.GetNotificationType();
-                string[] notificationStringArray = item.State is Neo.VM.Types.Array 
-                    ? (item.State as Neo.VM.Types.Array).ToStringList().ToArray() 
+                string[] notificationStringArray = item.State is Neo.VM.Types.Array
+                    ? (item.State as Neo.VM.Types.Array).ToStringList().ToArray()
                     : new string[] { type };
 
                 if (type == "transfer")
@@ -685,7 +698,7 @@ namespace StateOfNeo.Server.Actors
                         };
 
                         db.AddressesInTransactions.Add(fromAddressInTransaction);
-                        
+
                         var fromAddressInAssetTransaction = new AddressInAssetTransaction
                         {
                             AddressPublicAddress = fromAddress.PublicAddress,
@@ -811,6 +824,7 @@ namespace StateOfNeo.Server.Actors
             db.SaveChanges();
 
             this.EmitStatsInfo();
+            this.txHub.Clients.All.SendAsync("new", transactionsList);
 
             this.pendingAddresses.Clear();
             this.pendingAssets.Clear();

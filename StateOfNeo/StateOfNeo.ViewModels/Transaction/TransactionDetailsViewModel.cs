@@ -29,28 +29,6 @@ namespace StateOfNeo.ViewModels.Transaction
 
         public int BlockHeight { get; set; }
 
-        public IEnumerable<TransactedAssetViewModel> SentAssets => this.GlobalIncomingAssets
-            .GroupBy(x => x.FromAddress)
-            .Select(x => new TransactedAssetViewModel
-            {
-                FromAddress = x.Key,
-                Amount = x.Sum(z => z.Amount),
-                AssetType = x.First().AssetType,
-                Name = x.First().Name
-            })
-            .ToList();
-
-        public IEnumerable<TransactedAssetViewModel> ReceivedAssets => this.GlobalOutgoingAssets
-            .GroupBy(x => x.ToAddress)
-            .Select(x => new TransactedAssetViewModel
-            {
-                ToAddress = x.Key,
-                Amount = x.Sum(z => z.Amount),
-                AssetType = x.First().AssetType,
-                Name = x.First().Name
-            })
-            .ToList();
-
         public IEnumerable<TransactionAttributeViewModel> Attributes { get; set; }
 
         public IEnumerable<TransactionWitnessViewModel> Witnesses { get; set; }

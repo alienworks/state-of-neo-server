@@ -6,7 +6,7 @@ using System.Text;
 
 namespace StateOfNeo.ViewModels.Transaction
 {
-    public class TransactionListViewModel
+    public class TransactionListViewModel : TransactionAssetsViewModel
     {
         public string Hash { get; set; }
 
@@ -17,5 +17,6 @@ namespace StateOfNeo.ViewModels.Transaction
         public long Timestamp { get; set; }
 
         public DateTime FinalizedAt => this.Timestamp.ToUnixDate();
+        
     }
 }

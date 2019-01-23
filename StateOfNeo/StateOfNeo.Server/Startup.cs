@@ -105,6 +105,7 @@ namespace StateOfNeo.Server
             IOptions<NetSettings> netSettings,
             IOptions<ImportBlocksSettings> importSettings,
             IHubContext<StatsHub> statsHub,
+            IHubContext<TransactionsHub> txHub,
             IHubContext<NotificationHub> notificationHub, 
             BlockchainBalances blockChainBalances,
             RPCNodeCaller nodeCaller,
@@ -117,6 +118,7 @@ namespace StateOfNeo.Server
                 connectionString,
                 state,
                 statsHub,
+                txHub,
                 notificationHub,
                 blockChainBalances,
                 netSettings.Value.Net));
@@ -158,6 +160,7 @@ namespace StateOfNeo.Server
             app.UseSignalR(routes =>
             {
                 routes.MapHub<StatsHub>("/hubs/stats");
+                routes.MapHub<TransactionsHub>("/hubs/tx");
                 routes.MapHub<NotificationHub>("/hubs/notification");
             });
 
