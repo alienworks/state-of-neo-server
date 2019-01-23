@@ -22,19 +22,19 @@ namespace StateOfNeo.Server.Hubs
             await this.InitInfo("caller");
         }
 
-        public async Task InitInfo(string type = null, int pageSize = 10)
+        public async Task InitInfo(string type = null)
         {
             if (type == "clients")
             {
-                await this.InitInfoByType(this.Clients.All, pageSize);
+                await this.InitInfoByType(this.Clients.All);
             }
             else if (type == "caller")
             {
-                await this.InitInfoByType(this.Clients.Caller, pageSize);
+                await this.InitInfoByType(this.Clients.Caller);
             }
             else
             {
-                await this.InitInfoByType(this.Clients.All, pageSize);
+                await this.InitInfoByType(this.Clients.All);
             }
         }
 
