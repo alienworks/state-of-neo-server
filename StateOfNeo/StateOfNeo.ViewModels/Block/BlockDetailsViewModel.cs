@@ -13,8 +13,6 @@ namespace StateOfNeo.ViewModels.Block
 
         public string Validator { get; set; }
 
-        public string ValidatorAddress => UInt160.Parse(this.Validator).ToAddress();
-
         public string InvocationScript { get; set; }
 
         public string VerificationScript { get; set; }

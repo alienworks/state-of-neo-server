@@ -21,6 +21,8 @@ using Neo.Cryptography.ECC;
 using Neo.SmartContract;
 using System.Collections.Generic;
 using StateOfNeo.Data.Models;
+using Neo;
+using Microsoft.EntityFrameworkCore;
 
 namespace StateOfNeo.Server.Controllers
 {
@@ -179,29 +181,43 @@ namespace StateOfNeo.Server.Controllers
         [HttpPost("[action]")]
         public IActionResult CalculateConsensusFees()
         {
+            //var previousBlockHash = Neo.Ledger.Blockchain.Singleton.GetBlockHash(3224873);
+            //var previousBlock = Neo.Ledger.Blockchain.Singleton.GetBlock(previousBlockHash);
+
+            //var block = Neo.Ledger.Blockchain.Singleton.GetBlock(UInt256.Parse("f008b7f7db21aa6464ed1dd852ab3c4a9c27ca38392624f0694fb1c58064b2d8"));
+
+            //var test1 = previousBlock.NextConsensus.ToAddress();
+
+
+            //var a = 5;
+
             var blocks = this.db.Blocks
                 .OrderBy(x => x.Height)
-                .Where(x => x.Validator.StartsWith("0x"))
-                .Take(100_000)
+                .Take(200_000)
                 .ToList();
 
             var i = 0;
             while (i < blocks.Count)
             {
                 var block = blocks[i];
-                var previousHash = Neo.Ledger.Blockchain.Singleton.GetBlockHash((uint)block.Height - 1);
-                var previousBlock = Neo.Ledger.Blockchain.Singleton.GetBlock(previousHash);
-                block.Validator = previousBlock.NextConsensus.ToAddress();
+                if (block.Height == 0)
+                {
+                    i++;
+                    continue;
+                }
+
+                var bcBlock = Neo.Ledger.Blockchain.Singleton.GetBlock(UInt256.Parse(block.Hash));
+                block.NextConsensusNodeAddress = bcBlock.NextConsensus.ToAddress();
 
                 i++;
-                if (i % 100_000 == 0)
+                if (i % 200_000 == 0)
                 {
                     this.db.SaveChanges();
 
                     blocks = this.db.Blocks
                         .OrderBy(x => x.Height)
-                        .Where(x => x.Validator.StartsWith("0x"))
-                        .Take(100_000)
+                        .Where(x => x.Height > block.Height)
+                        .Take(200_000)
                         .ToList();
 
                     i = 0;
@@ -211,28 +227,71 @@ namespace StateOfNeo.Server.Controllers
             this.db.SaveChanges();
 
             var validators = new List<ConsensusNode>();
-            var blockFees = this.db.Blocks
-                .Select(x => new { x.Validator, Fees = x.Transactions.Sum(z => z.SystemFee) })
+            //var blockFees = this.db.Blocks
+            //    .Select(x => new
+            //    {
+            //        x.Height,
+            //        Tx = x.Transactions
+            //            .Where(z => z.Type == Neo.Network.P2P.Payloads.TransactionType.MinerTransaction)
+            //            .Select(z => new
+            //            {
+            //                Address = z.GlobalOutgoingAssets.Select(q => q.ToAddressPublicAddress).FirstOrDefault(),
+            //                Amount = z.GlobalOutgoingAssets.Select(q => q.Amount).FirstOrDefault()
+            //            })
+            //            .FirstOrDefault()
+            //    })
+            //    .Where(x => x.Tx.Amount > 0)
+            //    .ToList();
+
+            var blockFees = this.db.Transactions
+                .Include(x => x.GlobalOutgoingAssets)
+                .Where(x => x.Type == Neo.Network.P2P.Payloads.TransactionType.MinerTransaction)
+                .Where(x => x.GlobalOutgoingAssets.Any())
+                .SelectMany(x => x.GlobalOutgoingAssets)
+                .GroupBy(x => x.ToAddressPublicAddress)
                 .ToList();
 
             foreach (var item in blockFees)
             {
-                var validator = validators.FirstOrDefault(x => x.Address == item.Validator);
+                var validator = validators.FirstOrDefault(x => x.Address == item.Key);
                 if (validator == null)
                 {
-                    validator = new ConsensusNode
-                    {
-                        Address = item.Validator
-                    };
-
+                    validator = new ConsensusNode { Address = item.Key };
                     validators.Add(validator);
                     this.db.ConsensusNodes.Add(validator);
                 }
 
-                validator.CollectedFees += item.Fees;
+                foreach (var tx in item)
+                {
+                    var dbTx = Neo.Ledger.Blockchain.Singleton.GetTransaction(UInt256.Parse(tx.OutGlobalTransactionHash));
+                    foreach (var outgoing in dbTx.Outputs)
+                    {
+
+                    }
+                }
+
+                var fees = item.Sum(x => x.Amount);
+                validator.CollectedFees = fees;
             }
 
-            this.db.SaveChanges();
+            //foreach (var item in blockFees)
+            //{
+            //    var validator = validators.FirstOrDefault(x => x.Address == item.Tx.Address);
+            //    if (validator == null)
+            //    {
+            //        validator = new ConsensusNode
+            //        {
+            //            Address = item.Tx.Address
+            //        };
+
+            //        validators.Add(validator);
+            //        this.db.ConsensusNodes.Add(validator);
+            //    }
+
+            //    validator.CollectedFees += item.Tx.Amount;
+            //}
+
+            //this.db.SaveChanges();
 
             return this.Ok();
         }

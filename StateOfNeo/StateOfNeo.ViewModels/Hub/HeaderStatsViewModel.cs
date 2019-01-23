@@ -14,7 +14,6 @@ namespace StateOfNeo.ViewModels
         public long Timestamp { get; set; }
         public double TimeInSeconds { get; set; }
         public string Validator { get; set; }
-        public string ValidatorAddress => UInt160.Parse(this.Validator).ToAddress();
         public decimal CollectedFees { get; set; }
         public DateTime CreatedOn => this.Timestamp.ToUnixDate();
     }
