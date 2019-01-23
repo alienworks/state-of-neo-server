@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Neo;
+using StateOfNeo.Common;
 using StateOfNeo.Common.Constants;
 using StateOfNeo.Common.Enums;
 using StateOfNeo.Common.Extensions;
@@ -52,11 +53,20 @@ namespace StateOfNeo.Server.Controllers
         {
             if (page * pageSize <= StateService.CachedAddressesCount)
             {
-                var result = this.state.GetAddressesPage(page, pageSize);
+                var data = this.state.GetAddressesPage(page, pageSize);
+                this.UpdateNeoAndGasBalances(data);
 
-                this.UpdateNeoAndGasBalances(result);
+                var result = data.ToListResult();
+                var extended = PagedListMetadataExtended.FromParent(result.MetaData);
+                var pages = extended.TotalItemCount % pageSize == 0 
+                    ? extended.TotalItemCount / pageSize 
+                    : extended.TotalItemCount / pageSize + 1;
 
-                return this.Ok(result.ToListResult());
+                extended.TotalItemCount = (int)this.state.MainStats.TotalStats.AddressCount;
+                extended.PageCount = pages;
+                result.MetaData = extended;
+
+                return this.Ok(result);
             }
             else
             {
