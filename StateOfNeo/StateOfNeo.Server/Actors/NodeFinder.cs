@@ -113,7 +113,7 @@ namespace StateOfNeo.Server.Actors
                     {
                         Ip = address,
                         FlagUrl = location.Location.Flag,
-                        Locale = location.Location.Languages.FirstOrDefault().Code,
+                        Locale = location.Location.Languages?.FirstOrDefault().Code,
                         Latitude = location.Latitude,
                         Longitude = location.Longitude,
                         Location = location.CountryName
