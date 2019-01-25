@@ -28,8 +28,32 @@ namespace StateOfNeo.Data.Seed
         public void Init()
         {
             this.SeedPeers();
+            this.SeedNodesInPeers();
             this.SeedNodes();
             this.SeedAddresses();
+        }
+
+        private void SeedNodesInPeers()
+        {
+            if (!this.db.Peers.Any(x => x.NodeId.HasValue))
+            {
+                var addresses = this.db.NodeAddresses
+                    .Include(x => x.Node)
+                    .Where(x => x.Node.Net == this.netSettings.Value.Net)
+                    .ToList();
+                var peers = this.db.Peers.ToList();
+
+                foreach (var peer in peers)
+                {
+                    var address = addresses.FirstOrDefault(x => x.Ip.ToMatchedIp() == peer.Ip.ToMatchedIp());
+                    if (address != null)
+                    {
+                        peer.NodeId = address.NodeId;
+                    }
+                }
+
+                this.db.SaveChanges();
+            }
         }
 
         private void SeedPeers()

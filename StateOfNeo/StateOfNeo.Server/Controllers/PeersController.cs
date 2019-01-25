@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using StateOfNeo.Common;
 using StateOfNeo.Server.Infrastructure;
+using StateOfNeo.Services;
 using StateOfNeo.ViewModels;
 using System;
 using System.Collections.Generic;
@@ -11,10 +12,18 @@ namespace StateOfNeo.Server.Controllers
     public class PeersController : BaseApiController
     {
         private readonly PeersEngine peersEngine;
+        private readonly IPeerService peers;
 
-        public PeersController(PeersEngine peersEngine)
+        public PeersController(PeersEngine peersEngine, IPeerService peers)
         {
             this.peersEngine = peersEngine;
+            this.peers = peers;
+        }
+
+        [HttpGet]
+        public IActionResult Get()
+        {
+            return this.Ok(this.peers.GetAll<PeerViewModel>());
         }
 
         [HttpPost]
@@ -36,7 +45,7 @@ namespace StateOfNeo.Server.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                return this.BadRequest(ex.Message);
             }
         }
     }

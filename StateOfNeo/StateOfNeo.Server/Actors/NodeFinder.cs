@@ -1,4 +1,5 @@
 ﻿using Akka.Actor;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using StateOfNeo.Common;
@@ -10,7 +11,9 @@ using StateOfNeo.Data;
 using StateOfNeo.Data.Models;
 using StateOfNeo.Infrastructure.RPC;
 using StateOfNeo.Server.Cache;
+using StateOfNeo.Server.Hubs;
 using StateOfNeo.Server.Infrastructure;
+using StateOfNeo.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -26,6 +29,7 @@ namespace StateOfNeo.Server.Actors
     {
         private readonly string connectionString;
         private readonly NetSettings netSettings;
+        private readonly IHubContext<PeersHub> peersHub;
         private readonly NodeCache nodeCache;
 
         private long? lastUpdateStamp = null;
@@ -35,10 +39,12 @@ namespace StateOfNeo.Server.Actors
             IActorRef blockchain,
             string connectionString,
             NetSettings netSettings,
+            IHubContext<PeersHub> peersHub,
             NodeCache nodeCache)
         {
             this.connectionString = connectionString;
             this.netSettings = netSettings;
+            this.peersHub = peersHub;
             this.nodeCache = nodeCache;
 
             blockchain.Tell(new Register());
@@ -48,12 +54,14 @@ namespace StateOfNeo.Server.Actors
             IActorRef blockchain,
             string connectionString,
             NetSettings netSettings,
+            IHubContext<PeersHub> peersHub,
             NodeCache nodeCache) =>
                 Akka.Actor.Props.Create(() =>
                     new NodeFinder(
                         blockchain,
                         connectionString,
                         netSettings,
+                        peersHub,
                         nodeCache));
 
         protected override void OnReceive(object message)
@@ -103,7 +111,28 @@ namespace StateOfNeo.Server.Actors
 
         private void HandleNewPeerIp(string address, StateOfNeoContext db)
         {
-            if (!db.Peers.Any(x => x.Ip == address))
+            var existingAddress = db.NodeAddresses
+                .Include(x => x.Node)
+                .FirstOrDefault(x => x.Ip.ToMatchedIp() == address.ToMatchedIp());
+
+            if (existingAddress != null)
+            {
+                var newPeer = new Peer
+                {
+                    Ip = address,
+                    FlagUrl = existingAddress.Node.FlagUrl,
+                    Locale = existingAddress.Node.Locale,
+                    Latitude = existingAddress.Node.Latitude,
+                    Longitude = existingAddress.Node.Longitude,
+                    Location = existingAddress.Node.Location,
+                    NodeId = existingAddress.NodeId
+                };
+
+                this.nodeCache.AddPeerToCache(newPeer);
+                var peerModel = AutoMapper.Mapper.Map<PeerViewModel>(newPeer);
+                this.peersHub.Clients.All.SendAsync("new", peerModel);
+            }
+            else if (!db.Peers.Any(x => x.Ip == address))
             {
                 var location = LocationCaller.GetIpLocation(address).GetAwaiter().GetResult();
 
@@ -121,6 +150,10 @@ namespace StateOfNeo.Server.Actors
 
                     db.Peers.Add(newPeer);
                     db.SaveChanges();
+
+                    this.nodeCache.AddPeerToCache(newPeer);
+                    var peerModel = AutoMapper.Mapper.Map<PeerViewModel>(newPeer);
+                    this.peersHub.Clients.All.SendAsync("new", peerModel);
                 }
             }
         }
@@ -205,12 +238,15 @@ namespace StateOfNeo.Server.Actors
                     Node = newNode
                 };
 
+                var peer = db.Peers.FirstOrDefault(x => x.Ip == address.Address.ToMatchedIp());
+
                 var result = LocationCaller.UpdateNode(newNode, newNodeAddress.Ip).GetAwaiter().GetResult();
 
                 newNode.NodeAddresses.Add(newNodeAddress);
 
                 db.NodeAddresses.Add(newNodeAddress);
                 db.Nodes.Add(newNode);
+                peer.Node = newNode;
                 db.SaveChanges();
             }
         }

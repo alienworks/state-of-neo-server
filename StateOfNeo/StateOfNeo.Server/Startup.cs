@@ -22,6 +22,7 @@ using StateOfNeo.Services.Address;
 using StateOfNeo.Services.Block;
 using StateOfNeo.Services.Transaction;
 using System;
+using System.Linq;
 
 namespace StateOfNeo.Server
 {
@@ -64,6 +65,7 @@ namespace StateOfNeo.Server
             services.AddScoped<IAddressService, AddressService>();
             services.AddScoped<ISearchService, SearchService>();
             services.AddScoped<ISmartContractService, SmartContractService>();
+            services.AddScoped<IPeerService, PeerService>();
 
             services.AddSingleton<IMainStatsState, MainStatsState>();
             services.AddSingleton<IStateService, StateService>();
@@ -105,6 +107,7 @@ namespace StateOfNeo.Server
             IOptions<NetSettings> netSettings,
             IOptions<ImportBlocksSettings> importSettings,
             IHubContext<StatsHub> statsHub,
+            IHubContext<PeersHub> peersHub,
             IHubContext<TransactionsHub> txHub,
             IHubContext<NotificationHub> notificationHub, 
             BlockchainBalances blockChainBalances,
@@ -112,6 +115,7 @@ namespace StateOfNeo.Server
             NodeCache nodeCache,
             IStateService state)
         {
+            nodeCache.AddPeerToCache(ctx.Peers.ToList());
             var connectionString = this.Configuration.GetConnectionString("DefaultConnection");
             Program.NeoSystem.ActorSystem.ActorOf(BlockPersister.Props(
                 Program.NeoSystem.Blockchain,
@@ -133,6 +137,7 @@ namespace StateOfNeo.Server
                  Program.NeoSystem.Blockchain,
                  connectionString,
                  netSettings.Value,
+                 peersHub,
                  nodeCache));
 
             //    Program.NeoSystem.ActorSystem.ActorOf(NotificationsListener.Props(Program.NeoSystem.Blockchain, connectionString));
@@ -160,7 +165,8 @@ namespace StateOfNeo.Server
             app.UseSignalR(routes =>
             {
                 routes.MapHub<StatsHub>("/hubs/stats");
-                routes.MapHub<TransactionsHub>("/hubs/tx");
+                routes.MapHub<TransactionsHub>("/hubs/tx"); 
+                routes.MapHub<PeersHub>("/hubs/peers"); 
                 routes.MapHub<NotificationHub>("/hubs/notification");
             });
 

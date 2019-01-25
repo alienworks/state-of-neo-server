@@ -15,6 +15,7 @@ namespace StateOfNeo.Infrastructure.Mapping
                 TransactionConfig.InitMap(cfg);
                 ChartMapping.InitMap(cfg);
                 SmartContractConfig.InitMap(cfg);
+                PeerConfig.InitMap(cfg);
             });
         }
     }

@@ -9,5 +9,8 @@
         public double? Longitude { get; set; }
         public double? Latitude { get; set; }
         public string FlagUrl { get; set; }
+
+        public int? NodeId { get; set; }
+        public virtual Node Node { get; set; }
     }
 }

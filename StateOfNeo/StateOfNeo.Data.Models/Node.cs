@@ -9,6 +9,7 @@ namespace StateOfNeo.Data.Models
     {
         public Node()
         {
+            this.AssociatedPeers = new HashSet<Peer>();
             this.NodeAddresses = new HashSet<NodeAddress>();
             this.NodeStatusUpdates = new HashSet<NodeStatus>();
             this.Audits = new HashSet<NodeAudit>();
@@ -38,6 +39,8 @@ namespace StateOfNeo.Data.Models
         public long? LatestRuntime { get; set; }
         public long SecondsOnline { get; set; }
         public long? LastAudit { get; set; }
+        
+        public virtual ICollection<Peer> AssociatedPeers { get; set; }
 
         public virtual ICollection<NodeAddress> NodeAddresses { get; set; }
 
