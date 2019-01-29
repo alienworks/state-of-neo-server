@@ -189,6 +189,13 @@ namespace StateOfNeo.Server.Controllers
             return this.Ok(result);
         }
 
+        [HttpGet("[action]")]
+        public IActionResult NodeTypesChart()
+        {
+            var result = this.nodeService.NodeTypesChart();
+            return this.Ok(result);
+        }
+
         [HttpPost("[action]")]
         public IActionResult CalculateConsensusFees()
         {
