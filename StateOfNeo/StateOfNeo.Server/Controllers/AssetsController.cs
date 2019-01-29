@@ -91,10 +91,17 @@ namespace StateOfNeo.Server.Controllers
             return this.Ok(result);
         }
 
-        [HttpPost("[action]")]
-        public IActionResult TokenChart()
+        [HttpGet("[action]")]
+        public IActionResult TokenChart(int count = 20)
         {
-            var result = this.assets.TokenChart();
+            var result = this.assets.TokenChart(count);
+            return this.Ok(result);
+        }
+
+        [HttpGet("[action]")]
+        public IActionResult AssetTypesChart()
+        {
+            var result = this.assets.AssetTypesChart();
             return this.Ok(result);
         }
     }

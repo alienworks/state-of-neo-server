@@ -52,12 +52,12 @@ namespace StateOfNeo.Services
             return assets;
         }
 
-        public IEnumerable<ChartStatsViewModel> TokenChart()
+        public IEnumerable<ChartStatsViewModel> TokenChart(int count)
         {
             var result = this.db.Assets
                 .Where(x => x.Type == AssetType.NEP5)
                 .OrderByDescending(x => x.TransactionsCount)
-                .Take(20)
+                .Take(count)
                 .Select(x => new ChartStatsViewModel
                 {
                     Label = x.Name,
@@ -66,6 +66,23 @@ namespace StateOfNeo.Services
                 .ToList();
 
             return result;
+        }
+
+        public IEnumerable<ChartStatsViewModel> AssetTypesChart()
+        {
+            var globalAssetsModel = new ChartStatsViewModel
+            {
+                Label = "Global",
+                Value = this.db.Assets.Count(x => x.Type != AssetType.NEP5)
+            };
+
+            var tokenAssetsModel = new ChartStatsViewModel
+            {
+                Label = "NEP-5",
+                Value = this.db.Assets.Count(x => x.Type == AssetType.NEP5)
+            };
+
+            return new List<ChartStatsViewModel> { globalAssetsModel, tokenAssetsModel };
         }
 
         public int AddressCount(string hash, UnitOfTime unitOfTime = UnitOfTime.None, bool active = false)
