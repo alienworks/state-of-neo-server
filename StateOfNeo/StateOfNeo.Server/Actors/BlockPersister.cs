@@ -806,12 +806,18 @@ namespace StateOfNeo.Server.Actors
             var currentStats = Mapper.Map<HeaderStatsViewModel>(block);
             currentStats.TransactionCount = transactions;
 
-            var transactionsList = block.Transactions
+            var detailedTransactionsList = block.Transactions
+                .AsQueryable()
+                .ProjectTo<TransactionDetailedListViewModel>()
+                .ToList();
+
+            this.state.AddToDetailedTransactionsList(detailedTransactionsList);
+
+            var transactionList = detailedTransactionsList
                 .AsQueryable()
                 .ProjectTo<TransactionListViewModel>()
                 .ToList();
-
-            this.state.AddToTransactionsList(transactionsList);
+            this.state.AddToTransactionsList(transactionList);
 
             this.state.MainStats.SetHeaderStats(currentStats);
             this.state.MainStats.AddToTotalTxCount(transactions);
@@ -824,7 +830,7 @@ namespace StateOfNeo.Server.Actors
             db.SaveChanges();
 
             this.EmitStatsInfo();
-            this.txHub.Clients.All.SendAsync("new", transactionsList);
+            this.txHub.Clients.All.SendAsync("new", detailedTransactionsList);
 
             this.pendingAddresses.Clear();
             this.pendingAssets.Clear();
@@ -905,6 +911,10 @@ namespace StateOfNeo.Server.Actors
 
         private ConsensusNode GetConsensusNode(StateOfNeoContext db, string address)
         {
+            //foreach (var item in Blockchain.Singleton.GetSnapshot().Contracts)
+            //{
+
+            //}
             var consensusNode = db.ConsensusNodes.FirstOrDefault(x => x.Address == address);
 
             if (consensusNode == null)
