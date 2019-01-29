@@ -32,6 +32,9 @@ namespace StateOfNeo.Services
         ICollection<ChartStatsViewModel> GetBlockTransactionsChart(UnitOfTime unitOfTime, int count);
         void AddBlockTransactions(int transactions, DateTime time);
 
+        ICollection<ChartStatsViewModel> GetConsensusRewardsChart(UnitOfTime unitOfTime, int count);
+        void AddConsensusRewards(decimal sum, DateTime time);
+
         void AddActiveAddress(IEnumerable<AddressListViewModel> addresses);
         IPagedList<AddressListViewModel> GetAddressesPage(int page = 1, int pageSize = 10);
 

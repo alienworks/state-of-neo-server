@@ -58,6 +58,7 @@ namespace StateOfNeo.Services
             this.LoadTransactionsMainChart();
             this.LoadCreatedAddressesMainChart();
             this.LoadBlockTimesMainChart();
+            this.LoadConsensusRewardsMainChart();
 
             this.LoadBlockSizesMainChart();
 
@@ -80,7 +81,10 @@ namespace StateOfNeo.Services
             this.GetChart("createdAddresses")[unitOfTime].OrderByDescending(x => x.StartDate).Take(count).ToList();
 
         public ICollection<ChartStatsViewModel> GetTransactionsChart(UnitOfTime unitOfTime, int count) =>
-            this.GetChart("transactions")[unitOfTime].OrderByDescending(x => x.StartDate).Take(count).ToList();
+            this.GetChart("transactions")[unitOfTime]
+                .OrderByDescending(x => x.StartDate)
+                .Take(count)
+                .ToList();
 
         public ICollection<ChartStatsViewModel> GetBlockSizesChart(UnitOfTime unitOfTime, int count) =>
             this.GetChart("blockSizes")[unitOfTime]
@@ -96,6 +100,12 @@ namespace StateOfNeo.Services
                 .Take(count)
                 .Where(x => x.Value > 0)
                 .Select(x => new ChartStatsViewModel { Label = x.Label, StartDate = x.StartDate, Value = x.AccumulatedValue / x.Value })
+                .ToList();
+
+        public ICollection<ChartStatsViewModel> GetConsensusRewardsChart(UnitOfTime unitOfTime, int count) =>
+            this.GetChart("consensusRewards")[unitOfTime]
+                .OrderByDescending(x => x.StartDate)
+                .Take(count)
                 .ToList();
 
         public void AddBlockTime(double blockSeconds, DateTime time)
@@ -120,6 +130,13 @@ namespace StateOfNeo.Services
             this.AddChartValues("blockTransactions", 1, time, UnitOfTime.Hour, transactions);
             this.AddChartValues("blockTransactions", 1, time, UnitOfTime.Day, transactions);
             this.AddChartValues("blockTransactions", 1, time, UnitOfTime.Month, transactions);
+        }
+
+        public void AddConsensusRewards(decimal sum, DateTime time)
+        {
+            this.AddChartValues("consensusRewards", (double)sum, time, UnitOfTime.Hour);
+            this.AddChartValues("consensusRewards", (double)sum, time, UnitOfTime.Day);
+            this.AddChartValues("consensusRewards", (double)sum, time, UnitOfTime.Month);
         }
 
         public void AddAddresses(int count, DateTime time)
@@ -218,7 +235,7 @@ namespace StateOfNeo.Services
 
             this.transactionTypesLastUpdate = DateTime.UtcNow;
         }
-
+        
         public void LoadTransactionsMainChart()
         {
             var transactions = this.GetChart("transactions");
@@ -251,6 +268,14 @@ namespace StateOfNeo.Services
             blockTimes[UnitOfTime.Month] = this.GetBlockTimesStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Month, EndPeriod = 36 });
         }
 
+        private void LoadConsensusRewardsMainChart()
+        {
+            var consensusRewards = this.GetChart("consensusRewards");
+            consensusRewards[UnitOfTime.Hour] = this.GetConsensusRewardsStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Hour, EndPeriod = 36 });
+            consensusRewards[UnitOfTime.Day] = this.GetConsensusRewardsStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Day, EndPeriod = 36 });
+            consensusRewards[UnitOfTime.Month] = this.GetConsensusRewardsStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Month, EndPeriod = 36 });
+        }
+
         private void LoadLastActiveAddresses()
         {
             this.addresses = this.db.Addresses
@@ -268,7 +293,7 @@ namespace StateOfNeo.Services
                     || x.Type == TransactionType.MinerTransaction 
                     || x.Type == TransactionType.ContractTransaction 
                     || x.Type == TransactionType.InvocationTransaction)
-                .OrderByDescending(x => x.Timestamp)
+                //.OrderByDescending(x => x.Timestamp)
                 .ProjectTo<TransactionListViewModel>()
                 .Take(StateService.CachedTransactionsCount)
                 .ToList();
@@ -278,11 +303,60 @@ namespace StateOfNeo.Services
                     && x.Type != TransactionType.MinerTransaction
                     && x.Type != TransactionType.ContractTransaction
                     && x.Type != TransactionType.InvocationTransaction)
-                .OrderByDescending(x => x.Timestamp)
                 .ProjectTo<TransactionListViewModel>();
 
             this.transactions.AddRange(rarelyUsedTransactions);
             this.transactions = this.transactions.OrderByDescending(x => x.Timestamp).ToList();
+        }
+
+        private ICollection<ChartStatsViewModel> GetConsensusRewardsStats(ChartFilterViewModel filter)
+        {
+            var latestBlockDate = this.GetLatestTimestamp();
+            filter.StartStamp = latestBlockDate;
+            filter.StartDate = latestBlockDate.ToUnixDate();
+
+            var result = this.GetChartEntries(filter.UnitOfTime, ChartEntryType.ConsensusRewards);
+            var periods = filter.GetPeriodStamps().Where(x => !result.Any(y => y.Timestamp == x)).ToArray();
+
+            for (int i = 1; i < periods.Length; i++)
+            {
+                var sum = this.db.Transactions
+                    .Where(x => x.Type == TransactionType.MinerTransaction)
+                    .Where(x => x.GlobalOutgoingAssets.Any())
+                    .Where(x => x.Timestamp < periods[i - 1] && x.Timestamp >= periods[i])
+                    .SelectMany(x => x.GlobalOutgoingAssets)
+                    .Sum(x => x.Amount);
+
+                result.Add(new ChartStatsViewModel
+                {
+                    Value = (decimal)sum,
+                    StartDate = DateOrderFilter.GetDateTime(periods[i], filter.UnitOfTime),
+                    UnitOfTime = filter.UnitOfTime
+                });
+
+                var exists = this.db.ChartEntries.Any(
+                    x =>
+                        x.Timestamp == periods[i]
+                        && x.Type == ChartEntryType.ConsensusRewards
+                        && x.UnitOfTime == filter.UnitOfTime);
+
+                if (exists || !periods[i].IsPeriodOver(filter.UnitOfTime))
+                {
+                    continue;
+                }
+
+                this.db.ChartEntries.Add(new Data.Models.ChartEntry
+                {
+                    UnitOfTime = filter.UnitOfTime,
+                    Timestamp = periods[i],
+                    Type = ChartEntryType.ConsensusRewards,
+                    Value = sum
+                });
+
+                this.db.SaveChanges();
+            }
+
+            return result;
         }
 
         private ICollection<ChartStatsViewModel> GetBlockSizesStats(ChartFilterViewModel filter)

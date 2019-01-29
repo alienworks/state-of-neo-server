@@ -235,6 +235,12 @@ namespace StateOfNeo.Server.Actors
                     var unboxed = item as Neo.Network.P2P.Payloads.MinerTransaction;
                     var minerTransaction = new MinerTransaction { Nonce = unboxed.Nonce };
                     transaction.MinerTransaction = minerTransaction;
+
+                    if (item.Outputs.Any())
+                    {
+                        var sum = item.Outputs.Sum(x => (decimal)x.Value);
+                        this.state.AddConsensusRewards(sum, blockTime);
+                    }
                 }
                 else if (item.Type == Neo.Network.P2P.Payloads.TransactionType.RegisterTransaction)
                 {
@@ -455,8 +461,6 @@ namespace StateOfNeo.Server.Actors
                 block.Transactions.Add(transaction);
                 this.state.AddActiveAddress(activeAddresses);
             }
-
-
 
             this.state.AddBlockSize(block.Size, blockTime);
             this.state.AddBlockTime(block.TimeInSeconds, blockTime);
