@@ -13,6 +13,13 @@ namespace StateOfNeo.Infrastructure.Mapping
                 .ForMember(x => x.Hash, opt => opt.MapFrom(x => x.Hash))
                 .ReverseMap();
 
+            cfg.CreateMap<Transaction, TransactionDetailedListViewModel>()
+                .ForMember(x => x.Hash, opt => opt.MapFrom(x => x.Hash))
+                .ReverseMap();
+
+            cfg.CreateMap<TransactionDetailedListViewModel, TransactionListViewModel>()
+                .ReverseMap();
+
             cfg.CreateMap<Transaction, TransactionDetailsViewModel>()
                 .ForMember(x => x.Hash, opt => opt.MapFrom(x => x.Hash))
                 .ForMember(x => x.BlockHeight, opt => opt.MapFrom(x => x.Block.Height))

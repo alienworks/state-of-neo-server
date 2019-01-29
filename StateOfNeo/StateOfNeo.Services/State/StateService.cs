@@ -27,11 +27,13 @@ namespace StateOfNeo.Services
     {
         public const int CachedAddressesCount = 1500;
         public const int CachedTransactionsCount = 1500;
+        public const int CachedDetailedTransactionsCount = 50;
 
         private Dictionary<string, Dictionary<UnitOfTime, ICollection<ChartStatsViewModel>>> charts = new Dictionary<string, Dictionary<UnitOfTime, ICollection<ChartStatsViewModel>>>();
         private ICollection<ChartStatsViewModel> transactionTypes = new List<ChartStatsViewModel>();
         private DateTime? transactionTypesLastUpdate;
         private List<AddressListViewModel> addresses;
+        private List<TransactionDetailedListViewModel> detailedTransactions;
         private List<TransactionListViewModel> transactions;
 
         private long? lastBlockTime;
@@ -184,6 +186,18 @@ namespace StateOfNeo.Services
         public IPagedList<AddressListViewModel> GetAddressesPage(int page = 1, int pageSize = 10) =>
             this.addresses.AsQueryable().ToPagedList(page, pageSize);
 
+        public void AddToDetailedTransactionsList(TransactionDetailedListViewModel tx)
+        {
+            this.detailedTransactions.Add(tx);
+            this.EnsureTransactionsList();
+        }
+
+        public void AddToDetailedTransactionsList(IEnumerable<TransactionDetailedListViewModel> txs)
+        {
+            this.detailedTransactions.AddRange(txs);
+            this.EnsureTransactionsList();
+        }
+
         public void AddToTransactionsList(TransactionListViewModel tx)
         {
             this.transactions.Add(tx);
@@ -211,6 +225,21 @@ namespace StateOfNeo.Services
                 .ToPagedList(page, pageSize);
         }
 
+        public IPagedList<TransactionDetailedListViewModel> GetDetailedTransactionsPage(int page = 1, int pageSize = 10, string type = null)
+        {
+            var query = this.detailedTransactions.AsQueryable();
+
+            if (!string.IsNullOrEmpty(type))
+            {
+                var txType = Enum.Parse<TransactionType>(type);
+                query = query.Where(x => x.Type == txType);
+            }
+
+            return query
+                .OrderByDescending(x => x.Timestamp)
+                .ToPagedList(page, pageSize);
+        }
+
         private void EnsureTransactionsList()
         {
             if (this.transactions.Count > StateService.CachedTransactionsCount)
@@ -218,6 +247,13 @@ namespace StateOfNeo.Services
                 this.transactions = this.transactions
                     .TakeLast(StateService.CachedTransactionsCount)
                     .ToList();
+            }
+
+            if(this.detailedTransactions.Count > StateService.CachedDetailedTransactionsCount)
+            {
+                this.detailedTransactions = this.detailedTransactions
+                       .TakeLast(StateService.CachedDetailedTransactionsCount)
+                       .ToList();
             }
         }
 
@@ -288,6 +324,16 @@ namespace StateOfNeo.Services
 
         private void LoadLastTransactions()
         {
+            this.detailedTransactions = this.db.Transactions
+                .Where(x => x.Type == TransactionType.ClaimTransaction
+                    || x.Type == TransactionType.MinerTransaction
+                    || x.Type == TransactionType.ContractTransaction
+                    || x.Type == TransactionType.InvocationTransaction)
+                .OrderByDescending(x => x.Timestamp)
+                .ProjectTo<TransactionDetailedListViewModel>()
+                .Take(StateService.CachedDetailedTransactionsCount)
+                .ToList();
+
             this.transactions = this.db.Transactions
                 .Where(x => x.Type == TransactionType.ClaimTransaction 
                     || x.Type == TransactionType.MinerTransaction 

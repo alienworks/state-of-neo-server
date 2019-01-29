@@ -14,7 +14,7 @@ namespace StateOfNeo.Services
     {
         IMainStatsState MainStats { get; }
         IContractsState Contracts { get; }
-        
+
         IEnumerable<ChartStatsViewModel> GetTransactionTypes();
 
         ICollection<ChartStatsViewModel> GetTransactionsChart(UnitOfTime unitOfTime, int count);
@@ -41,5 +41,10 @@ namespace StateOfNeo.Services
         void AddToTransactionsList(TransactionListViewModel tx);
         void AddToTransactionsList(IEnumerable<TransactionListViewModel> txs);
         IPagedList<TransactionListViewModel> GetTransactionsPage(int page = 1, int pageSize = 10, string type = null);
+
+        void AddToDetailedTransactionsList(TransactionDetailedListViewModel tx);
+        void AddToDetailedTransactionsList(IEnumerable<TransactionDetailedListViewModel> txs);
+        IPagedList<TransactionDetailedListViewModel> GetDetailedTransactionsPage(int page = 1, int pageSize = 10, string type = null);
+
     }
 }

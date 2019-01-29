@@ -40,7 +40,7 @@ namespace StateOfNeo.Server.Hubs
 
         public async Task InitInfoByType(IClientProxy proxy, int pageSize = 10)
         {
-            await proxy.SendAsync("list", this.state.GetTransactionsPage(1, pageSize));
+            await proxy.SendAsync("list", this.state.GetDetailedTransactionsPage(1, pageSize));
         }
     }
 }
