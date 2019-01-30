@@ -175,6 +175,14 @@ namespace StateOfNeo.Server.Controllers
 
         [HttpPost("[action]")]
         [ResponseCache(Duration = CachingConstants.Hour)]
+        public IActionResult ActiveChart([FromBody]ChartFilterViewModel filter)
+        {
+            var result = this.state.GetActiveAddressesChart(filter.UnitOfTime, filter.EndPeriod);
+            return this.Ok(result);
+        }
+
+        [HttpPost("[action]")]
+        [ResponseCache(Duration = CachingConstants.Hour)]
         public IActionResult AssetChart([FromBody]ChartFilterViewModel filter, string assetHash)
         {
             var result = this.addresses.GetAddressesForAssetChart(filter, assetHash);

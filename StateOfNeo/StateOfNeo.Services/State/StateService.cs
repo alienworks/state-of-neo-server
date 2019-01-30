@@ -59,6 +59,7 @@ namespace StateOfNeo.Services
 
             this.LoadTransactionsMainChart();
             this.LoadCreatedAddressesMainChart();
+            this.LoadActiveAddressesMainChart();
             this.LoadBlockTimesMainChart();
             this.LoadConsensusRewardsMainChart();
 
@@ -81,6 +82,12 @@ namespace StateOfNeo.Services
 
         public ICollection<ChartStatsViewModel> GetAddressesChart(UnitOfTime unitOfTime, int count) =>
             this.GetChart("createdAddresses")[unitOfTime].OrderByDescending(x => x.StartDate).Take(count).ToList();
+
+        public ICollection<ChartStatsViewModel> GetActiveAddressesChart(UnitOfTime unitOfTime, int count) =>
+            this.GetChart("activeAddresses")[unitOfTime]
+                .OrderByDescending(x => x.StartDate)
+                .Take(count)
+                .ToList();
 
         public ICollection<ChartStatsViewModel> GetTransactionsChart(UnitOfTime unitOfTime, int count) =>
             this.GetChart("transactions")[unitOfTime]
@@ -286,6 +293,14 @@ namespace StateOfNeo.Services
             addresses[UnitOfTime.Hour] = this.GetAddressesStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Hour, EndPeriod = 36 });
             addresses[UnitOfTime.Day] = this.GetAddressesStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Day, EndPeriod = 36 });
             addresses[UnitOfTime.Month] = this.GetAddressesStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Month, EndPeriod = 36 });
+        }
+
+        public void LoadActiveAddressesMainChart()
+        {
+            var addresses = this.GetChart("activeAddresses");
+            addresses[UnitOfTime.Hour] = this.GetActiveAddressesStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Hour, EndPeriod = 36 });
+            addresses[UnitOfTime.Day] = this.GetActiveAddressesStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Day, EndPeriod = 36 });
+            addresses[UnitOfTime.Month] = this.GetActiveAddressesStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Month, EndPeriod = 36 });
         }
 
         private void LoadBlockSizesMainChart()
@@ -612,6 +627,52 @@ namespace StateOfNeo.Services
                     Timestamp = entry.Timestamp,
                     Type = ChartEntryType.CreatedAddresses,
                     Value = entry.Value
+                });
+
+                this.db.SaveChanges();
+            }
+
+            return result;
+        }
+
+        private ICollection<ChartStatsViewModel> GetActiveAddressesStats(ChartFilterViewModel filter)
+        {
+            var latestBlockDate = this.GetLatestTimestamp();
+            filter.StartDate = latestBlockDate.ToUnixDate();
+            filter.StartStamp = latestBlockDate;
+
+            var result = this.GetChartEntries(filter.UnitOfTime, ChartEntryType.ActiveAddresses);
+            var periods = filter.GetPeriodStamps().Where(x => !result.Any(y => y.Timestamp == x)).ToArray();
+
+            for (int i = 1; i < periods.Length; i++)
+            {
+                var count = this.db.Addresses
+                    .Count(x => x.AddressesInTransaction.Any(at => at.Timestamp < periods[i - 1] && at.Timestamp >= periods[i]));
+
+                result.Add(new ChartStatsViewModel
+                {
+                    Value = (decimal)count,
+                    StartDate = DateOrderFilter.GetDateTime(periods[i], filter.UnitOfTime),
+                    UnitOfTime = filter.UnitOfTime
+                });
+
+                var exists = this.db.ChartEntries.Any(
+                    x =>
+                        x.Timestamp == periods[i]
+                        && x.Type == ChartEntryType.ActiveAddresses
+                        && x.UnitOfTime == filter.UnitOfTime);
+
+                if (exists || !periods[i].IsPeriodOver(filter.UnitOfTime))
+                {
+                    continue;
+                }
+
+                this.db.ChartEntries.Add(new Data.Models.ChartEntry
+                {
+                    UnitOfTime = filter.UnitOfTime,
+                    Timestamp = periods[i],
+                    Type = ChartEntryType.ActiveAddresses,
+                    Value = count
                 });
 
                 this.db.SaveChanges();

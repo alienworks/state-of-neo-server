@@ -8,6 +8,7 @@
         TransactionsTypes = 4,
         Assets = 5,
         CreatedAddresses = 6,
-        ConsensusRewards = 7
+        ConsensusRewards = 7,
+        ActiveAddresses = 8
     }
 }
