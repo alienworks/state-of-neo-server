@@ -71,7 +71,6 @@ namespace StateOfNeo.Server.Controllers
             else
             {
                 var result = this.addresses.GetPage(page, pageSize);
-
                 this.UpdateNeoAndGasBalances(result);
 
                 return this.Ok(result.ToListResult());
@@ -91,19 +90,33 @@ namespace StateOfNeo.Server.Controllers
                     if (balancesList[j].Name.ToLower() == "gas")
                     {
                         var gasKey = UInt256.Parse(AssetConstants.GasAssetId);
-                        if (balancesFromSnapshot != null && balancesFromSnapshot.ContainsKey(gasKey))
+                        if (balancesFromSnapshot != null)
                         {
-                            var balance = balancesFromSnapshot[gasKey];
-                            balancesList[j].Balance = (decimal)balance;
+                            if (balancesFromSnapshot.ContainsKey(gasKey))
+                            {
+                                var balance = balancesFromSnapshot[gasKey];
+                                balancesList[j].Balance = (decimal)balance;
+                            }
+                            else
+                            {
+                                balancesList[j].Balance = 0;
+                            }
                         }
                     }
                     else if (balancesList[j].Name.ToLower() == "neo")
                     {
                         var neoKey = UInt256.Parse(AssetConstants.NeoAssetId);
-                        if (balancesFromSnapshot != null && balancesFromSnapshot.ContainsKey(neoKey))
+                        if (balancesFromSnapshot != null)
                         {
-                            var balance = balancesFromSnapshot[neoKey];
-                            balancesList[j].Balance = (decimal)balance;
+                            if (balancesFromSnapshot.ContainsKey(neoKey))
+                            {
+                                var balance = balancesFromSnapshot[neoKey];
+                                balancesList[j].Balance = (decimal)balance;
+                            }
+                            else
+                            {
+                                balancesList[j].Balance = 0;
+                            }
                         }
                     }
                 }
@@ -157,6 +170,14 @@ namespace StateOfNeo.Server.Controllers
         {
             //var result = this.addresses.GetCreatedAddressesChart(filter);
             var result = this.state.GetAddressesChart(filter.UnitOfTime, filter.EndPeriod);
+            return this.Ok(result);
+        }
+
+        [HttpPost("[action]")]
+        [ResponseCache(Duration = CachingConstants.Hour)]
+        public IActionResult ActiveChart([FromBody]ChartFilterViewModel filter)
+        {
+            var result = this.state.GetActiveAddressesChart(filter.UnitOfTime, filter.EndPeriod);
             return this.Ok(result);
         }
 

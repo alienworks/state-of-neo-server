@@ -15,6 +15,7 @@ using System.Threading.Tasks;
 using StateOfNeo.Common.Extensions;
 using StateOfNeo.Data.Models;
 using Microsoft.EntityFrameworkCore;
+using StateOfNeo.Common.Enums;
 
 namespace StateOfNeo.Server.Infrastructure
 {
@@ -42,7 +43,7 @@ namespace StateOfNeo.Server.Infrastructure
 
             foreach (var address in addresses)
             {
-                var addressUpdated = GetAddressAssets(address, this.db, true);
+                var addressUpdated = GetAddressAssets(address, this.db);
 
                 if (addressUpdated != null)
                 {
@@ -90,13 +91,13 @@ namespace StateOfNeo.Server.Infrastructure
             return amount;
         }
 
-        static public Address GetAddressAssets(string address, StateOfNeoContext db, bool update = false)
+        static public Address GetAddressAssets(string address, StateOfNeoContext db)
         {
             var accHash = address.ToScriptHash();
             var account = Blockchain.Singleton.GetSnapshot().Accounts.TryGet(accHash);
 
             var assets = db.Assets
-                .Where(x => x.Type == StateOfNeo.Common.Enums.AssetType.NEP5)
+                .Where(x => x.Type == AssetType.NEP5)
                 .Select(x => x.Hash)
                 .ToList();
 
@@ -117,17 +118,17 @@ namespace StateOfNeo.Server.Infrastructure
                 // Update global assets
                 if (account != null)
                 {
-                    foreach (var balance in account.Balances)
+                    foreach (var accountBalance in addressAccount.Balances.Where(x => x.Asset.Type != AssetType.NEP5))
                     {
-                        var assetBalance = addressAccount.Balances.FirstOrDefault(x => x.AssetHash == balance.Key.ToString());
-                        if (assetBalance != null)
+                        //var assetBalance = addressAccount.Balances.FirstOrDefault(x => x.AssetHash == balance.Key.ToString());
+                        var assetBalance = account.Balances.FirstOrDefault(x => x.Key.ToString() == accountBalance.AssetHash);
+                        if (assetBalance.Value != null)
                         {
-                            assetBalance.Balance = (decimal)balance.Value;
-
-                            if (update)
-                            {
-                                db.AddressBalances.Update(assetBalance);
-                            }
+                            accountBalance.Balance = (decimal)assetBalance.Value;
+                        }
+                        else
+                        {
+                            accountBalance.Balance = 0;
                         }
                     }
                 }
@@ -155,13 +156,11 @@ namespace StateOfNeo.Server.Infrastructure
                     if (assetBalance != null)
                     {
                         assetBalance.Balance = amount.ToDecimal(decimals);
-
-                        if (update)
-                        {
-                            db.AddressBalances.Update(assetBalance);
-                        }
                     }
-
+                    else
+                    {
+                        assetBalance.Balance = 0;
+                    }
                 }
             }
 

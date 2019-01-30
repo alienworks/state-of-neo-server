@@ -65,6 +65,23 @@ namespace StateOfNeo.Services
                 x => x.NodeId == nodeId && x.Peers.HasValue);
         }
 
+        public IEnumerable<ChartStatsViewModel> NodeTypesChart()
+        {
+            var result = this.db.Nodes
+                .Where(x => x.Type == NodeAddressType.REST || x.Type == NodeAddressType.RPC)
+                .GroupBy(x => x.Type)
+                .Select(x => new ChartStatsViewModel
+                {
+                    Label = x.Key.ToString(),
+                    Value = x.Count()
+                })
+                .ToList();
+
+            result.Add(new ChartStatsViewModel { Label = "Consensus", Value = 7 });
+
+            return result;
+        }
+
         public async Task<bool> GetWsStatusAsync(int nodeId)
         {
             var nodeUrl = this.db.Nodes

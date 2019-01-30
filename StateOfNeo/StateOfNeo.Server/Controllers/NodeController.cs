@@ -31,16 +31,19 @@ namespace StateOfNeo.Server.Controllers
     {
         private readonly NodeCache nodeCache;
         private readonly INodeService nodeService;
+        private readonly IStateService state;
         private readonly StateOfNeoContext db;
 
         public NodeController(
             StateOfNeoContext db,
             NodeCache nodeCache,
-            INodeService nodeService)
+            INodeService nodeService,
+            IStateService state)
         {
             this.db = db;
             this.nodeCache = nodeCache;
             this.nodeService = nodeService;
+            this.state = state;
         }
 
         [HttpGet("[action]/{id}")]
@@ -179,6 +182,21 @@ namespace StateOfNeo.Server.Controllers
         }
 
         [HttpPost("[action]")]
+        [ResponseCache(Duration = CachingConstants.Hour)]
+        public IActionResult ConsensusRewardsChart([FromBody]ChartFilterViewModel filter)
+        {
+            var result = this.state.GetConsensusRewardsChart(filter.UnitOfTime, filter.EndPeriod);
+            return this.Ok(result);
+        }
+
+        [HttpGet("[action]")]
+        public IActionResult NodeTypesChart()
+        {
+            var result = this.nodeService.NodeTypesChart();
+            return this.Ok(result);
+        }
+
+        [HttpPost("[action]")]
         public IActionResult CalculateConsensusFees()
         {
             return this.Ok();
@@ -192,10 +210,15 @@ namespace StateOfNeo.Server.Controllers
 
             //var a = 5;
 
-            //var blocks = this.db.Blocks
-            //    .OrderBy(x => x.Height)
-            //    .Take(200_000)
-            //    .ToList();
+            var assetsToRemove = this.db.Transactions
+                .Where(x => x.Timestamp > 1)
+                .Select(x => x.Assets.Where(z => z.AssetType != StateOfNeo.Common.Enums.AssetType.NEP5))
+                .ToList();
+
+            var blocks = this.db.Blocks
+                .OrderBy(x => x.Height)
+                .Take(200_000)
+                .ToList();
 
             //var i = 0;
             //while (i < blocks.Count)

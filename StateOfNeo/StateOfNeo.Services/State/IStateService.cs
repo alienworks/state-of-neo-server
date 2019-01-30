@@ -23,6 +23,8 @@ namespace StateOfNeo.Services
         ICollection<ChartStatsViewModel> GetAddressesChart(UnitOfTime unitOfTime, int count);
         void AddAddresses(int count, DateTime time);
 
+        ICollection<ChartStatsViewModel> GetActiveAddressesChart(UnitOfTime unitOfTime, int count);
+
         ICollection<ChartStatsViewModel> GetBlockSizesChart(UnitOfTime unitOfTime, int count);
         void AddBlockSize(int size, DateTime time);
 
@@ -31,6 +33,9 @@ namespace StateOfNeo.Services
 
         ICollection<ChartStatsViewModel> GetBlockTransactionsChart(UnitOfTime unitOfTime, int count);
         void AddBlockTransactions(int transactions, DateTime time);
+
+        ICollection<ChartStatsViewModel> GetConsensusRewardsChart(UnitOfTime unitOfTime, int count);
+        void AddConsensusRewards(decimal sum, DateTime time);
 
         void AddActiveAddress(IEnumerable<AddressListViewModel> addresses);
         IPagedList<AddressListViewModel> GetAddressesPage(int page = 1, int pageSize = 10);
@@ -42,6 +47,5 @@ namespace StateOfNeo.Services
         void AddToDetailedTransactionsList(TransactionDetailedListViewModel tx);
         void AddToDetailedTransactionsList(IEnumerable<TransactionDetailedListViewModel> txs);
         IPagedList<TransactionDetailedListViewModel> GetDetailedTransactionsPage(int page = 1, int pageSize = 10, string type = null);
-
     }
 }
