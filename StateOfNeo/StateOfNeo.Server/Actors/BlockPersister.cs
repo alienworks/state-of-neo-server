@@ -817,6 +817,7 @@ namespace StateOfNeo.Server.Actors
                 .AsQueryable()
                 .ProjectTo<TransactionListViewModel>()
                 .ToList();
+
             this.state.AddToTransactionsList(transactionList);
 
             this.state.MainStats.SetHeaderStats(currentStats);
@@ -837,12 +838,6 @@ namespace StateOfNeo.Server.Actors
             this.pendingBalances.Clear();
             this.pendingSmartContracts.Clear();
             this.pendingConsensusNodes.Clear();
-
-            //if (Blockchain.Singleton.Height == block.Height && !balancesRecalculated)
-            //{
-            //    this.blockchainBalancesRecalculator.Run();
-            //    this.balancesRecalculated = true;
-            //}
         }
 
         private void EmitStatsInfo()
