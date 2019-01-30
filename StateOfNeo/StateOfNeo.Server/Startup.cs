@@ -23,6 +23,7 @@ using StateOfNeo.Services.Block;
 using StateOfNeo.Services.Transaction;
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace StateOfNeo.Server
 {
@@ -71,6 +72,7 @@ namespace StateOfNeo.Server
             services.AddSingleton<IStateService, StateService>();
             //services.AddSingleton<BalanceUpdater>(); 
             services.AddSingleton<BlockchainBalances>();
+            services.AddSingleton<SmartContractEngine>();
 
             // Infrastructure
             services.AddSingleton<NodeCache>();
@@ -101,6 +103,7 @@ namespace StateOfNeo.Server
         public void Configure(
             IApplicationBuilder app,
             IHostingEnvironment env,
+            SmartContractEngine smartContractEngine,
             StateOfNeoSeedData seeder,
             StateOfNeoContext ctx,
             IServiceProvider services,
@@ -109,11 +112,12 @@ namespace StateOfNeo.Server
             IHubContext<StatsHub> statsHub,
             IHubContext<PeersHub> peersHub,
             IHubContext<TransactionsHub> txHub,
-            IHubContext<NotificationHub> notificationHub, 
+            IHubContext<NotificationHub> notificationHub,
             BlockchainBalances blockChainBalances,
             RPCNodeCaller nodeCaller,
             NodeCache nodeCache,
-            IStateService state)
+            IStateService state
+            )
         {
             nodeCache.AddPeerToCache(ctx.Peers.ToList());
             var connectionString = this.Configuration.GetConnectionString("DefaultConnection");
@@ -169,6 +173,8 @@ namespace StateOfNeo.Server
                 routes.MapHub<PeersHub>("/hubs/peers"); 
                 routes.MapHub<NotificationHub>("/hubs/notification");
             });
+
+            Task.Run(() => smartContractEngine.Run());
 
             seeder.Init();
 

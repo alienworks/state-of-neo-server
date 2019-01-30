@@ -1,9 +1,18 @@
 ﻿using Neo.SmartContract;
+using StateOfNeo.Data.Models.Transactions;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace StateOfNeo.Data.Models
 {
     public class SmartContract : BaseEntity
     {
+        public SmartContract()
+        {
+            this.InvocationTransactions = new HashSet<InvocationTransaction>();
+        }
+
+        [Key]
         public int Id { get; set; }
 
         public string Hash { get; set; }
@@ -29,5 +38,7 @@ namespace StateOfNeo.Data.Models
         public string InputParameters { get; set; }
 
         public ContractParameterType ReturnType { get; set; }
+
+        public virtual IEnumerable<InvocationTransaction> InvocationTransactions { get; set; }
     }
 }
