@@ -62,17 +62,57 @@ namespace StateOfNeo.Server.Actors
                     var nodes = db.Nodes
                         .Include(x => x.NodeAddresses)
                         .Include(x => x.Audits)
-                        .Where(x => x.Net == this.net && x.SuccessUrl != null)
+                        .Where(x => x.Net == this.net)
                         .ToList();
 
                     foreach (var node in nodes)
                     {
+                        var successUrl = node.SuccessUrl;
                         var audit = this.NodeAudit(node, m.Block);
 
                         if (audit != null)
                         {
                             db.NodeAudits.Add(audit);
                             node.LastAudit = m.Block.Timestamp;
+
+                        }
+
+                        if (string.IsNullOrEmpty(successUrl) || (!node.Longitude.HasValue && !node.Latitude.HasValue))
+                        {
+                            foreach (var address in node.NodeAddresses)
+                            {
+                                var result = LocationCaller.UpdateNode(node, address.Ip).GetAwaiter().GetResult();
+
+                                var peerById = db.Peers.FirstOrDefault(x => x.NodeId == node.Id);
+                                if (result && peerById == null)
+                                {
+                                    var peer = db.Peers.FirstOrDefault(x => x.Ip == address.Ip);
+
+                                    if (peer != null)
+                                    {
+                                        peer.NodeId = node.Id;
+                                    }
+                                    else
+                                    {
+                                        var newPeer = CreatePeerFromNode(node, address.Ip);
+
+                                        db.Peers.Add(newPeer);
+                                    }
+
+                                    break;
+                                }
+                                else if (peerById != null)
+                                {
+                                    if (!peerById.Longitude.HasValue && !peerById.Latitude.HasValue)
+                                    {
+                                        peerById.FlagUrl = node.FlagUrl;
+                                        peerById.Locale = node.Locale;
+                                        peerById.Latitude = node.Latitude;
+                                        peerById.Longitude = node.Longitude;
+                                        peerById.Location = node.Location;
+                                    }
+                                }
+                            }
                         }
 
                         db.Nodes.Update(node);
@@ -83,6 +123,22 @@ namespace StateOfNeo.Server.Actors
                     this.totalSecondsElapsed = null;
                 }
             }
+        }
+
+        private Peer CreatePeerFromNode(Node node, string ip)
+        {
+            var newPeer = new Peer
+            {
+                Ip = ip,
+                FlagUrl = node.Location,
+                Locale = node.Locale,
+                Latitude = node.Latitude,
+                Longitude = node.Longitude,
+                Location = node.Location,
+                NodeId = node.Id
+            };
+
+            return newPeer;
         }
 
         private void UpdateNodeTimes(Node node, Neo.Network.P2P.Payloads.Block block)
