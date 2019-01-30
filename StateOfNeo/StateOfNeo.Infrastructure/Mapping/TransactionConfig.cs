@@ -1,7 +1,6 @@
 ﻿using AutoMapper;
-using StateOfNeo.ViewModels.Transaction;
 using StateOfNeo.Data.Models.Transactions;
-using StateOfNeo.Common.Extensions;
+using StateOfNeo.ViewModels.Transaction;
 
 namespace StateOfNeo.Infrastructure.Mapping
 {
@@ -15,6 +14,12 @@ namespace StateOfNeo.Infrastructure.Mapping
 
             cfg.CreateMap<Transaction, TransactionDetailedListViewModel>()
                 .ForMember(x => x.Hash, opt => opt.MapFrom(x => x.Hash))
+                .ReverseMap();
+
+            cfg.CreateMap<InvocationTransaction, TransactionListViewModel>()
+                .ForMember(x => x.Hash, opt => opt.MapFrom(x => x.TransactionHash))
+                .ForMember(x => x.Timestamp, opt => opt.MapFrom(x => x.Transaction.Timestamp))
+                .ForMember(x => x.Type, opt => opt.MapFrom(x => x.Transaction.Type))
                 .ReverseMap();
 
             cfg.CreateMap<TransactionDetailedListViewModel, TransactionListViewModel>()
