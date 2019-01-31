@@ -148,8 +148,10 @@ namespace StateOfNeo.Server.Infrastructure
                         }
 
                         if (response != null && response.IsSuccessStatusCode)
+                        {
                             node.SuccessUrl = triedUrl;
-                        break;
+                            break;
+                        }
                     }
                 }
 

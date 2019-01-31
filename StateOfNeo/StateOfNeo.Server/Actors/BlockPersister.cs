@@ -821,6 +821,7 @@ namespace StateOfNeo.Server.Actors
                 .AsQueryable()
                 .ProjectTo<TransactionListViewModel>()
                 .ToList();
+
             this.state.AddToTransactionsList(transactionList);
 
             this.state.MainStats.SetHeaderStats(currentStats);

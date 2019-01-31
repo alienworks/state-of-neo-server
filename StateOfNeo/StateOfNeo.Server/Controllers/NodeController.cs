@@ -199,6 +199,7 @@ namespace StateOfNeo.Server.Controllers
         [HttpPost("[action]")]
         public IActionResult CalculateConsensusFees()
         {
+            return this.Ok();
             //var previousBlockHash = Neo.Ledger.Blockchain.Singleton.GetBlockHash(3224873);
             //var previousBlock = Neo.Ledger.Blockchain.Singleton.GetBlock(previousBlockHash);
 
@@ -219,35 +220,35 @@ namespace StateOfNeo.Server.Controllers
                 .Take(200_000)
                 .ToList();
 
-            var i = 0;
-            while (i < blocks.Count)
-            {
-                var block = blocks[i];
-                if (block.Height == 0)
-                {
-                    i++;
-                    continue;
-                }
+            //var i = 0;
+            //while (i < blocks.Count)
+            //{
+            //    var block = blocks[i];
+            //    if (block.Height == 0)
+            //    {
+            //        i++;
+            //        continue;
+            //    }
 
-                var bcBlock = Neo.Ledger.Blockchain.Singleton.GetBlock(UInt256.Parse(block.Hash));
-                block.NextConsensusNodeAddress = bcBlock.NextConsensus.ToAddress();
+            //    var bcBlock = Neo.Ledger.Blockchain.Singleton.GetBlock(UInt256.Parse(block.Hash));
+            //    block.NextConsensusNodeAddress = bcBlock.NextConsensus.ToAddress();
 
-                i++;
-                if (i % 200_000 == 0)
-                {
-                    this.db.SaveChanges();
+            //    i++;
+            //    if (i % 200_000 == 0)
+            //    {
+            //        this.db.SaveChanges();
 
-                    blocks = this.db.Blocks
-                        .OrderBy(x => x.Height)
-                        .Where(x => x.Height > block.Height)
-                        .Take(200_000)
-                        .ToList();
+            //        blocks = this.db.Blocks
+            //            .OrderBy(x => x.Height)
+            //            .Where(x => x.Height > block.Height)
+            //            .Take(200_000)
+            //            .ToList();
 
-                    i = 0;
-                }
-            }
+            //        i = 0;
+            //    }
+            //}
 
-            this.db.SaveChanges();
+            //this.db.SaveChanges();
 
             var validators = new List<ConsensusNode>();
             //var blockFees = this.db.Blocks

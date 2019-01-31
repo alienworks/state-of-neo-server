@@ -1,5 +1,6 @@
 ﻿using StateOfNeo.ViewModels.Contracts;
 using System.Collections.Generic;
+using X.PagedList;
 
 namespace StateOfNeo.Services
 {
@@ -8,5 +9,6 @@ namespace StateOfNeo.Services
         SmartContractDetailsViewModel Find(string hash);
 
         IEnumerable<T> GetAll<T>();
+        IPagedList<T> GetTransactions<T>(string hash, int page, int pageSize);
     }
 }

@@ -1,11 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using StateOfNeo.Common.Extensions;
 using StateOfNeo.Services;
 using StateOfNeo.ViewModels;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using StateOfNeo.ViewModels.Transaction;
 
 namespace StateOfNeo.Server.Controllers
 {
@@ -35,6 +32,18 @@ namespace StateOfNeo.Server.Controllers
         {
             var result = this.contracts.GetAll<SmartContractListViewModel>();
             return this.Ok(result);
+        }
+
+
+        [HttpGet("[action]/{hash}/{page}/{pageSize}")]
+        public IActionResult InvocationTransactions(
+            string hash,
+            int page = 1,
+            int pageSize = 10)
+        {
+            var result = this.contracts.GetTransactions<TransactionListViewModel>(hash, page, pageSize);
+
+            return Ok(result.ToListResult());
         }
     }
 }

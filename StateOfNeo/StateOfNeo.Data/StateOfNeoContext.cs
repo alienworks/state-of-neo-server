@@ -45,7 +45,7 @@ namespace StateOfNeo.Data
         public static StateOfNeoContext Create(string connectionString)
         {
             var optionsBuilder = new DbContextOptionsBuilder<StateOfNeoContext>();
-            optionsBuilder.UseSqlServer(connectionString, 
+            optionsBuilder.UseSqlServer(connectionString,
                 opts => opts.CommandTimeout((int)TimeSpan.FromMinutes(10000).TotalSeconds));
             return new StateOfNeoContext(optionsBuilder.Options);
         }
@@ -80,6 +80,11 @@ namespace StateOfNeo.Data
                 .HasMany(x => x.Audits)
                 .WithOne(x => x.Node)
                 .HasForeignKey(x => x.NodeId);
+
+            modelBuilder.Entity<InvocationTransaction>()
+                .HasOne<Transaction>(x => x.Transaction)
+                .WithOne(x => x.InvocationTransaction)
+                .HasForeignKey<Transaction>(x => x.InvocationTransactionId);
 
             var decimalProps = modelBuilder.Model
                 .GetEntityTypes()
