@@ -841,12 +841,6 @@ namespace StateOfNeo.Server.Actors
             this.pendingBalances.Clear();
             this.pendingSmartContracts.Clear();
             this.pendingConsensusNodes.Clear();
-
-            //if (Blockchain.Singleton.Height == block.Height && !balancesRecalculated)
-            //{
-            //    this.blockchainBalancesRecalculator.Run();
-            //    this.balancesRecalculated = true;
-            //}
         }
 
         private void EmitStatsInfo()
@@ -915,10 +909,6 @@ namespace StateOfNeo.Server.Actors
 
         private ConsensusNode GetConsensusNode(StateOfNeoContext db, string address)
         {
-            //foreach (var item in Blockchain.Singleton.GetSnapshot().Contracts)
-            //{
-
-            //}
             var consensusNode = db.ConsensusNodes.FirstOrDefault(x => x.Address == address);
 
             if (consensusNode == null)

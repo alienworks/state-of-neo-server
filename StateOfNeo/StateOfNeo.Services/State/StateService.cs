@@ -256,11 +256,12 @@ namespace StateOfNeo.Services
                     .ToList();
             }
 
-            if(this.detailedTransactions.Count > StateService.CachedDetailedTransactionsCount)
+
+            if (this.detailedTransactions.Count > StateService.CachedDetailedTransactionsCount)
             {
                 this.detailedTransactions = this.detailedTransactions
-                       .TakeLast(StateService.CachedDetailedTransactionsCount)
-                       .ToList();
+                    .TakeLast(StateService.CachedDetailedTransactionsCount)
+                    .ToList();
             }
         }
 
@@ -354,7 +355,7 @@ namespace StateOfNeo.Services
                     || x.Type == TransactionType.MinerTransaction 
                     || x.Type == TransactionType.ContractTransaction 
                     || x.Type == TransactionType.InvocationTransaction)
-                //.OrderByDescending(x => x.Timestamp)
+                .OrderByDescending(x => x.Timestamp)
                 .ProjectTo<TransactionListViewModel>()
                 .Take(StateService.CachedTransactionsCount)
                 .ToList();
