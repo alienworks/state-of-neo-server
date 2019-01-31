@@ -45,5 +45,12 @@ namespace StateOfNeo.Server.Controllers
 
             return Ok(result.ToListResult());
         }
+
+        [HttpGet("[action]")]
+        public IActionResult InvocationsChart(int count = 20)
+        {
+            var result = this.contracts.ContractInvocationsChart(count);
+            return this.Ok(result);
+        }
     }
 }

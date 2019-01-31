@@ -1,6 +1,7 @@
 ﻿using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
 using StateOfNeo.Data;
+using StateOfNeo.ViewModels.Chart;
 using StateOfNeo.ViewModels.Contracts;
 using System.Collections.Generic;
 using System.Linq;
@@ -33,5 +34,20 @@ namespace StateOfNeo.Services
                 .OrderByDescending(x => x.Transaction.Timestamp)
                 .ProjectTo<T>()
                 .ToPagedList(page, pageSize);
+
+        public IEnumerable<ChartStatsViewModel> ContractInvocationsChart(int count)
+        {
+            var result = this.db.SmartContracts
+                .Select(x => new ChartStatsViewModel
+                {
+                    Label = x.Name,
+                    Value = x.InvocationTransactions.Count()
+                })
+                .OrderByDescending(x => x.Value)
+                .Take(count)
+                .ToList();
+
+            return result;
+        }
     }
 }

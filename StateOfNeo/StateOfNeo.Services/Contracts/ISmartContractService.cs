@@ -1,4 +1,5 @@
-﻿using StateOfNeo.ViewModels.Contracts;
+﻿using StateOfNeo.ViewModels.Chart;
+using StateOfNeo.ViewModels.Contracts;
 using System.Collections.Generic;
 using X.PagedList;
 
@@ -10,5 +11,7 @@ namespace StateOfNeo.Services
 
         IEnumerable<T> GetAll<T>();
         IPagedList<T> GetTransactions<T>(string hash, int page, int pageSize);
+
+        IEnumerable<ChartStatsViewModel> ContractInvocationsChart(int count);
     }
 }
