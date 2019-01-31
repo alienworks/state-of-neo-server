@@ -938,10 +938,6 @@ namespace StateOfNeo.Server.Actors
 
         private ConsensusNode GetConsensusNode(StateOfNeoContext db, string address)
         {
-            //foreach (var item in Blockchain.Singleton.GetSnapshot().Contracts)
-            //{
-
-            //}
             var consensusNode = db.ConsensusNodes.FirstOrDefault(x => x.Address == address);
 
             if (consensusNode == null)
