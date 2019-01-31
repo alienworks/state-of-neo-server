@@ -293,10 +293,31 @@ namespace StateOfNeo.Server.Actors
                     {
                         CreatedOn = System.DateTime.UtcNow,
                         Gas = (decimal)unboxed.Gas,
-                        ScriptAsHexString = unboxed.Script.ToHexString()
+                        ScriptAsHexString = unboxed.Script.ToHexString(),
+                        TransactionHash = transaction.Hash
                     };
 
-                    this.TrackInvocationTransaction(unboxed, db, block.Timestamp.ToUnixDate());
+                    var appResult = this.TrackInvocationTransaction(unboxed, db, block.Timestamp.ToUnixDate());
+
+                    if (appResult != null && appResult.ContractHash != null)
+                    {
+                        invocationTransaction.ContractHash = appResult.ContractHash.ToString();
+
+                        var contract = db.SmartContracts.FirstOrDefault(x=>x.Hash == appResult.ContractHash.ToString());
+
+                        if (contract != null)
+                        {
+                            invocationTransaction.SmartContractId = contract.Id;
+                        } else
+                        {
+                            contract = this.pendingSmartContracts.FirstOrDefault(x => x.Hash == appResult.ContractHash.ToString());
+
+                            if (contract != null)
+                            {
+                                invocationTransaction.SmartContractId = contract.Id;
+                            }
+                        }
+                    }
 
                     transaction.InvocationTransaction = invocationTransaction;
                 }
@@ -525,9 +546,13 @@ namespace StateOfNeo.Server.Actors
             transactedAmounts[assetHash][publicAddress] += amount;
         }
 
-        private void TrackInvocationTransaction(Neo.Network.P2P.Payloads.InvocationTransaction transaction, StateOfNeoContext db, DateTime blockTime)
+        private AppExecutionResult TrackInvocationTransaction(
+            Neo.Network.P2P.Payloads.InvocationTransaction transaction,
+            StateOfNeoContext db,
+            DateTime blockTime)
         {
             AppExecutionResult result = null;
+            UInt160 contractHash = null;
             using (ApplicationEngine engine = new ApplicationEngine(TriggerType.Application, transaction, Blockchain.Singleton.GetSnapshot().Clone(), transaction.Gas, true))
             {
                 engine.LoadScript(transaction.Script);
@@ -551,7 +576,7 @@ namespace StateOfNeo.Server.Actors
 
                         engine.CurrentContext.InstructionPointer = startingPosition;
 
-                        var contractHash = new UInt160(rawContractHash);
+                        contractHash = new UInt160(rawContractHash);
                         this.EnsureSmartContractCreated(contractHash, db, blockTime.ToUnixTimestamp());
                     }
 
@@ -581,7 +606,8 @@ namespace StateOfNeo.Server.Actors
                     VMState = engine.State,
                     GasConsumed = engine.GasConsumed,
                     Stack = engine.ResultStack.ToArray(),
-                    Notifications = engine.Service.Notifications.ToArray()
+                    Notifications = engine.Service.Notifications.ToArray(),
+                    ContractHash = contractHash
                 };
             }
 
@@ -774,6 +800,8 @@ namespace StateOfNeo.Server.Actors
                     .All
                     .SendAsync("all", this.state.Contracts.GetNotificationsFor(NotificationConstants.AllNotificationsKey));
             }
+
+            return result;
         }
 
         private string TestInvoke(UInt160 contractHash, string operation, params object[] args)
