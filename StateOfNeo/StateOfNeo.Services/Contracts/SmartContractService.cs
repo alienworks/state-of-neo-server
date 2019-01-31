@@ -1,8 +1,10 @@
 ﻿using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
+using StateOfNeo.Common.Extensions;
 using StateOfNeo.Data;
 using StateOfNeo.ViewModels.Chart;
 using StateOfNeo.ViewModels.Contracts;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using X.PagedList;
@@ -49,5 +51,10 @@ namespace StateOfNeo.Services
 
             return result;
         }
+
+        public int CreatedTotal() => this.db.SmartContracts.Count();
+
+        public int CreatedLastMonth() => this.db.SmartContracts
+            .Count(x => x.Timestamp.ToUnixDate() >= DateTime.UtcNow.AddMonths(-1));
     }
 }

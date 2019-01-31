@@ -13,5 +13,8 @@ namespace StateOfNeo.Services
         IPagedList<T> GetTransactions<T>(string hash, int page, int pageSize);
 
         IEnumerable<ChartStatsViewModel> ContractInvocationsChart(int count);
+
+        int CreatedTotal();
+        int CreatedLastMonth();
     }
 }
