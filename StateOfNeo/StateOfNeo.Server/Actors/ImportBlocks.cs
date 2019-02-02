@@ -16,60 +16,24 @@ namespace StateOfNeo.Server.Actors
 {
     public class ImportBlocks : Plugin
     {
-        private int maxOnImportHeight;
-
-        public ImportBlocks(int maxOnImportHeight)
+        public ImportBlocks()
         {
-            this.maxOnImportHeight = maxOnImportHeight;
-
-            Task.Run(() =>
-            {
-                const string path_acc = "chain.acc";
-                if (File.Exists(path_acc))
-                    using (FileStream fs = new FileStream(path_acc, FileMode.Open, FileAccess.Read, FileShare.Read))
-                        System.Blockchain
-                        .Ask<Blockchain.ImportCompleted>(new Blockchain.Import
-                            {
-                                Blocks = GetBlocks(fs)
-                            })
-                        .Wait();
-                const string path_acc_zip = path_acc + ".zip";
-                if (File.Exists(path_acc_zip))
-                    using (FileStream fs = new FileStream(path_acc_zip, FileMode.Open, FileAccess.Read, FileShare.Read))
-                    using (ZipArchive zip = new ZipArchive(fs, ZipArchiveMode.Read))
-                    using (Stream zs = zip.GetEntry(path_acc).Open())
-                        System.Blockchain.Ask<Blockchain.ImportCompleted>(new Blockchain.Import
-                        {
-                            Blocks = GetBlocks(zs)
-                        }).Wait();
-                var paths = Directory.EnumerateFiles(".", "chain.*.acc", SearchOption.TopDirectoryOnly).Concat(Directory.EnumerateFiles(".", "chain.*.acc.zip", SearchOption.TopDirectoryOnly)).Select(p => new
-                {
-                    FileName = Path.GetFileName(p),
-                    Start = uint.Parse(Regex.Match(p, @"\d+").Value),
-                    IsCompressed = p.EndsWith(".zip")
-                }).OrderBy(p => p.Start).ToList();
-                foreach (var path in paths)
-                {
-                    if (path.Start > Blockchain.Singleton.Height + 1) break;
-                    if (path.IsCompressed)
-                        using (FileStream fs = new FileStream(path.FileName, FileMode.Open, FileAccess.Read, FileShare.Read))
-                        using (ZipArchive zip = new ZipArchive(fs, ZipArchiveMode.Read))
-                        using (Stream zs = zip.GetEntry(Path.GetFileNameWithoutExtension(path.FileName)).Open())
-                            System.Blockchain.Ask<Blockchain.ImportCompleted>(new Blockchain.Import
-                            {
-                                Blocks = GetBlocks(zs, true)
-                            }).Wait();
-                    else
-                        using (FileStream fs = new FileStream(path.FileName, FileMode.Open, FileAccess.Read, FileShare.Read))
-                            System.Blockchain.Ask<Blockchain.ImportCompleted>(new Blockchain.Import
-                            {
-                                Blocks = GetBlocks(fs, true)
-                            }).Wait();
-                }
-            });
+            OnImport();
         }
 
-        private IEnumerable<Block> GetBlocks(Stream stream, bool read_start = false)
+        private static bool CheckMaxOnImportHeight(uint currentImportBlockHeight)
+        {
+            if (Neo.Plugins.Settings.Default.MaxOnImportHeight == 0 || Neo.Plugins.Settings.Default.MaxOnImportHeight >= currentImportBlockHeight)
+                return true;
+            return false;
+        }
+
+        public override void Configure()
+        {
+            Neo.Plugins.Settings.Load(GetConfiguration());
+        }
+
+        private static IEnumerable<Block> GetBlocks(Stream stream, bool read_start = false)
         {
             using (BinaryReader r = new BinaryReader(stream))
             {
@@ -90,20 +54,12 @@ namespace StateOfNeo.Server.Actors
             }
         }
 
-        private bool CheckMaxOnImportHeight(uint currentImportBlockHeight) =>
-            this.maxOnImportHeight == 0 || this.maxOnImportHeight >= currentImportBlockHeight;
-
-        public override void Configure()
+        private bool OnExport(string[] args)
         {
-
-        }
-
-        protected override bool OnMessage(object message)
-        {
-            if (!(message is string[] args)) return false;
             if (args.Length < 2) return false;
-            if (args[0] != "export") return false;
-            if (args[1] != "block" && args[1] != "blocks") return false;
+            if (!string.Equals(args[1], "block", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(args[1], "blocks", StringComparison.OrdinalIgnoreCase))
+                return false;
             if (args.Length >= 3 && uint.TryParse(args[2], out uint start))
             {
                 if (start > Blockchain.Singleton.Height)
@@ -171,9 +127,77 @@ namespace StateOfNeo.Server.Actors
                         }
                 }
             }
-
             Console.WriteLine();
             return true;
+        }
+
+        private bool OnHelp(string[] args)
+        {
+            if (args.Length < 2) return false;
+            if (!string.Equals(args[1], Name, StringComparison.OrdinalIgnoreCase))
+                return false;
+            Console.Write($"{Name} Commands:\n" + "\texport block[s] <index>\n");
+            return true;
+        }
+
+        private async void OnImport()
+        {
+            SuspendNodeStartup();
+            const string path_acc = "chain.acc";
+            if (File.Exists(path_acc))
+                using (FileStream fs = new FileStream(path_acc, FileMode.Open, FileAccess.Read, FileShare.Read))
+                    await System.Blockchain.Ask<Blockchain.ImportCompleted>(new Blockchain.Import
+                    {
+                        Blocks = GetBlocks(fs)
+                    });
+            const string path_acc_zip = path_acc + ".zip";
+            if (File.Exists(path_acc_zip))
+                using (FileStream fs = new FileStream(path_acc_zip, FileMode.Open, FileAccess.Read, FileShare.Read))
+                using (ZipArchive zip = new ZipArchive(fs, ZipArchiveMode.Read))
+                using (Stream zs = zip.GetEntry(path_acc).Open())
+                    await System.Blockchain.Ask<Blockchain.ImportCompleted>(new Blockchain.Import
+                    {
+                        Blocks = GetBlocks(zs)
+                    });
+            var paths = Directory.EnumerateFiles(".", "chain.*.acc", SearchOption.TopDirectoryOnly).Concat(Directory.EnumerateFiles(".", "chain.*.acc.zip", SearchOption.TopDirectoryOnly)).Select(p => new
+            {
+                FileName = Path.GetFileName(p),
+                Start = uint.Parse(Regex.Match(p, @"\d+").Value),
+                IsCompressed = p.EndsWith(".zip")
+            }).OrderBy(p => p.Start);
+            foreach (var path in paths)
+            {
+                if (path.Start > Blockchain.Singleton.Height + 1) break;
+                if (path.IsCompressed)
+                    using (FileStream fs = new FileStream(path.FileName, FileMode.Open, FileAccess.Read, FileShare.Read))
+                    using (ZipArchive zip = new ZipArchive(fs, ZipArchiveMode.Read))
+                    using (Stream zs = zip.GetEntry(Path.GetFileNameWithoutExtension(path.FileName)).Open())
+                        await System.Blockchain.Ask<Blockchain.ImportCompleted>(new Blockchain.Import
+                        {
+                            Blocks = GetBlocks(zs, true)
+                        });
+                else
+                    using (FileStream fs = new FileStream(path.FileName, FileMode.Open, FileAccess.Read, FileShare.Read))
+                        await System.Blockchain.Ask<Blockchain.ImportCompleted>(new Blockchain.Import
+                        {
+                            Blocks = GetBlocks(fs, true)
+                        });
+            }
+            ResumeNodeStartup();
+        }
+
+        protected override bool OnMessage(object message)
+        {
+            if (!(message is string[] args)) return false;
+            if (args.Length == 0) return false;
+            switch (args[0].ToLower())
+            {
+                case "help":
+                    return OnHelp(args);
+                case "export":
+                    return OnExport(args);
+            }
+            return false;
         }
     }
 }
