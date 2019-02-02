@@ -52,5 +52,19 @@ namespace StateOfNeo.Server.Controllers
             var result = this.contracts.ContractInvocationsChart(count);
             return this.Ok(result);
         }
+
+        [HttpGet("[action]")]
+        public IActionResult CreatedTotal()
+        {
+            var result = this.contracts.CreatedTotal();
+            return this.Ok(result);
+        }
+
+        [HttpGet("[action]")]
+        public IActionResult CreatedLastMonth()
+        {
+            var result = this.contracts.CreatedLastMonth();
+            return this.Ok(result);
+        }
     }
 }
