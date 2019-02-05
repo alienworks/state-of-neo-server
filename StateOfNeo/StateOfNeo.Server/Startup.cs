@@ -174,7 +174,7 @@ namespace StateOfNeo.Server
                 routes.MapHub<NotificationHub>("/hubs/notification");
             });
 
-            Task.Run(() => smartContractEngine.Run());
+            //Task.Run(() => smartContractEngine.Run());
 
             seeder.Init();
 

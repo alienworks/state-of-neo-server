@@ -11,5 +11,9 @@ namespace StateOfNeo.ViewModels.Transaction
         public TransactionType Type { get; set; }
 
         public long Timestamp { get; set; }
+
+        public string ContractName { get; set; }
+
+        public string ContractHash { get; set; }
     }
 }

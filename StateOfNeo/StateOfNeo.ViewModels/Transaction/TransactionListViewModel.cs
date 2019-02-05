@@ -14,6 +14,6 @@ namespace StateOfNeo.ViewModels.Transaction
 
         public long Timestamp { get; set; }
 
-        public DateTime FinalizedAt => this.Timestamp.ToUnixDate();        
+        public DateTime FinalizedAt => this.Timestamp.ToUnixDate();
     }
 }

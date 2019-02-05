@@ -9,11 +9,18 @@ namespace StateOfNeo.Infrastructure.Mapping
         internal static void InitMap(IMapperConfigurationExpression cfg)
         {
             cfg.CreateMap<Transaction, TransactionListViewModel>()
-                .ForMember(x => x.Hash, opt => opt.MapFrom(x => x.Hash))
                 .ReverseMap();
 
             cfg.CreateMap<Transaction, TransactionDetailedListViewModel>()
-                .ForMember(x => x.Hash, opt => opt.MapFrom(x => x.Hash))
+                .ForMember(
+                    x => x.ContractHash,
+                    opt => opt.MapFrom(x => x.InvocationTransaction != null ? x.InvocationTransaction.ContractHash : ""))
+                .ForMember(
+                    x => x.ContractName,
+                    opt => opt.MapFrom(
+                        x => x.InvocationTransaction != null && x.InvocationTransaction.SmartContract != null 
+                            ? x.InvocationTransaction.SmartContract.Name 
+                            : ""))
                 .ReverseMap();
 
             cfg.CreateMap<InvocationTransaction, TransactionListViewModel>()
@@ -26,8 +33,17 @@ namespace StateOfNeo.Infrastructure.Mapping
                 .ReverseMap();
 
             cfg.CreateMap<Transaction, TransactionDetailsViewModel>()
-                .ForMember(x => x.Hash, opt => opt.MapFrom(x => x.Hash))
+                .ForMember(x => x.Hash, opt => opt.MapFrom(x => x.Hash)) 
                 .ForMember(x => x.BlockHeight, opt => opt.MapFrom(x => x.Block.Height))
+                .ForMember(
+                    x => x.ContractHash, 
+                    opt => opt.MapFrom(x => x.InvocationTransaction != null ? x.InvocationTransaction.ContractHash : ""))
+                .ForMember(
+                    x => x.ContractName,
+                    opt => opt.MapFrom(
+                        x => x.InvocationTransaction != null && x.InvocationTransaction.SmartContract != null
+                            ? x.InvocationTransaction.SmartContract.Name
+                            : ""))
                 .ReverseMap();
 
             cfg.CreateMap<Transaction, TransactionAssetsViewModel>()

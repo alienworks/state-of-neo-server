@@ -29,6 +29,10 @@ namespace StateOfNeo.ViewModels.Transaction
 
         public int BlockHeight { get; set; }
 
+        public string ContractName { get; set; }
+
+        public string ContractHash { get; set; }
+
         public IEnumerable<TransactionAttributeViewModel> Attributes { get; set; }
 
         public IEnumerable<TransactionWitnessViewModel> Witnesses { get; set; }

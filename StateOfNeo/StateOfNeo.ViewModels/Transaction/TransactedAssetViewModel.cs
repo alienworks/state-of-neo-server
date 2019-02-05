@@ -8,6 +8,10 @@ namespace StateOfNeo.ViewModels.Transaction
 
         public AssetType AssetType { get; set; }
 
+        public string AssetHash { get; set; }
+
+        public string AssetSymbol { get; set; }
+
         public string FromAddress { get; set; }
 
         public string ToAddress { get; set; }
