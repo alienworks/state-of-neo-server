@@ -105,7 +105,7 @@ namespace StateOfNeo.Server.Actors
         {
             if (message is PersistCompleted m)
             {
-                if (m.Block.Index <= 3062777)
+                if (m.Block.Index <= 3293295)
                 {
                     return;
                 }
@@ -424,7 +424,6 @@ namespace StateOfNeo.Server.Actors
                     this.AdjustTransactedAmount(transactedAmounts, assetHash, toPublicAddress, ta.Amount);
 
                     transaction.GlobalOutgoingAssets.Add(ta);
-                    transaction.Assets.Add(ta);
 
                     var activeAddress = Mapper.Map<AddressListViewModel>(toAddress);
                     activeAddresses.Add(activeAddress);
@@ -562,7 +561,7 @@ namespace StateOfNeo.Server.Actors
                     && engine.CurrentContext.InstructionPointer != engine.CurrentContext.Script.Length)
                 {
                     var nextOpCode = engine.CurrentContext.NextInstruction;
-                    if (nextOpCode == OpCode.APPCALL)
+                    if (nextOpCode == OpCode.APPCALL || nextOpCode == OpCode.TAILCALL)
                     {
                         var startingPosition = engine.CurrentContext.InstructionPointer;
                         engine.CurrentContext.InstructionPointer = startingPosition + 1;
@@ -835,6 +834,8 @@ namespace StateOfNeo.Server.Actors
 
         private void SaveEmitAndClear(StateOfNeoContext db, Block block, int transactions)
         {
+            db.SaveChanges();
+
             var currentStats = Mapper.Map<HeaderStatsViewModel>(block);
             currentStats.TransactionCount = transactions;
 
@@ -860,7 +861,6 @@ namespace StateOfNeo.Server.Actors
             this.state.MainStats.AddToTotalBlocksTimesCount((decimal)block.TimeInSeconds);
 
             db.TotalStats.Update(this.state.MainStats.TotalStats);
-            db.SaveChanges();
 
             this.EmitStatsInfo();
             this.txHub.Clients.All.SendAsync("new", detailedTransactionsList);
