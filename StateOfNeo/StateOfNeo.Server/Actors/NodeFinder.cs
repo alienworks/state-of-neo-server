@@ -74,13 +74,13 @@ namespace StateOfNeo.Server.Actors
                     if (this.nodeCache.PeersCollected.Count > 0)
                     {
                         this.currentStamp = m.Block.Timestamp;
-                        this.DoWork();
+                        this.CheckAddOrUpdatePeersAndNodes();
                     }
                 }
             }
         }
 
-        private void DoWork()
+        private void CheckAddOrUpdatePeersAndNodes()
         {
             var optionsBuilder = new DbContextOptionsBuilder<StateOfNeoContext>();
             optionsBuilder.UseSqlServer(this.connectionString, opts => opts.CommandTimeout((int)TimeSpan.FromMinutes(10).TotalSeconds));
