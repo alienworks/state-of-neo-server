@@ -24,5 +24,7 @@ namespace StateOfNeo.Services.Transaction
         double AveragePer(UnitOfTime unitOfTime);
         long Total();
         decimal TotalClaimed();
+
+        int DeleteWrongAssets();
     }
 }

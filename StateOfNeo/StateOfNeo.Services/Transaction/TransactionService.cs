@@ -218,5 +218,35 @@ namespace StateOfNeo.Services.Transaction
                 .Where(x => x.Type == TransactionType.ClaimTransaction)
                 .SelectMany(x => x.GlobalOutgoingAssets)
                 .Sum(x => x.Amount);
+
+        public int DeleteWrongAssets()
+        {
+            var transactionsWithWrongAssets = this.db.Transactions
+                .Include(x => x.Assets)
+                .Include(x => x.GlobalIncomingAssets)
+                .Include(x => x.GlobalOutgoingAssets)
+                .Where(x => x.Assets.Any(a => a.AssetType != Common.Enums.AssetType.NEP5))
+                .ToList();
+
+            var assetsToRemove = transactionsWithWrongAssets
+                .SelectMany(x => x.Assets.Where(a => a.AssetType != Common.Enums.AssetType.NEP5))
+                .ToList();
+
+            var iterations = 0;
+            foreach (var item in assetsToRemove)
+            {
+                this.db.TransactedAssets.Remove(item);
+                if (iterations % 100_000 == 0)
+                {
+                    this.db.SaveChanges();
+                }
+
+                iterations++;
+            }
+
+            this.db.SaveChanges();
+
+            return iterations;
+        }
     }
 }

@@ -46,6 +46,14 @@ namespace StateOfNeo.Server.Controllers
             return this.Ok(transaction);
         }
 
+        [HttpGet("[action]")]
+        public IActionResult DeleteWrongAssets()
+        {
+            var deleted = this.transactions.DeleteWrongAssets();
+
+            return this.Ok();
+        }
+
         [HttpGet("[action]/{hash}")]
         [ResponseCache(Duration = CachingConstants.TenYears)]
         public IActionResult GetAssets(string hash)
