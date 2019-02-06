@@ -28,6 +28,14 @@ namespace StateOfNeo.Server.Controllers
 
         [HttpGet("[action]/{hash}")]
         [ResponseCache(Duration = CachingConstants.TenYears)]
+        public IActionResult HeightByHash(string hash)
+        {
+            var height = this.blocks.GetHeight(hash);
+            return this.Ok(height);
+        }
+
+        [HttpGet("[action]/{hash}")]
+        [ResponseCache(Duration = CachingConstants.TenYears)]
         public IActionResult ByHash(string hash)
         {
             var block = this.blocks.Find<BlockDetailsViewModel>(hash);

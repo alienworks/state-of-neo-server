@@ -15,5 +15,7 @@ namespace StateOfNeo.Services.Block
         double GetAvgBlockSize();
 
         string NextBlockHash(int height);
+
+        int GetHeight(string hash);
     }
 }

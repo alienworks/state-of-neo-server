@@ -121,5 +121,12 @@ namespace StateOfNeo.Services.Block
             .Where(x => x.Height == height + 1)
             .Select(x => x.Hash)
             .FirstOrDefault();
+
+        public int GetHeight(string hash) =>
+            this.db.Blocks
+                .Where(x => x.Hash == hash)
+                .Select(x => x.Height)
+                .FirstOrDefault();
+
     }
 }
