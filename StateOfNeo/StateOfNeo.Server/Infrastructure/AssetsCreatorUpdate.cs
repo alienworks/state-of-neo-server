@@ -40,13 +40,14 @@ namespace StateOfNeo.Server.Infrastructure
 
             if (gasAsset != null)
             {
-                neoAsset.CreatorAddressId = Blockchain.UtilityToken.Admin.ToAddress();
+                gasAsset.CreatorAddressId = Blockchain.UtilityToken.Admin.ToAddress();
                 db.Assets.Update(gasAsset);
             }
 
             // GlobalAssets
             var globalAssets = db.Assets
                 .Where(x => x.GlobalType.HasValue)
+                .Where(x => x.CreatorAddressId != null)
                 .ToList();
 
             var registerTransactions = db.RegisterTransactions.ToList();
