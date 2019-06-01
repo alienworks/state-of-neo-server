@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace StateOfNeo.ViewModels.Address
+﻿namespace StateOfNeo.ViewModels.Address
 {
     public class AddressAssetViewModel
     {
@@ -11,5 +7,7 @@ namespace StateOfNeo.ViewModels.Address
         public decimal Balance { get; set; }
 
         public string AssetType { get; set; }
+
+        public string AssetHash { get; set; }
     }
 }

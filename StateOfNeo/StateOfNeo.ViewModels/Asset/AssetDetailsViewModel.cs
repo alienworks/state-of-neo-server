@@ -25,5 +25,7 @@ namespace StateOfNeo.ViewModels.Asset
         public double AverageTransactedValue { get; set; }
 
         public double MedianTransactedValue { get; set; }
+
+        public string CreatorAddressId { get; set; }
     }
 }
