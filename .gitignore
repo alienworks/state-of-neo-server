@@ -336,3 +336,5 @@ ASALocalRun/
 /StateOfNeo/StateOfNeo.Server/ChainPrivateNet
 /StateOfNeo/StateOfNeo.Server/log.txt
 /StateOfNeo/StateOfNeo.Server/chain.acc.zip
+/StateOfNeo/StateOfNeo.Server/Plugins
+/.vscode
