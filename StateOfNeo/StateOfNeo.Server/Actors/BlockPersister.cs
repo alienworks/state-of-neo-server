@@ -52,7 +52,7 @@ namespace StateOfNeo.Server.Actors
         private IStateService state;
         private readonly BlockchainBalances blockchainBalancesRecalculator;
         private DateTime genesisTime = GenesisBlock.Timestamp.ToUnixDate();
-        private bool balancesRecalculated = false;
+        private bool newAssetsRegistered = false;
 
         private readonly ICollection<Data.Models.Asset> pendingAssets = new List<Data.Models.Asset>();
         private readonly ICollection<Data.Models.SmartContract> pendingSmartContracts = new List<Data.Models.SmartContract>();
@@ -105,6 +105,8 @@ namespace StateOfNeo.Server.Actors
         {
             if (message is PersistCompleted m)
             {
+                this.newAssetsRegistered = false;
+
                 if (m.Block.Index <= 3293295)
                 {
                     return;
@@ -253,7 +255,8 @@ namespace StateOfNeo.Server.Actors
                         CreatedOn = System.DateTime.UtcNow,
                         Name = unboxed.Name,
                         OwnerPublicKey = unboxed.Owner.ToString(),
-                        Precision = unboxed.Precision
+                        Precision = unboxed.Precision,
+                        TransactionHash = transaction.Hash
                     };
 
                     transaction.RegisterTransaction = registerTransaction;
@@ -268,6 +271,8 @@ namespace StateOfNeo.Server.Actors
                         Hash = item.Hash.ToString(),
                         Decimals = unboxed.Precision
                     };
+
+                    this.newAssetsRegistered = true;
 
                     if (unboxed.Name.Length > 2)
                     {
@@ -303,12 +308,13 @@ namespace StateOfNeo.Server.Actors
                     {
                         invocationTransaction.ContractHash = appResult.ContractHash.ToString();
 
-                        var contract = db.SmartContracts.FirstOrDefault(x=>x.Hash == appResult.ContractHash.ToString());
+                        var contract = db.SmartContracts.FirstOrDefault(x => x.Hash == appResult.ContractHash.ToString());
 
                         if (contract != null)
                         {
                             invocationTransaction.SmartContractId = contract.Id;
-                        } else
+                        }
+                        else
                         {
                             contract = this.pendingSmartContracts.FirstOrDefault(x => x.Hash == appResult.ContractHash.ToString());
 
@@ -656,6 +662,7 @@ namespace StateOfNeo.Server.Actors
                             Symbol = symbol
                         };
 
+                        this.newAssetsRegistered = true;
                         db.Assets.Add(asset);
                         this.pendingAssets.Add(asset);
                         this.state.MainStats.AddTotalAssetsCount(1);
@@ -861,6 +868,11 @@ namespace StateOfNeo.Server.Actors
             this.state.MainStats.AddToTotalBlocksTimesCount((decimal)block.TimeInSeconds);
 
             db.TotalStats.Update(this.state.MainStats.TotalStats);
+
+            if (this.newAssetsRegistered)
+            {
+                AssetsCreatorUpdate.Nep5CreatorUpdate(db);
+            }
 
             this.EmitStatsInfo();
             this.txHub.Clients.All.SendAsync("new", detailedTransactionsList);
