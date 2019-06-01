@@ -72,7 +72,8 @@ namespace StateOfNeo.Server
             services.AddSingleton<IStateService, StateService>();
             //services.AddSingleton<BalanceUpdater>(); 
             services.AddSingleton<BlockchainBalances>();
-            services.AddSingleton<SmartContractEngine>();
+            services.AddSingleton<SmartContractEngine>(); 
+            services.AddSingleton<AssetsCreatorUpdate>(); 
 
             // Infrastructure
             services.AddSingleton<NodeCache>();
@@ -116,9 +117,11 @@ namespace StateOfNeo.Server
             BlockchainBalances blockChainBalances,
             RPCNodeCaller nodeCaller,
             NodeCache nodeCache,
-            IStateService state
+            IStateService state,
+            AssetsCreatorUpdate assetsCreatorUpdate
             )
         {
+            assetsCreatorUpdate.Run().Wait();
             nodeCache.AddPeerToCache(ctx.Peers.ToList());
             var connectionString = this.Configuration.GetConnectionString("DefaultConnection");
             Program.NeoSystem.ActorSystem.ActorOf(BlockPersister.Props(

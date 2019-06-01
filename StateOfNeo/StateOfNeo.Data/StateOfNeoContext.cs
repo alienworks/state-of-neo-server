@@ -86,6 +86,11 @@ namespace StateOfNeo.Data
                 .WithOne(x => x.InvocationTransaction)
                 .HasForeignKey<Transaction>(x => x.InvocationTransactionId);
 
+            modelBuilder.Entity<RegisterTransaction>()
+                .HasOne<Transaction>(x => x.Transaction)
+                .WithOne(x => x.RegisterTransaction)
+                .HasForeignKey<Transaction>(x => x.RegisterTransactionId);
+
             var decimalProps = modelBuilder.Model
                 .GetEntityTypes()
                 .SelectMany(t => t.GetProperties())

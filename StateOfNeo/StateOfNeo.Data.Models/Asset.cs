@@ -34,6 +34,10 @@ namespace StateOfNeo.Data.Models
 
         public int TransactionsCount { get; set; }
 
+        public string CreatorAddressId { get; set; }
+
+        public virtual Address CreatorAddress { get; set; }
+
         public virtual ICollection<AddressAssetBalance> Balances { get; set; }
 
         public virtual ICollection<TransactedAsset> TransactedAssets { get; set; }
