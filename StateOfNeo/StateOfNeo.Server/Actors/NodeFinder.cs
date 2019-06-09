@@ -154,6 +154,7 @@ namespace StateOfNeo.Server.Actors
                     this.nodeCache.AddPeerToCache(newPeer);
                     var peerModel = AutoMapper.Mapper.Map<PeerViewModel>(newPeer);
                     this.peersHub.Clients.All.SendAsync("new", peerModel);
+                    this.peersHub.Clients.All.SendAsync("total-tracked", this.nodeCache.GetCachedPeersCount);
                 }
             }
         }

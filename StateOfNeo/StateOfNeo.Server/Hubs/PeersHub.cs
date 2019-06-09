@@ -42,7 +42,9 @@ namespace StateOfNeo.Server.Hubs
 
         public async Task InitInfoByType(IClientProxy proxy, int pageSize = 10)
         {
-            await proxy.SendAsync("list", this.nodeCache.GetCachedPeers<PeerViewModel>().ToList());
+            await proxy.SendAsync("list", this.nodeCache.GetCachedPeers<PeerViewModel>());
+            await proxy.SendAsync("total-found", this.nodeCache.PeersCollected.Count);
+            await proxy.SendAsync("total-tracked", this.nodeCache.GetCachedPeersCount);
         }
     }
 }

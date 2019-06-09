@@ -30,6 +30,7 @@ namespace StateOfNeo.Server.Controllers
     public class NodeController : BaseApiController
     {
         private readonly NodeCache nodeCache;
+        private readonly IHubContext<PeersHub> peersHub;
         private readonly INodeService nodeService;
         private readonly IStateService state;
         private readonly StateOfNeoContext db;
@@ -37,11 +38,13 @@ namespace StateOfNeo.Server.Controllers
         public NodeController(
             StateOfNeoContext db,
             NodeCache nodeCache,
+            IHubContext<PeersHub> peersHub,
             INodeService nodeService,
             IStateService state)
         {
             this.db = db;
             this.nodeCache = nodeCache;
+            this.peersHub = peersHub;
             this.nodeService = nodeService;
             this.state = state;
         }
@@ -168,13 +171,20 @@ namespace StateOfNeo.Server.Controllers
         }
 
         [HttpPost("[action]")]
-        public async Task<IActionResult> AddRPCNodes(RPCPeer[] peers)
+        public async Task<IActionResult> AddRPCNodes([FromBody]RPCPeer[] peers)
         {
-            if (peers != null)
+            if (peers != null && peers.Length > 0)
             {
+                var oldCollectedPeersCount = this.nodeCache.PeersCollected.Count;
+
                 foreach (var peer in peers)
                 {
                     this.nodeCache.AddPeer(peer);
+                }
+
+                if (oldCollectedPeersCount < this.nodeCache.PeersCollected.Count)
+                {
+                    await this.peersHub.Clients.All.SendAsync("total-found", this.nodeCache.PeersCollected.Count);
                 }
             }
 
