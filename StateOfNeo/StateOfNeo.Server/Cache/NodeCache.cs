@@ -45,6 +45,8 @@ namespace StateOfNeo.Server.Cache
             this.PeersCached.AddRange(peers);
         }
 
+        public int GetCachedPeersCount => this.PeersCached.Count;
+
         public ICollection<T> GetCachedPeers<T>() => this.PeersCached.AsQueryable().ProjectTo<T>().ToList();
     }
 }
