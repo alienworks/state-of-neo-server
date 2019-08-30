@@ -97,8 +97,10 @@ namespace StateOfNeo.Data.Seed
 
         private void SeedNodesByNetType(string net)
         {
-            var mainNodes = ((JArray)JsonConvert.DeserializeObject(File.ReadAllText($@"seed-{net.ToLower()}.json"))).ToObject<List<NodeViewModel>>();
-            foreach (var node in mainNodes)
+            var seedNodesFileName = $@"seed-{net.ToLower()}.json";
+            var seedNodesSerialized = File.ReadAllText(seedNodesFileName);
+            var seedNodes = JsonConvert.DeserializeObject<List<NodeViewModel>>(seedNodesSerialized);
+            foreach (var node in seedNodes)
             {
                 var newNode = new Node
                 {
@@ -112,6 +114,7 @@ namespace StateOfNeo.Data.Seed
                     Version = node.Version,
                     Service = node.Service
                 };
+
                 this.db.Nodes.Add(newNode);
                 this.db.SaveChanges();
 
@@ -121,15 +124,32 @@ namespace StateOfNeo.Data.Seed
 
         private void RegisterIpAddresses(int nodeId, NodeViewModel node)
         {
-            foreach (var ip in node.Ips)
+            if (node.Ips != null)
+            {
+                foreach (var ip in node.Ips)
+                {
+                    var newAddress = new NodeAddress
+                    {
+                        Ip = ip,
+                        Port = node.Port,
+                        NodeId = nodeId,
+                        Type = Enum.Parse<NodeAddressType>(node.Type)
+                    };
+
+                    this.db.NodeAddresses.Add(newAddress);
+                    this.db.SaveChanges();
+                }
+            }
+            else if (node.Ip != null)
             {
                 var newAddress = new NodeAddress
                 {
-                    Ip = ip,
+                    Ip = node.Ip,
                     Port = node.Port,
                     NodeId = nodeId,
                     Type = Enum.Parse<NodeAddressType>(node.Type)
                 };
+
                 this.db.NodeAddresses.Add(newAddress);
                 this.db.SaveChanges();
             }

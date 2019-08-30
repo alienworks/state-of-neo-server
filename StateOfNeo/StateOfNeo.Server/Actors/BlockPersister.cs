@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Neo;
 using Neo.IO.Json;
 using Neo.Ledger;
+using Neo.Plugins;
 using Neo.SmartContract;
 using Neo.VM;
 using Neo.Wallets;
@@ -28,6 +29,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using static Neo.Ledger.Blockchain;
 
 namespace StateOfNeo.Server.Actors
@@ -51,7 +53,7 @@ namespace StateOfNeo.Server.Actors
         private readonly IHubContext<NotificationHub> notificationHub;
         private IStateService state;
         private readonly BlockchainBalances blockchainBalancesRecalculator;
-        private DateTime genesisTime = GenesisBlock.Timestamp.ToUnixDate();
+        private DateTime genesisTime = ((long)GenesisBlock.Timestamp).ToUnixDate();
         private bool newAssetsRegistered = false;
 
         private readonly ICollection<Data.Models.Asset> pendingAssets = new List<Data.Models.Asset>();
@@ -61,7 +63,6 @@ namespace StateOfNeo.Server.Actors
         private readonly ICollection<ConsensusNode> pendingConsensusNodes = new List<ConsensusNode>();
 
         public BlockPersister(
-            IActorRef blockchain,
             string connectionString,
             IStateService state,
             IHubContext<StatsHub> statsHub,
@@ -78,11 +79,10 @@ namespace StateOfNeo.Server.Actors
             this.state = state;
             this.blockchainBalancesRecalculator = blockChainBalancesRecalculator;
 
-            blockchain.Tell(new Register());
+            Context.System.EventStream.Subscribe(Self, typeof(Blockchain.PersistCompleted));
         }
 
         public static Props Props(
-            IActorRef blockchain,
             string connectionString,
             IStateService state,
             IHubContext<StatsHub> statsHub,
@@ -92,7 +92,6 @@ namespace StateOfNeo.Server.Actors
             string net) =>
                 Akka.Actor.Props.Create(
                     () => new BlockPersister(
-                        blockchain,
                         connectionString,
                         state,
                         statsHub,
@@ -106,11 +105,6 @@ namespace StateOfNeo.Server.Actors
             if (message is PersistCompleted m)
             {
                 this.newAssetsRegistered = false;
-
-                if (m.Block.Index <= 3293295)
-                {
-                    return;
-                }
 
                 var db = StateOfNeoContext.Create(this.connectionString);
                 if (db.Blocks.Any(x => x.Hash == m.Block.Hash.ToString()))
@@ -191,7 +185,7 @@ namespace StateOfNeo.Server.Actors
                 while (db.Transactions.Any(x => x.Hash == newTxHash))
                 {
                     newTxHash += "+1";
-                    Log.Warning($"Duplicate transaction hash - {newTxHash}");
+                    Serilog.Log.Warning($"Duplicate transaction hash - {newTxHash}");
                 }
 
                 var transaction = new Transaction
@@ -252,7 +246,7 @@ namespace StateOfNeo.Server.Actors
                         AdminAddress = unboxed.Admin.ToAddress().ToString(),
                         Amount = (decimal)unboxed.Amount,
                         AssetType = unboxed.AssetType,
-                        CreatedOn = System.DateTime.UtcNow,
+                        CreatedOn = DateTime.UtcNow,
                         Name = unboxed.Name,
                         OwnerPublicKey = unboxed.Owner.ToString(),
                         Precision = unboxed.Precision,
@@ -296,7 +290,7 @@ namespace StateOfNeo.Server.Actors
                     var unboxed = item as Neo.Network.P2P.Payloads.InvocationTransaction;
                     var invocationTransaction = new InvocationTransaction
                     {
-                        CreatedOn = System.DateTime.UtcNow,
+                        CreatedOn = DateTime.UtcNow,
                         Gas = (decimal)unboxed.Gas,
                         ScriptAsHexString = unboxed.Script.ToHexString(),
                         TransactionHash = transaction.Hash
@@ -507,7 +501,7 @@ namespace StateOfNeo.Server.Actors
             var sc = contractsStore.TryGet(contractHash);
             if (sc == null)
             {
-                Log.Information($"Tryed to create not existing contract with hash: {contractHash}. Timestamp: {timestamp}");
+                Serilog.Log.Information($"Tryed to create not existing contract with hash: {contractHash}. Timestamp: {timestamp}");
                 return;
             }
 
@@ -558,7 +552,7 @@ namespace StateOfNeo.Server.Actors
         {
             AppExecutionResult result = null;
             UInt160 contractHash = null;
-            using (ApplicationEngine engine = new ApplicationEngine(TriggerType.Application, transaction, Blockchain.Singleton.GetSnapshot().Clone(), transaction.Gas, true))
+            using (var engine = new ApplicationEngine(TriggerType.Application, transaction, Blockchain.Singleton.GetSnapshot().Clone(), transaction.Gas, true))
             {
                 engine.LoadScript(transaction.Script);
                 while (
@@ -566,26 +560,15 @@ namespace StateOfNeo.Server.Actors
                     && engine.InvocationStack.Any()
                     && engine.CurrentContext.InstructionPointer != engine.CurrentContext.Script.Length)
                 {
-                    var nextOpCode = engine.CurrentContext.NextInstruction;
+                    var nextOpCode = engine.CurrentContext.NextInstruction.OpCode;
                     if (nextOpCode == OpCode.APPCALL || nextOpCode == OpCode.TAILCALL)
                     {
-                        var startingPosition = engine.CurrentContext.InstructionPointer;
-                        engine.CurrentContext.InstructionPointer = startingPosition + 1;
-
-                        var reader = engine.CurrentContext.GetFieldValue<BinaryReader>("OpReader");
-                        var rawContractHash = reader.ReadBytes(20);
-                        if (rawContractHash.All(x => x == 0))
-                        {
-                            rawContractHash = engine.CurrentContext.EvaluationStack.Pop().GetByteArray();
-                        }
-
-                        engine.CurrentContext.InstructionPointer = startingPosition;
-
-                        contractHash = new UInt160(rawContractHash);
+                        contractHash = new UInt160(engine.CurrentContext.NextInstruction.Operand);
                         this.EnsureSmartContractCreated(contractHash, db, blockTime.ToUnixTimestamp());
                     }
 
-                    engine.StepInto();
+                    var executeNextMethod = typeof(ExecutionEngine).GetMethod("ExecuteNext", BindingFlags.NonPublic | BindingFlags.Instance);
+                    executeNextMethod.Invoke(engine, new object[0]);
                 }
 
                 var success = !engine.State.HasFlag(VMState.FAULT);
@@ -646,7 +629,7 @@ namespace StateOfNeo.Server.Actors
                         }
                         catch (Exception e)
                         {
-                            Log.Warning($"Getting totalSupply throw an error for contract - {item.ScriptHash.ToString()}. In this Max and Total supply are set to null");
+                            Serilog.Log.Warning($"Getting totalSupply throw an error for contract - {item.ScriptHash.ToString()}. In this Max and Total supply are set to null");
                         }
 
                         asset = new Asset
@@ -682,8 +665,8 @@ namespace StateOfNeo.Server.Actors
                     var isLfx = symbol.ToLower() == "lfx";
                     var notification = isLfx ? item.GetNotification<TransferNotification>(2) : item.GetNotification<TransferNotification>();
 
-                    if (notification.Amount == 0) Log.Warning($"Transfer with 0 amount value or empty array for {name}/{symbol}");
-                    if (isLfx) Log.Warning($"Transfer in {name}/{symbol} returns wrong number of arguments {type} - {string.Join(" | ", notificationStringArray)}");
+                    if (notification.Amount == 0) Serilog.Log.Warning($"Transfer with 0 amount value or empty array for {name}/{symbol}");
+                    if (isLfx) Serilog.Log.Warning($"Transfer in {name}/{symbol} returns wrong number of arguments {type} - {string.Join(" | ", notificationStringArray)}");
 
                     string from = null;
 
@@ -696,7 +679,7 @@ namespace StateOfNeo.Server.Actors
 
                     if (notification.To.Length != 20)
                     {
-                        Log.Warning($"{item.ScriptHash} NEP-5 token {name} / {symbol} invalid To address. Tx {transaction.Hash}");
+                        Serilog.Log.Warning($"{item.ScriptHash} NEP-5 token {name} / {symbol} invalid To address. Tx {transaction.Hash}");
                     }
                     else
                     {
@@ -792,7 +775,7 @@ namespace StateOfNeo.Server.Actors
                 }
                 else
                 {
-                    Log.Information($@"Notification of type - {type} has been thrown by contract - {item.ScriptHash}
+                    Serilog.Log.Information($@"Notification of type - {type} has been thrown by contract - {item.ScriptHash}
                         This is for tx = {transaction.Hash.ToString()}");
                 }
 
@@ -994,7 +977,7 @@ namespace StateOfNeo.Server.Actors
                 pendingAddresses.Add(result);
 
                 this.state.MainStats.AddTotalAddressCount(1);
-                this.state.AddAddresses(1, blockTime);
+                //this.state.AddAddresses(1, blockTime);
             }
 
             return result;

@@ -1,6 +1,7 @@
 ﻿using Akka.Actor;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using Neo.Ledger;
 using Serilog;
 using StateOfNeo.Common;
 using StateOfNeo.Common.Constants;
@@ -36,7 +37,6 @@ namespace StateOfNeo.Server.Actors
         private long currentStamp;
 
         public NodeFinder(
-            IActorRef blockchain,
             string connectionString,
             NetSettings netSettings,
             IHubContext<PeersHub> peersHub,
@@ -47,18 +47,16 @@ namespace StateOfNeo.Server.Actors
             this.peersHub = peersHub;
             this.nodeCache = nodeCache;
 
-            blockchain.Tell(new Register());
+            Context.System.EventStream.Subscribe(Self, typeof(Blockchain.PersistCompleted));
         }
 
         public static Props Props(
-            IActorRef blockchain,
             string connectionString,
             NetSettings netSettings,
             IHubContext<PeersHub> peersHub,
             NodeCache nodeCache) =>
                 Akka.Actor.Props.Create(() =>
                     new NodeFinder(
-                        blockchain,
                         connectionString,
                         netSettings,
                         peersHub,

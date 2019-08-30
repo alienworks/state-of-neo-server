@@ -30,18 +30,18 @@ namespace StateOfNeo.Server.Actors
         private long? lastUpdateStamp = null;
         private long? totalSecondsElapsed = null;
 
-        public NodePersister(IActorRef blockchain, string connectionString, string net, RPCNodeCaller nodeCaller)
+        public NodePersister(string connectionString, string net, RPCNodeCaller nodeCaller)
         {
             this.connectionString = connectionString;
             this.net = net;
             this.nodeCaller = nodeCaller;
             this.NodesAuditCache = new Dictionary<string, Dictionary<int, ICollection<long>>>();
 
-            blockchain.Tell(new Register());
+            Context.System.EventStream.Subscribe(Self, typeof(Blockchain.PersistCompleted));
         }
 
-        public static Props Props(IActorRef blockchain, string connectionString, string net, RPCNodeCaller nodeCaller) =>
-            Akka.Actor.Props.Create(() => new NodePersister(blockchain, connectionString, net, nodeCaller));
+        public static Props Props(string connectionString, string net, RPCNodeCaller nodeCaller) =>
+            Akka.Actor.Props.Create(() => new NodePersister(connectionString, net, nodeCaller));
 
         protected override void OnReceive(object message)
         {

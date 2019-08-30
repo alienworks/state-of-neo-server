@@ -122,10 +122,11 @@ namespace StateOfNeo.Server
             )
         {
             assetsCreatorUpdate.Run().Wait();
+
             nodeCache.AddPeerToCache(ctx.Peers.ToList());
             var connectionString = this.Configuration.GetConnectionString("DefaultConnection");
+
             Program.NeoSystem.ActorSystem.ActorOf(BlockPersister.Props(
-                Program.NeoSystem.Blockchain,
                 connectionString,
                 state,
                 statsHub,
@@ -135,13 +136,11 @@ namespace StateOfNeo.Server
                 netSettings.Value.Net));
 
             Program.NeoSystem.ActorSystem.ActorOf(NodePersister.Props(
-                Program.NeoSystem.Blockchain,
                 connectionString,
                 netSettings.Value.Net,
                 nodeCaller));
 
             Program.NeoSystem.ActorSystem.ActorOf(NodeFinder.Props(
-                 Program.NeoSystem.Blockchain,
                  connectionString,
                  netSettings.Value,
                  peersHub,

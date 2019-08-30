@@ -15,6 +15,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -152,27 +153,15 @@ namespace StateOfNeo.Server.Infrastructure
                     && engine.InvocationStack.Any()
                     && engine.CurrentContext.InstructionPointer != engine.CurrentContext.Script.Length)
                 {
-                    var nextOpCode = engine.CurrentContext.NextInstruction;
-
+                    var nextOpCode = engine.CurrentContext.NextInstruction.OpCode;
                     if (nextOpCode == OpCode.APPCALL || nextOpCode == OpCode.TAILCALL)
                     {
-                        var startingPosition = engine.CurrentContext.InstructionPointer;
-                        engine.CurrentContext.InstructionPointer = startingPosition + 1;
-
-                        var reader = engine.CurrentContext.GetFieldValue<BinaryReader>("OpReader");
-                        var rawContractHash = reader.ReadBytes(20);
-                        if (rawContractHash.All(x => x == 0))
-                        {
-                            rawContractHash = engine.CurrentContext.EvaluationStack.Pop().GetByteArray();
-                        }
-
-                        engine.CurrentContext.InstructionPointer = startingPosition;
-
-                        contractHash = new UInt160(rawContractHash);
+                        contractHash = new UInt160(engine.CurrentContext.NextInstruction.Operand);
                         break;
                     }
 
-                    engine.StepInto();
+                    var executeNextMethod = typeof(ExecutionEngine).GetMethod("ExecuteNext", BindingFlags.NonPublic | BindingFlags.Instance);
+                    executeNextMethod.Invoke(engine, new object[0]);
                 }
             }
 

@@ -16,6 +16,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 
 namespace StateOfNeo.Server.Infrastructure
@@ -410,26 +411,15 @@ namespace StateOfNeo.Server.Infrastructure
                     && engine.InvocationStack.Any()
                     && engine.CurrentContext.InstructionPointer != engine.CurrentContext.Script.Length)
                 {
-                    var nextOpCode = engine.CurrentContext.NextInstruction;
+                    var nextOpCode = engine.CurrentContext.NextInstruction.OpCode;
                     if (nextOpCode == OpCode.APPCALL)
                     {
-                        var startingPosition = engine.CurrentContext.InstructionPointer;
-                        engine.CurrentContext.InstructionPointer = startingPosition + 1;
-
-                        var reader = engine.CurrentContext.GetFieldValue<BinaryReader>("OpReader");
-                        var rawContractHash = reader.ReadBytes(20);
-                        if (rawContractHash.All(x => x == 0))
-                        {
-                            rawContractHash = engine.CurrentContext.EvaluationStack.Pop().GetByteArray();
-                        }
-
-                        engine.CurrentContext.InstructionPointer = startingPosition;
-
-                        var contractHash = new UInt160(rawContractHash);
+                        var contractHash = new UInt160(engine.CurrentContext.NextInstruction.Operand);
                         this.EnsureSmartContractCreated(contractHash, db, blockTime.ToUnixTimestamp());
                     }
 
-                    engine.StepInto();
+                    var executeNextMethod = typeof(ExecutionEngine).GetMethod("ExecuteNext", BindingFlags.NonPublic | BindingFlags.Instance);
+                    executeNextMethod.Invoke(engine, new object[0]);
                 }
 
                 var success = !engine.State.HasFlag(VMState.FAULT);

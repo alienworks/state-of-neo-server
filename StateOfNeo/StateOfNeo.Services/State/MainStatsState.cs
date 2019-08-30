@@ -68,7 +68,7 @@ namespace StateOfNeo.Services
                 this.headerStats = this.db.Blocks
                     .OrderByDescending(x => x.Height)
                     .ProjectTo<HeaderStatsViewModel>()
-                    .FirstOrDefault();
+                    .FirstOrDefault() ?? new HeaderStatsViewModel();
             }
 
             return this.headerStats;

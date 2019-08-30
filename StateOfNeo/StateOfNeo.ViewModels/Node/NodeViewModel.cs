@@ -25,6 +25,8 @@ namespace StateOfNeo.ViewModels
 
         public string Net { get; set; }
 
+        public string Ip { get; set; }
+
         public override int GetHashCode() => this.Url.GetHashCode();
     }
 }
