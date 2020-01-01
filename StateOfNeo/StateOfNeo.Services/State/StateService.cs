@@ -277,6 +277,14 @@ namespace StateOfNeo.Services
                  })
                  .ToList();
 
+            //mysql testing debug
+            //var txs = this.db.Transactions.Select(x => x.Type).GroupBy(x => x).ToList();
+            //var chartStatsList = new List<ChartStatsViewModel>();
+            //for (int i = 0; i < txs.Count; i++)
+            //{
+            //    chartStatsList.Add(new ChartStatsViewModel { Label = txs[i].Key.ToString(), Value = txs[i].Count() });
+            //}
+
             this.transactionTypesLastUpdate = DateTime.UtcNow;
         }
         
