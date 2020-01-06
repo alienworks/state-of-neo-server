@@ -77,8 +77,18 @@ namespace StateOfNeo.Services
                 })
                 .ToList();
 
-            result.Add(new ChartStatsViewModel { Label = "Consensus", Value = 7 });
+            //Mark mysql debugging
+            //var nodes = this.db.Nodes
+            //    .Where(x => x.Type == NodeAddressType.REST || x.Type == NodeAddressType.RPC)
+            //    .GroupBy(x => x.Type)
+            //    .ToList();
+            //var result = new List<ChartStatsViewModel>();
+            //for (int i = 0; i < nodes.Count; i++)
+            //{
+            //    result.Add(new ChartStatsViewModel { Label = nodes[i].Key.ToString(), Value = nodes[i].Count() });
+            //}
 
+            result.Add(new ChartStatsViewModel { Label = "Consensus", Value = 7 });
             return result;
         }
 
