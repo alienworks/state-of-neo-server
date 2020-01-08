@@ -74,6 +74,7 @@ namespace StateOfNeo.Server
             services.AddSingleton<BlockchainBalances>();
             services.AddSingleton<SmartContractEngine>(); 
             services.AddSingleton<AssetsCreatorUpdate>(); 
+            services.AddSingleton<Microsoft.Extensions.Hosting.IHostedService, SyncingService>();
 
             // Infrastructure
             services.AddSingleton<NodeCache>();
