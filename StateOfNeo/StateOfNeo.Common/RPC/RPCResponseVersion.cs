@@ -2,7 +2,7 @@
 
 namespace StateOfNeo.Common.RPC
 {
-    public class RPCResultGetVersion
+    public class RPCResponseVersion
     {
         [JsonProperty(PropertyName = "port")]
         public uint Port { get; set; }

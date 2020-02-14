@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace StateOfNeo.Common.RPC
 {
-    public class RPCPeersResponse
+    public class RPCResponsePeers
     {
         [JsonProperty(PropertyName = "unconnected")]
         public IEnumerable<RPCPeer> Unconnected { get; set; }

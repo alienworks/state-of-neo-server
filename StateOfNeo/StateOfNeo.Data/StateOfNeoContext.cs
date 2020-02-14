@@ -98,7 +98,7 @@ namespace StateOfNeo.Data
 
             foreach (var property in decimalProps)
             {
-                property.Relational().ColumnType = "decimal(36, 8)";
+                property.SetColumnType("decimal(36, 8)");
             }
         }
 

@@ -92,13 +92,6 @@ namespace StateOfNeo.Server
 
             services.AddCors();
             services.AddSignalR();
-            services
-                .AddMvc(options =>
-                {
-                    //options.SslPort = 5001;
-                    //options.Filters.Add(new RequireHttpsAttribute());
-                })
-                .SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
         }
 
 
@@ -180,8 +173,6 @@ namespace StateOfNeo.Server
             //Task.Run(() => smartContractEngine.Run());
 
             seeder.Init();
-
-            app.UseMvc();
         }
     }
 }

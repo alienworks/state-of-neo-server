@@ -95,7 +95,7 @@ namespace StateOfNeo.Server.Infrastructure
 
         public async Task<string> GetNodeVersion(string endpoint)
         {
-            var result = await RpcCaller.MakeRPCCall<RPCResponseBody<RPCResultGetVersion>>(endpoint, "getversion");
+            var result = await RpcCaller.MakeRPCCall<RPCResponseBody<RPCResponseVersion>>(endpoint, "getversion");
             return result == null ? string.Empty : result.Result.Useragent;
         }
 
@@ -103,7 +103,7 @@ namespace StateOfNeo.Server.Infrastructure
         {
             if (string.IsNullOrEmpty(node.Version))
             {
-                var result = await MakeRPCCall<RPCResponseBody<RPCResultGetVersion>>(node, "getversion");
+                var result = await MakeRPCCall<RPCResponseBody<RPCResponseVersion>>(node, "getversion");
                 if (result?.Result != null)
                 {
                     return result.Result.Useragent;
@@ -113,9 +113,9 @@ namespace StateOfNeo.Server.Infrastructure
             return node.Version;
         }
 
-        public async Task<RPCPeersResponse> GetNodePeers(Node node)
+        public async Task<RPCResponsePeers> GetNodePeers(Node node)
         {
-            var result = await this.MakeRPCCall<RPCResponseBody<RPCPeersResponse>>(node, "getpeers");
+            var result = await this.MakeRPCCall<RPCResponseBody<RPCResponsePeers>>(node, "getpeers");
             return result?.Result;
         }
 
