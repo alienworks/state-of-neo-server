@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Text;
 
 namespace StateOfNeo.Data.Models
 {
@@ -19,5 +17,18 @@ namespace StateOfNeo.Data.Models
         public string AssetHash { get; set; }
 
         public virtual Asset Asset { get; set; }
+
+        public override string ToString()
+        {
+            StringBuilder result = new StringBuilder();
+            result.Append($"Id: {Id}\n" +
+                $"Balance: {Balance}\n" +
+                $"TransactionsCount: {TransactionsCount}\n" +
+                $"AddressPublicAddress: {AddressPublicAddress}\n" +
+                $"AssetHash: {AssetHash}\n" +
+                $"TransactionsCount: {TransactionsCount}\n");
+
+            return result.ToString();
+        }
     }
 }

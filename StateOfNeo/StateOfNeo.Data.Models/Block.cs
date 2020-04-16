@@ -1,8 +1,7 @@
-﻿using System;
+﻿using StateOfNeo.Data.Models.Transactions;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Text;
-using StateOfNeo.Data.Models.Transactions;
 
 namespace StateOfNeo.Data.Models
 {
@@ -40,5 +39,30 @@ namespace StateOfNeo.Data.Models
         public virtual ICollection<Transaction> Transactions { get; set; }
 
         public virtual ICollection<NodeStatus> NodeStatusUpdates { get; set; }
+
+        public override string ToString()
+        {
+            StringBuilder result = new StringBuilder();
+            result.Append($"Hash: {Hash}\n" +
+                            $"CreatedOn: {CreatedOn}\n" +
+                            $"TimeStamp: {Timestamp}\n" +
+                            $"MonthlyStamp: {MonthlyStamp}\n" +
+                            $"DailyStamp: {DailyStamp}\n" +
+                            $"Height: {Height}\n" +
+                            $"Size: {Size}\n" +
+                            $"TimeInSeconds: {TimeInSeconds}\n" +
+                            $"ConsensusData: {ConsensusData}\n" +
+                            $"NextConsensusNodeAddress: {NextConsensusNodeAddress}\n" +
+                            $"Validator: {Validator}\n" +
+                            $"InvocationScript: {InvocationScript}\n" +
+                            $"VerificationScript: {VerificationScript}\n" +
+                            $"PreviousBlockHash: { PreviousBlockHash}\n");
+
+            foreach (var item in Transactions)
+            {
+                result.AppendLine($"{item.ToString()}");
+            }
+            return result.ToString();
+        }
     }
 }

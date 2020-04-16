@@ -40,5 +40,22 @@ namespace StateOfNeo.Data.Models
         public virtual ICollection<AddressInTransaction> AddressesInTransaction { get; set; }
 
         public virtual ICollection<AddressInAssetTransaction> AddressesInAssetTransactions { get; set; }
+
+        public override string ToString()
+        {
+            StringBuilder result = new StringBuilder();
+            result.Append($"Address: {PublicAddress}\n" +
+                            $"CreatedOn: {CreatedOn}\n" +
+                            $"FirstTransactionOn: {FirstTransactionOn}\n" +
+                            $"LastTransactionOn: {LastTransactionOn}\n" +
+                            $"LastTransactionStamp: {LastTransactionStamp}\n" +
+                            $"TransactionsCount: { TransactionsCount}\n");
+
+            foreach (var item in Balances)
+            {
+                result.AppendLine($"{item.ToString()}");
+            }
+            return result.ToString();
+        }
     }
 }

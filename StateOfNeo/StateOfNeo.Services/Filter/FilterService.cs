@@ -25,7 +25,7 @@ namespace StateOfNeo.Services
             ChartFilterViewModel chartFilter,
             Expression<Func<T, ValueExtractionModel>> projection = null,
             Expression<Func<T, bool>> queryFilter = null)
-                where T : StampedEntity
+            	where T : StampedEntity
         {
             this.ConfirmStartDateValue<T>(chartFilter);
 
@@ -43,6 +43,7 @@ namespace StateOfNeo.Services
             }));
 
             var result = filteredQuery
+                .AsNoTracking()
                 .GroupBy(x => DateOrderFilter.GetGroupBy(x.Timestamp, chartFilter.UnitOfTime))
                 .Select(x => new ChartStatsViewModel
                 {
@@ -57,12 +58,12 @@ namespace StateOfNeo.Services
             return result;
         }
 
-        protected void ConfirmStartDateValue<T>(ChartFilterViewModel filter)
-            where T : StampedEntity
+        protected void ConfirmStartDateValue<T>(ChartFilterViewModel filter) where T : StampedEntity
         {
             if (filter.StartDate == null)
             {
                 var latestDbBlockTime = this.db.Set<T>()
+                    .AsNoTracking()
                     .OrderByDescending(x => x.Timestamp)
                     .Select(x => x.Timestamp.ToUnixDate())
                     .FirstOrDefault();
