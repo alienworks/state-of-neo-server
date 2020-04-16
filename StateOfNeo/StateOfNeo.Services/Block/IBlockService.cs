@@ -6,16 +6,21 @@ namespace StateOfNeo.Services.Block
     public interface IBlockService
     {
         T Find<T>(string hash);
+
         T Find<T>(int height);
 
-        IEnumerable<ChartStatsViewModel> GetBlockSizeStats(ChartFilterViewModel filter);
-        IEnumerable<ChartStatsViewModel> GetBlockTimeStats(ChartFilterViewModel filter);
-        decimal GetAvgTxPerBlock();
+        int GetHeight(string hash);
+
+        decimal GetAvgTxCountPerBlock();
+
         double GetAvgBlockTime();
+
         double GetAvgBlockSize();
 
         string NextBlockHash(int height);
 
-        int GetHeight(string hash);
+        IEnumerable<ChartStatsViewModel> GetBlockSizeStats(ChartFilterViewModel filter);
+
+        IEnumerable<ChartStatsViewModel> GetBlockTimeStats(ChartFilterViewModel filter);
     }
 }

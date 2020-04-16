@@ -1,9 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.SignalR;
 using Neo.Ledger;
 using StateOfNeo.Common.Constants;
 using StateOfNeo.Common.Extensions;
-using StateOfNeo.Server.Hubs;
 using StateOfNeo.Services;
 using StateOfNeo.Services.Block;
 using StateOfNeo.ViewModels;
@@ -39,13 +37,8 @@ namespace StateOfNeo.Server.Controllers
         public IActionResult ByHash(string hash)
         {
             var block = this.blocks.Find<BlockDetailsViewModel>(hash);
-            if (block == null)
-            {
-                return this.BadRequest("Invalid block hash");
-            }
-
+            if (block == null) return this.BadRequest("Invalid block hash");
             block.NextBlockHash = this.blocks.NextBlockHash(block.Height);
-
             return this.Ok(block);
         }
 
@@ -53,13 +46,8 @@ namespace StateOfNeo.Server.Controllers
         public IActionResult ByHeight(int height)
         {
             var block = this.blocks.Find<BlockDetailsViewModel>(height);
-            if (block == null)
-            {
-                return this.BadRequest("Invalid block height");
-            }
-
+            if (block == null) return this.BadRequest("Invalid block height");
             block.NextBlockHash = this.blocks.NextBlockHash(block.Height);
-
             return this.Ok(block);
         }
 
@@ -68,11 +56,7 @@ namespace StateOfNeo.Server.Controllers
         public IActionResult StampByHash(string hash)
         {
             var block = this.blocks.Find<StampViewModel>(hash);
-            if (block == null)
-            {
-                return this.BadRequest("Invalid block hash");
-            }
-
+            if (block == null) return this.BadRequest("Invalid block hash");
             return this.Ok(block);
         }
 
@@ -80,11 +64,7 @@ namespace StateOfNeo.Server.Controllers
         public IActionResult StampByHeight(int height)
         {
             var block = this.blocks.Find<StampViewModel>(height);
-            if (block == null)
-            {
-                return this.BadRequest("Invalid block height");
-            }
-
+            if (block == null) return this.BadRequest("Invalid block height");
             return this.Ok(block);
         }
 
@@ -93,8 +73,34 @@ namespace StateOfNeo.Server.Controllers
         {
             var data = await this.paginating.GetPage<Data.Models.Block, BlockListViewModel>(page, pageSize, x => x.Height);
             var result = data.ToListResult();
-
             return this.Ok(result);
+        }
+
+        [HttpGet("[action]")]
+        [ResponseCache(Duration = CachingConstants.Day)]
+        public IActionResult AverageTxCount()
+        {
+            return Ok(this.blocks.GetAvgTxCountPerBlock());
+        }
+
+        [HttpGet("[action]")]
+        [ResponseCache(Duration = CachingConstants.Day)]
+        public IActionResult AverageTime()
+        {
+            return Ok(this.blocks.GetAvgBlockTime());
+        }
+
+        [HttpGet("[action]")]
+        [ResponseCache(Duration = CachingConstants.Day)]
+        public IActionResult AverageSize()
+        {
+            return Ok(this.blocks.GetAvgBlockSize());
+        }
+
+        [HttpGet("[action]")]
+        public IActionResult GetBCHeight()
+        {
+            return this.Ok(Blockchain.Singleton.Height.ToString());
         }
 
         [HttpPost("[action]")]
@@ -113,33 +119,6 @@ namespace StateOfNeo.Server.Controllers
             //var result = this.blocks.GetBlockTimeStats(filter);
             var result = this.state.GetBlockTimesChart(filter.UnitOfTime, filter.EndPeriod);
             return this.Ok(result);
-        }
-
-        [HttpGet("[action]")]
-        public IActionResult GetHeight()
-        {
-            return this.Ok(Blockchain.Singleton.Height.ToString());
-        }
-
-        [HttpGet("[action]")]
-        [ResponseCache(Duration = CachingConstants.Day)]
-        public IActionResult AverageTxCount()
-        {
-            return Ok(this.blocks.GetAvgTxPerBlock());
-        }
-
-        [HttpGet("[action]")]
-        [ResponseCache(Duration = CachingConstants.Day)]
-        public IActionResult AverageTime()
-        {
-            return Ok(this.blocks.GetAvgBlockTime());
-        }
-
-        [HttpGet("[action]")]
-        [ResponseCache(Duration = CachingConstants.Day)]
-        public IActionResult AverageSize()
-        {
-            return Ok(this.blocks.GetAvgBlockSize());
         }
     }
 }
