@@ -291,49 +291,49 @@ namespace StateOfNeo.Services
         public void LoadTransactionsMainChart()
         {
             var transactions = this.GetChart("transactions");
-            transactions[UnitOfTime.Hour] = this.GetTransactionsStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Hour, EndPeriod = 36 });
-            transactions[UnitOfTime.Day] = this.GetTransactionsStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Day, EndPeriod = 36 });
-            transactions[UnitOfTime.Month] = this.GetTransactionsStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Month, EndPeriod = 36 });
+            transactions[UnitOfTime.Hour] = this.GetTransactionsStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Hour, Period = 36 });
+            transactions[UnitOfTime.Day] = this.GetTransactionsStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Day, Period = 36 });
+            transactions[UnitOfTime.Month] = this.GetTransactionsStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Month, Period = 36 });
         }
 
         public void LoadCreatedAddressesMainChart()
         {
             var addresses = this.GetChart("createdAddresses");
-            addresses[UnitOfTime.Hour] = this.GetAddressesStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Hour, EndPeriod = 36 });
-            addresses[UnitOfTime.Day] = this.GetAddressesStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Day, EndPeriod = 36 });
-            addresses[UnitOfTime.Month] = this.GetAddressesStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Month, EndPeriod = 36 });
+            addresses[UnitOfTime.Hour] = this.GetAddressesStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Hour, Period = 36 });
+            addresses[UnitOfTime.Day] = this.GetAddressesStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Day, Period = 36 });
+            addresses[UnitOfTime.Month] = this.GetAddressesStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Month, Period = 36 });
         }
 
         public void LoadActiveAddressesMainChart()
         {
             var addresses = this.GetChart("activeAddresses");
-            addresses[UnitOfTime.Hour] = this.GetActiveAddressesStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Hour, EndPeriod = 36 });
-            addresses[UnitOfTime.Day] = this.GetActiveAddressesStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Day, EndPeriod = 36 });
-            addresses[UnitOfTime.Month] = this.GetActiveAddressesStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Month, EndPeriod = 36 });
+            addresses[UnitOfTime.Hour] = this.GetActiveAddressesStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Hour, Period = 36 });
+            addresses[UnitOfTime.Day] = this.GetActiveAddressesStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Day, Period = 36 });
+            addresses[UnitOfTime.Month] = this.GetActiveAddressesStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Month, Period = 36 });
         }
 
         private void LoadBlockSizesMainChart()
         {
             var blockSizes = this.GetChart("blockSizes");
-            blockSizes[UnitOfTime.Hour] = this.GetBlockSizesStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Hour, EndPeriod = 36 });
-            blockSizes[UnitOfTime.Day] = this.GetBlockSizesStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Day, EndPeriod = 36 });
-            blockSizes[UnitOfTime.Month] = this.GetBlockSizesStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Month, EndPeriod = 36 });
+            blockSizes[UnitOfTime.Hour] = this.GetBlockSizesStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Hour, Period = 36 });
+            blockSizes[UnitOfTime.Day] = this.GetBlockSizesStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Day, Period = 36 });
+            blockSizes[UnitOfTime.Month] = this.GetBlockSizesStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Month, Period = 36 });
         }
 
         private void LoadBlockTimesMainChart()
         {
             var blockTimes = this.GetChart("blockTimes");
-            blockTimes[UnitOfTime.Hour] = this.GetBlockTimesStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Hour, EndPeriod = 36 });
-            blockTimes[UnitOfTime.Day] = this.GetBlockTimesStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Day, EndPeriod = 36 });
-            blockTimes[UnitOfTime.Month] = this.GetBlockTimesStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Month, EndPeriod = 36 });
+            blockTimes[UnitOfTime.Hour] = this.GetBlockTimesStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Hour, Period = 36 });
+            blockTimes[UnitOfTime.Day] = this.GetBlockTimesStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Day, Period = 36 });
+            blockTimes[UnitOfTime.Month] = this.GetBlockTimesStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Month, Period = 36 });
         }
 
         private void LoadConsensusRewardsMainChart()
         {
             var consensusRewards = this.GetChart("consensusRewards");
-            consensusRewards[UnitOfTime.Hour] = this.GetConsensusRewardsStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Hour, EndPeriod = 36 });
-            consensusRewards[UnitOfTime.Day] = this.GetConsensusRewardsStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Day, EndPeriod = 36 });
-            consensusRewards[UnitOfTime.Month] = this.GetConsensusRewardsStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Month, EndPeriod = 36 });
+            consensusRewards[UnitOfTime.Hour] = this.GetConsensusRewardsStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Hour, Period = 36 });
+            consensusRewards[UnitOfTime.Day] = this.GetConsensusRewardsStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Day, Period = 36 });
+            consensusRewards[UnitOfTime.Month] = this.GetConsensusRewardsStats(new ChartFilterViewModel { UnitOfTime = UnitOfTime.Month, Period = 36 });
         }
 
         private void LoadLastActiveAddresses()
@@ -382,7 +382,6 @@ namespace StateOfNeo.Services
         private ICollection<ChartStatsViewModel> GetConsensusRewardsStats(ChartFilterViewModel filter)
         {
             var latestBlockDate = this.GetLatestTimestamp();
-            filter.StartStamp = latestBlockDate;
             filter.StartDate = latestBlockDate.ToUnixDate();
 
             var result = this.GetChartEntries(filter.UnitOfTime, ChartEntryType.ConsensusRewards);
@@ -432,8 +431,6 @@ namespace StateOfNeo.Services
         private ICollection<ChartStatsViewModel> GetBlockSizesStats(ChartFilterViewModel filter)
         {
             long latestBlockDate = this.GetLatestTimestamp();
-
-            filter.StartStamp = latestBlockDate;
             filter.StartDate = latestBlockDate.ToUnixDate();
 
             var result = this.GetChartEntries(filter.UnitOfTime, ChartEntryType.BlockSizes);
@@ -486,9 +483,7 @@ namespace StateOfNeo.Services
         private ICollection<ChartStatsViewModel> GetBlockTimesStats(ChartFilterViewModel filter)
         {
             var latestBlockDate = this.GetLatestTimestamp();
-
             filter.StartDate = latestBlockDate.ToUnixDate();
-            filter.StartStamp = latestBlockDate;
 
             var result = this.GetChartEntries(filter.UnitOfTime, ChartEntryType.BlockTimes);
             var periods = filter.GetPeriodStamps().Where(x => !result.Any(y => y.Timestamp == x));
@@ -539,14 +534,12 @@ namespace StateOfNeo.Services
         private ICollection<ChartStatsViewModel> GetAddressesStats(ChartFilterViewModel filter)
         {
             var latestBlockDate = this.GetLatestTimestamp();
-
             filter.StartDate = latestBlockDate.ToUnixDate();
-            filter.StartStamp = latestBlockDate;
 
             var result = this.GetChartEntries(filter.UnitOfTime, ChartEntryType.CreatedAddresses);
             var query = this.db.Addresses
                 .Where(x =>
-                    x.FirstTransactionOn >= filter.GetEndPeriod()
+                    x.FirstTransactionOn >= filter.GetEndDate()
                     && !result.Any(r => r.Timestamp == x.FirstTransactionOn.GetPeriodStart(filter.UnitOfTime).ToUnixTimestamp()));
 
             var newEntries = new List<ChartStatsViewModel>();
@@ -648,7 +641,6 @@ namespace StateOfNeo.Services
         {
             var latestBlockDate = this.GetLatestTimestamp();
             filter.StartDate = latestBlockDate.ToUnixDate();
-            filter.StartStamp = latestBlockDate;
 
             var result = this.GetChartEntries(filter.UnitOfTime, ChartEntryType.ActiveAddresses);
             var periods = filter.GetPeriodStamps().Where(x => !result.Any(y => y.Timestamp == x)).ToArray();
@@ -693,7 +685,6 @@ namespace StateOfNeo.Services
         private ICollection<ChartStatsViewModel> GetTransactionsStats(ChartFilterViewModel filter)
         {
             filter.StartDate = this.lastBlockTime.Value.ToUnixDate();
-            filter.StartStamp = this.lastBlockTime.Value;
 
             var result = this.GetChartEntries(filter.UnitOfTime, ChartEntryType.Transactions);
             var periods = filter.GetPeriodStamps().Where(x => !result.Any(y => y.Timestamp == x)).ToArray();

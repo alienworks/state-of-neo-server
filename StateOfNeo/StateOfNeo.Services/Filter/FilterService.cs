@@ -52,7 +52,7 @@ namespace StateOfNeo.Services
                     Value = projection == null ? x.Count() : x.Sum(z => z.Size) / x.Count()
                 })
                 .OrderByDescending(x => x.StartDate)
-                .Take(chartFilter.EndPeriod)
+                .Take(chartFilter.Period)
                 .ToList();
 
             return result;

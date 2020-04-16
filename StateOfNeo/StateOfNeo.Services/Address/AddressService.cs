@@ -132,7 +132,7 @@ namespace StateOfNeo.Services.Address
             }
 
             var result = new List<ChartStatsViewModel>();
-            query = query.Where(x => x.FirstTransactionOn >= filter.GetEndPeriod());
+            query = query.Where(x => x.FirstTransactionOn >= filter.GetEndDate());
 
             if (filter.UnitOfTime == UnitOfTime.Hour)
             {
@@ -200,7 +200,7 @@ namespace StateOfNeo.Services.Address
             }
             var query = this.db.Addresses.AsQueryable();
             var result = new List<ChartStatsViewModel>();
-            query = query.Where(x => x.FirstTransactionOn >= filter.GetEndPeriod());
+            query = query.Where(x => x.FirstTransactionOn >= filter.GetEndDate());
 
             if (filter.UnitOfTime == UnitOfTime.Hour)
             {

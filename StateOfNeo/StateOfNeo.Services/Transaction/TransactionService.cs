@@ -77,7 +77,6 @@ namespace StateOfNeo.Services.Transaction
                 .First();
 
             filter.StartDate = latestDate.ToUnixDate();
-            filter.StartStamp = latestDate;
 
             List<ChartStatsViewModel> result = new List<ChartStatsViewModel>();
             var periods = filter.GetPeriodStamps();
@@ -112,7 +111,6 @@ namespace StateOfNeo.Services.Transaction
                 .First();
 
             filter.StartDate = latestDate.ToUnixDate();
-            filter.StartStamp = latestDate;
 
             List<ChartStatsViewModel> result = new List<ChartStatsViewModel>();
             var periods = filter.GetPeriodStamps();

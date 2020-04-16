@@ -169,7 +169,7 @@ namespace StateOfNeo.Server.Controllers
         public IActionResult Chart([FromBody]ChartFilterViewModel filter)
         {
             //var result = this.addresses.GetCreatedAddressesChart(filter);
-            var result = this.state.GetAddressesChart(filter.UnitOfTime, filter.EndPeriod);
+            var result = this.state.GetAddressesChart(filter.UnitOfTime, filter.Period);
             return this.Ok(result);
         }
 
@@ -177,7 +177,7 @@ namespace StateOfNeo.Server.Controllers
         [ResponseCache(Duration = CachingConstants.Hour)]
         public IActionResult ActiveChart([FromBody]ChartFilterViewModel filter)
         {
-            var result = this.state.GetActiveAddressesChart(filter.UnitOfTime, filter.EndPeriod);
+            var result = this.state.GetActiveAddressesChart(filter.UnitOfTime, filter.Period);
             return this.Ok(result);
         }
 

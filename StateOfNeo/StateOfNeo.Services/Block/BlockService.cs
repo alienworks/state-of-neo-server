@@ -70,8 +70,6 @@ namespace StateOfNeo.Services.Block
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
             long latestBlockDate = this.GetLatestTimestamp();
-
-            filter.StartStamp = latestBlockDate;
             filter.StartDate = latestBlockDate.ToUnixDate();
 
             List<ChartStatsViewModel> result = new List<ChartStatsViewModel>();
@@ -102,9 +100,7 @@ namespace StateOfNeo.Services.Block
             stopwatch.Start();
 
             var latestBlockDate = this.GetLatestTimestamp();
-
             filter.StartDate = latestBlockDate.ToUnixDate();
-            filter.StartStamp = latestBlockDate;
 
             List<ChartStatsViewModel> result = new List<ChartStatsViewModel>();
             var periods = filter.GetPeriodStamps();

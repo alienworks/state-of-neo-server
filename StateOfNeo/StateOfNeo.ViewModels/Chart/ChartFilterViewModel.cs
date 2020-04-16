@@ -10,21 +10,19 @@ namespace StateOfNeo.ViewModels.Chart
     {
         public DateTime? StartDate { get; set; }
 
-        public long? StartStamp { get; set; }
-
         public DateTime? EndDate { get; set; }
 
         [Range(6, 36)]
-        public int EndPeriod { get; set; } = 6;
+        public int Period { get; set; } = 6;
 
         public UnitOfTime UnitOfTime { get; set; } = UnitOfTime.Hour;
 
-        public DateTime GetEndPeriod()
+        public DateTime GetEndDate()
         {
-            if (this.UnitOfTime == UnitOfTime.Hour) return new DateTime(this.StartDate.Value.Year, this.StartDate.Value.Month, this.StartDate.Value.Day, this.StartDate.Value.Hour, 0, 0).AddHours(-this.EndPeriod);
-            if (this.UnitOfTime == UnitOfTime.Day) return new DateTime(this.StartDate.Value.Year, this.StartDate.Value.Month, this.StartDate.Value.Day).AddDays(-this.EndPeriod);
-            if (this.UnitOfTime == UnitOfTime.Month) return new DateTime(this.StartDate.Value.Year, this.StartDate.Value.Month, 1).AddMonths(-this.EndPeriod);
-            return new DateTime(this.StartDate.Value.Year, this.StartDate.Value.Month, this.StartDate.Value.Day).AddDays(-this.EndPeriod);
+            if (this.UnitOfTime == UnitOfTime.Hour) return new DateTime(this.StartDate.Value.Year, this.StartDate.Value.Month, this.StartDate.Value.Day, this.StartDate.Value.Hour, 0, 0).AddHours(-this.Period);
+            if (this.UnitOfTime == UnitOfTime.Day) return new DateTime(this.StartDate.Value.Year, this.StartDate.Value.Month, this.StartDate.Value.Day).AddDays(-this.Period);
+            if (this.UnitOfTime == UnitOfTime.Month) return new DateTime(this.StartDate.Value.Year, this.StartDate.Value.Month, 1).AddMonths(-this.Period);
+            return new DateTime(this.StartDate.Value.Year, this.StartDate.Value.Month, this.StartDate.Value.Day).AddDays(-this.Period);
         }
 
         public IEnumerable<long> GetPeriodStamps()
@@ -47,7 +45,7 @@ namespace StateOfNeo.ViewModels.Chart
 
             periods.Add(((DateTimeOffset)lastPeriod).ToUnixTimeSeconds());
 
-            for (int i = 1; i <= this.EndPeriod - 1; i++)
+            for (int i = 1; i <= this.Period - 1; i++)
             {
                 var end = default(DateTime);
                 if (this.UnitOfTime == UnitOfTime.Hour)
@@ -69,6 +67,5 @@ namespace StateOfNeo.ViewModels.Chart
             return periods;
         }
 
-        public long LatestTimestamp => this.StartDate.HasValue ? this.GetEndPeriod().ToUnixTimestamp() : 0;
     }
 }

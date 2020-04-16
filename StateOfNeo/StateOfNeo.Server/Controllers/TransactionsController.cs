@@ -128,7 +128,7 @@ namespace StateOfNeo.Server.Controllers
         public IActionResult Chart([FromBody]ChartFilterViewModel filter)
         {
             //var result = this.transactions.GetStats(filter);
-            var result = this.state.GetTransactionsChart(filter.UnitOfTime, filter.EndPeriod);
+            var result = this.state.GetTransactionsChart(filter.UnitOfTime, filter.Period);
             return this.Ok(result);
         }
         

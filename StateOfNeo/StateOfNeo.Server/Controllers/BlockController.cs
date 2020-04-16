@@ -108,7 +108,7 @@ namespace StateOfNeo.Server.Controllers
         public IActionResult BlockSizeChart([FromBody]ChartFilterViewModel filter)
         {
             //var result = this.blocks.GetBlockSizeStats(filter);
-            var result = this.state.GetBlockSizesChart(filter.UnitOfTime, filter.EndPeriod);
+            var result = this.state.GetBlockSizesChart(filter.UnitOfTime, filter.Period);
             return this.Ok(result);
         }
 
@@ -117,7 +117,7 @@ namespace StateOfNeo.Server.Controllers
         public IActionResult BlockTimeChart([FromBody]ChartFilterViewModel filter)
         {
             //var result = this.blocks.GetBlockTimeStats(filter);
-            var result = this.state.GetBlockTimesChart(filter.UnitOfTime, filter.EndPeriod);
+            var result = this.state.GetBlockTimesChart(filter.UnitOfTime, filter.Period);
             return this.Ok(result);
         }
     }

@@ -195,7 +195,7 @@ namespace StateOfNeo.Server.Controllers
         [ResponseCache(Duration = CachingConstants.Hour)]
         public IActionResult ConsensusRewardsChart([FromBody]ChartFilterViewModel filter)
         {
-            var result = this.state.GetConsensusRewardsChart(filter.UnitOfTime, filter.EndPeriod);
+            var result = this.state.GetConsensusRewardsChart(filter.UnitOfTime, filter.Period);
             return this.Ok(result);
         }
 
