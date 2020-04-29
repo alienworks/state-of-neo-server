@@ -50,17 +50,18 @@ namespace StateOfNeo.Services.Block
 
         public decimal GetAvgTxCountPerBlock()
         {
-            var txs = this.db.Transactions.Count();
-            var blocks = this.db.Blocks.Count();
+            var txs = this.db.Transactions.AsNoTracking().Count();
+            var blocks = this.db.Blocks.AsNoTracking().Count();
 
             return txs / blocks;
         }
 
-        public double GetAvgBlockTime() => this.db.Blocks.Average(x => x.TimeInSeconds);
+        public double GetAvgBlockTime() => this.db.Blocks.AsNoTracking().Average(x => x.TimeInSeconds);
 
-        public double GetAvgBlockSize() => this.db.Blocks.Average(x => x.Size);
+        public double GetAvgBlockSize() => this.db.Blocks.AsNoTracking().Average(x => x.Size);
 
         public string NextBlockHash(int height) => this.db.Blocks
+            .AsNoTracking()
             .Where(x => x.Height == height + 1)
             .Select(x => x.Hash)
             .FirstOrDefault();
@@ -69,19 +70,21 @@ namespace StateOfNeo.Services.Block
         {
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
+
             long latestBlockDate = this.GetLatestTimestamp();
             filter.StartDate = latestBlockDate.ToUnixDate();
 
             List<ChartStatsViewModel> result = new List<ChartStatsViewModel>();
             foreach (var endStamp in filter.GetPeriodStamps())
             {
-                var avg = this.db.Blocks
+                var avgSize = this.db.Blocks
+                    .AsNoTracking()
                     .Where(x => x.Timestamp <= latestBlockDate && x.Timestamp >= endStamp)
                     .Average(x => x.Size);
 
                 result.Add(new ChartStatsViewModel
                 {
-                    Value = (decimal)avg,
+                    Value = (decimal)avgSize,
                     StartDate = DateOrderFilter.GetDateTime(endStamp, filter.UnitOfTime),
                     UnitOfTime = filter.UnitOfTime
                 });
@@ -106,13 +109,14 @@ namespace StateOfNeo.Services.Block
             var periods = filter.GetPeriodStamps();
             foreach (var endStamp in periods)
             {
-                var avg = this.db.Blocks
+                var avgInterval = this.db.Blocks
+                    .AsNoTracking()
                     .Where(x => x.Timestamp <= latestBlockDate && x.Timestamp >= endStamp)
                     .Average(x => x.TimeInSeconds);
 
                 result.Add(new ChartStatsViewModel
                 {
-                    Value = (decimal)avg,
+                    Value = (decimal)avgInterval,
                     StartDate = DateOrderFilter.GetDateTime(endStamp, filter.UnitOfTime),
                     UnitOfTime = filter.UnitOfTime
                 });
@@ -124,6 +128,5 @@ namespace StateOfNeo.Services.Block
             Log.Information("GetBlockTimeStats time - " + stopwatch.ElapsedMilliseconds);
             return result;
         }
-
     }
 }

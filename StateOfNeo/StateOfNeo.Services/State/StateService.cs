@@ -537,16 +537,17 @@ namespace StateOfNeo.Services
             filter.StartDate = latestBlockDate.ToUnixDate();
 
             var result = this.GetChartEntries(filter.UnitOfTime, ChartEntryType.CreatedAddresses);
-            var query = this.db.Addresses
+            var addrList = this.db.Addresses
+                .AsNoTracking()
                 .Where(x =>
                     x.FirstTransactionOn >= filter.GetEndDate()
-                    && !result.Any(r => r.Timestamp == x.FirstTransactionOn.GetPeriodStart(filter.UnitOfTime).ToUnixTimestamp()));
+                    && !result.Any(r => r.Timestamp == x.FirstTransactionOn.GetPeriodStart(filter.UnitOfTime).ToUnixTimestamp()))
+                .ToList();
 
             var newEntries = new List<ChartStatsViewModel>();
             if (filter.UnitOfTime == UnitOfTime.Hour)
             {
-                newEntries = query
-                    .ToList()
+                newEntries = addrList
                     .GroupBy(x => new
                     {
                         x.FirstTransactionOn.Year,
@@ -568,8 +569,7 @@ namespace StateOfNeo.Services
             }
             else if (filter.UnitOfTime == UnitOfTime.Day)
             {
-                newEntries = query
-                    .ToList()
+                newEntries = addrList
                     .GroupBy(x => new
                     {
                         x.FirstTransactionOn.Year,
@@ -590,8 +590,7 @@ namespace StateOfNeo.Services
             }
             else if (filter.UnitOfTime == UnitOfTime.Month)
             {
-                newEntries = query
-                    .ToList()
+                newEntries = addrList
                     .GroupBy(x => new
                     {
                         x.FirstTransactionOn.Year,
@@ -612,8 +611,9 @@ namespace StateOfNeo.Services
 
             foreach (var entry in newEntries)
             {
-                var exists = this.db.ChartEntries.Any(
-                    x =>
+                var exists = this.db.ChartEntries
+                    .AsNoTracking()
+                    .Any(x =>
                         x.Timestamp == entry.Timestamp
                         && x.Type == ChartEntryType.CreatedAddresses
                         && x.UnitOfTime == entry.UnitOfTime);
