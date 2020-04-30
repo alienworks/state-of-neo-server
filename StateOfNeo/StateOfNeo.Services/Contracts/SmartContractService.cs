@@ -26,7 +26,7 @@ namespace StateOfNeo.Services
                 .ProjectTo<SmartContractDetailsViewModel>()
                 .FirstOrDefault();
 
-        public IEnumerable<T> GetAll<T>() => this.db.SmartContracts.ProjectTo<T>();
+        public IEnumerable<T> GetAll<T>() => this.db.SmartContracts.AsNoTracking().OrderByDescending(x => x.Timestamp).ProjectTo<T>();
 
         public IPagedList<T> GetTransactions<T>(string hash, int page, int pageSize) =>
             this.db.InvocationTransactions
