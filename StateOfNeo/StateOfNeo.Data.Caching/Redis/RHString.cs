@@ -46,7 +46,7 @@ namespace StateOfNeo.Data.Caching.Redis
         public bool StringSet<T>(string key, T obj, TimeSpan? expiration = default(TimeSpan?))
         {
             key = AddSysCustomKey(key);
-            string json = ConvertJson(obj);
+            string json = ConvertToJson(obj);
             return Do(db => db.StringSet(key, json, expiration));
         }
 
@@ -69,7 +69,7 @@ namespace StateOfNeo.Data.Caching.Redis
         public RedisValue[] StringGet(List<string> listKey)
         {
             List<string> newKeys = listKey.Select(AddSysCustomKey).ToList();
-            return Do(db => db.StringGet(ConvertRedisKeys(newKeys)));
+            return Do(db => db.StringGet(ConvertToRedisKeys(newKeys)));
         }
 
         /// <summary>
@@ -81,7 +81,7 @@ namespace StateOfNeo.Data.Caching.Redis
         public T StringGet<T>(string key)
         {
             key = AddSysCustomKey(key);
-            return Do(db => ConvertObj<T>(db.StringGet(key)));
+            return Do(db => ConvertToObj<T>(db.StringGet(key)));
         }
 
         /// <summary>

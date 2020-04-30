@@ -42,13 +42,13 @@ namespace StateOfNeo.Data.Caching.Redis
             return func(database);
         }
 
-        private string ConvertJson<T>(T value)
+        private string ConvertToJson<T>(T value)
         {
             string result = value is string ? value.ToString() : JsonConvert.SerializeObject(value);
             return result;
         }
 
-        private T ConvertObj<T>(RedisValue value)
+        private T ConvertToObj<T>(RedisValue value)
         {
             if (typeof(T).Name.Equals(typeof(string).Name))
             {
@@ -57,18 +57,18 @@ namespace StateOfNeo.Data.Caching.Redis
             return JsonConvert.DeserializeObject<T>(value);
         }
 
-        private List<T> ConvetList<T>(RedisValue[] values)
+        private List<T> ConvertToList<T>(RedisValue[] values)
         {
             List<T> result = new List<T>();
             foreach (var item in values)
             {
-                var model = ConvertObj<T>(item);
+                var model = ConvertToObj<T>(item);
                 result.Add(model);
             }
             return result;
         }
 
-        private RedisKey[] ConvertRedisKeys(List<string> redisKeys)
+        private RedisKey[] ConvertToRedisKeys(List<string> redisKeys)
         {
             return redisKeys.Select(redisKey => (RedisKey)redisKey).ToArray();
         }

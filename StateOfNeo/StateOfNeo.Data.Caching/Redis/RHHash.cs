@@ -21,7 +21,7 @@ namespace StateOfNeo.Data.Caching.Redis
             key = AddSysCustomKey(key);
             return Do(db =>
             {
-                string json = ConvertJson(t);
+                string json = ConvertToJson(t);
                 return db.HashSet(key, dataKey, json);
             });
         }
@@ -44,7 +44,7 @@ namespace StateOfNeo.Data.Caching.Redis
             return Do(db =>
             {
                 string value = db.HashGet(key, dataKey);
-                return ConvertObj<T>(value);
+                return ConvertToObj<T>(value);
             });
         }
 
@@ -66,7 +66,7 @@ namespace StateOfNeo.Data.Caching.Redis
             return Do(db =>
             {
                 RedisValue[] values = db.HashKeys(key);
-                return ConvetList<T>(values);
+                return ConvertToList<T>(values);
             });
         }
 
