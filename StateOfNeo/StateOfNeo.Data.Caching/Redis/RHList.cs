@@ -1,9 +1,12 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
 
 namespace StateOfNeo.Data.Caching.Redis
 {
     public partial class RedisHelper
     {
+
         #region Sync
 
         /// <summary>
@@ -72,6 +75,26 @@ namespace StateOfNeo.Data.Caching.Redis
         {
             key = AddSysCustomKey(key);
             return Do(db => db.ListLeftPush(key, ConvertToJson(value)));
+        }
+
+        /// <summary>
+        /// Enqueue from the left
+        /// Fixed length list
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        /// <returns>The result of this operation</returns>
+        public bool ListLeftPushLimit<T>(string key, T value, int length)
+        {
+            if (value == null || length <= 0) return false;
+            key = AddSysCustomKey(key);
+            return Do(db =>
+            {
+                db.ListLeftPush(key, ConvertToJson(value));
+                db.ListTrim(key, 0, length - 1);
+                return true;
+            });
         }
 
         /// <summary>
