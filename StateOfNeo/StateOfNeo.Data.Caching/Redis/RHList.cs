@@ -1,13 +1,23 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Collections.Generic;
+using System.Linq;
 
 namespace StateOfNeo.Data.Caching.Redis
 {
     public partial class RedisHelper
     {
-
         #region Sync
+
+        /// <summary>
+        /// Get list element by index
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="index"></param>
+        /// <returns>element</returns>
+        public T ListGetByIndex<T>(string key, long index)
+        {
+            key = AddSysCustomKey(key);
+            return Do(db => ConvertToObj<T>(db.ListGetByIndex(key, index)));
+        }
 
         /// <summary>
         /// Remove one element of the list
@@ -49,6 +59,46 @@ namespace StateOfNeo.Data.Caching.Redis
         }
 
         /// <summary>
+        /// Enqueue element from the right
+        /// Fixed length list
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        /// <returns>The result of this operation</returns>
+        public bool ListRightPushLimit<T>(string key, T value, int length)
+        {
+            if (value == null || length <= 0) return false;
+            key = AddSysCustomKey(key);
+            return Do(db =>
+            {
+                db.ListRightPush(key, ConvertToJson(value));
+                db.ListTrim(key, 1, length);
+                return true;
+            });
+        }
+
+        /// <summary>
+        /// Enqueue elements from the right
+        /// Fixed length list
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="key"></param>
+        /// <param name="values"></param>
+        /// <returns>The result of this operation</returns>
+        public bool ListRightPushLimit<T>(string key, T[] values, int length)
+        {
+            if (values == null || length <= 0) return false;
+            key = AddSysCustomKey(key);
+            return Do(db =>
+            {
+                db.ListRightPush(key, ConvertToJson(values));
+                db.ListTrim(key, values.Count(), length - 1 + values.Count());
+                return true;
+            });
+        }
+
+        /// <summary>
         /// Dequeue from the right
         /// </summary>
         /// <typeparam name="T"></typeparam>
@@ -65,7 +115,7 @@ namespace StateOfNeo.Data.Caching.Redis
         }
 
         /// <summary>
-        /// Enqueue from the left
+        /// Enqueue one element from the left
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="key"></param>
@@ -78,7 +128,20 @@ namespace StateOfNeo.Data.Caching.Redis
         }
 
         /// <summary>
-        /// Enqueue from the left
+        /// Enqueue multiple elements from the left
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="key"></param>
+        /// <param name="values"></param>
+        /// <returns>The length of the list after the push operations</returns>
+        public long ListLeftPush<T>(string key, T[] values)
+        {
+            key = AddSysCustomKey(key);
+            return Do(db => db.ListLeftPush(key, ConvertToJson(values)));
+        }
+
+        /// <summary>
+        /// Enqueue element from the left
         /// Fixed length list
         /// </summary>
         /// <typeparam name="T"></typeparam>
@@ -92,6 +155,26 @@ namespace StateOfNeo.Data.Caching.Redis
             return Do(db =>
             {
                 db.ListLeftPush(key, ConvertToJson(value));
+                db.ListTrim(key, 0, length - 1);
+                return true;
+            });
+        }
+
+        /// <summary>
+        /// Enqueue elements from the left
+        /// Fixed length list
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="key"></param>
+        /// <param name="values"></param>
+        /// <returns>The result of this operation</returns>
+        public bool ListLeftPushLimit<T>(string key, T[] values, int length)
+        {
+            if (values == null || length <= 0) return false;
+            key = AddSysCustomKey(key);
+            return Do(db =>
+            {
+                db.ListLeftPush(key, ConvertToJson(values));
                 db.ListTrim(key, 0, length - 1);
                 return true;
             });
