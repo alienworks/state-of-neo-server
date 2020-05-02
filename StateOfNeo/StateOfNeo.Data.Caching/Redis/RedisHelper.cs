@@ -3,8 +3,6 @@ using StackExchange.Redis;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace StateOfNeo.Data.Caching.Redis
 {
@@ -98,65 +96,36 @@ namespace StateOfNeo.Data.Caching.Redis
 
         #endregion Tool
 
-        #region Key
+        #region Others
 
         /// <summary>
-        /// Delete one key
+        /// Create transaction
         /// </summary>
-        /// <param name="key">redis key</param>
-        /// <returns>True if the key was removed</returns>
-        public bool KeyDelete(string key)
+        /// <returns>The created transaction</returns>
+        public ITransaction CreateTransaction()
         {
-            key = AddSysCustomKey(key);
-            return Do(db => db.KeyDelete(key));
+            return GetDatabase().CreateTransaction();
+        }
+
+        public IDatabase GetDatabase()
+        {
+            return _conn.GetDatabase(DbNum);
+        }
+
+        public IServer GetServer(string hostAndPort)
+        {
+            return _conn.GetServer(hostAndPort);
         }
 
         /// <summary>
-        /// Delete multiple keys
+        /// Set system custom key
         /// </summary>
-        /// <param name="keys">redis key</param>
-        /// <returns>The number of keys that were removed</returns>
-        public long KeyDelete(List<string> keys)
+        /// <param name="customKey"></param>
+        public void SetSysCustomKey(string customKey)
         {
-            List<string> newKeys = keys.Select(AddSysCustomKey).ToList();
-            return Do(db => db.KeyDelete(ConvertToRedisKeys(newKeys)));
+            CustomKey = customKey;
         }
 
-        /// <summary>
-        /// If key exists
-        /// </summary>
-        /// <param name="key">redis key</param>
-        /// <returns>Returns if key exists</returns>
-        public bool KeyExists(string key)
-        {
-            key = AddSysCustomKey(key);
-            return Do(db => db.KeyExists(key));
-        }
-
-        /// <summary>
-        /// Rename key
-        /// </summary>
-        /// <param name="key">old redis key</param>
-        /// <param name="newKey">new redis key</param>
-        /// <returns>True if the key was renamed, false otherwise</returns>
-        public bool KeyRename(string key, string newKey)
-        {
-            key = AddSysCustomKey(key);
-            return Do(db => db.KeyRename(key, newKey));
-        }
-
-        /// <summary>
-        /// Set a timeout on key
-        /// </summary>
-        /// <param name="key">redis key</param>
-        /// <param name="expiry"></param>
-        /// <returns>true if the timeout was set. false if key does not exist or the timeout could not be set.</returns>
-        public bool KeyExpire(string key, TimeSpan? expiry = default(TimeSpan?))
-        {
-            key = AddSysCustomKey(key);
-            return Do(db => db.KeyExpire(key, expiry));
-        }
-
-        #endregion key
+        #endregion Others
     }
 }
