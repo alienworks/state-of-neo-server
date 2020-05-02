@@ -84,9 +84,11 @@ namespace StateOfNeo.Data.Caching.Redis
             key = AddSysCustomKey(key);
             return Do(db =>
             {
+                var tran = db.CreateTransaction();
                 db.ListRightPush(key, ConvertToJson(value));
                 db.ListTrim(key, 1, length);
-                return true;
+                bool committed = tran.Execute();
+                return committed;
             });
         }
 
@@ -104,9 +106,11 @@ namespace StateOfNeo.Data.Caching.Redis
             key = AddSysCustomKey(key);
             return Do(db =>
             {
+                var tran = db.CreateTransaction();
                 db.ListRightPush(key, ConvertToJson(values));
                 db.ListTrim(key, values.Count(), length - 1 + values.Count());
-                return true;
+                bool committed = tran.Execute();
+                return committed;
             });
         }
 
@@ -166,9 +170,11 @@ namespace StateOfNeo.Data.Caching.Redis
             key = AddSysCustomKey(key);
             return Do(db =>
             {
+                var tran = db.CreateTransaction();
                 db.ListLeftPush(key, ConvertToJson(value));
                 db.ListTrim(key, 0, length - 1);
-                return true;
+                bool committed = tran.Execute();
+                return committed;
             });
         }
 
@@ -186,9 +192,11 @@ namespace StateOfNeo.Data.Caching.Redis
             key = AddSysCustomKey(key);
             return Do(db =>
             {
+                var tran = db.CreateTransaction();
                 db.ListLeftPush(key, ConvertToJson(values));
                 db.ListTrim(key, 0, length - 1);
-                return true;
+                bool committed = tran.Execute();
+                return committed;
             });
         }
 

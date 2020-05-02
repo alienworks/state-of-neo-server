@@ -34,6 +34,15 @@ namespace StateOfNeo.Data.Caching.Redis
             return prefixKey + oldKey;
         }
 
+        /// <summary>
+        /// Set system custom key
+        /// </summary>
+        /// <param name="customKey"></param>
+        public void SetSysCustomKey(string customKey)
+        {
+            CustomKey = customKey;
+        }
+
         private T Do<T>(Func<IDatabase, T> func)
         {
             var database = _conn.GetDatabase(DbNum);
@@ -69,6 +78,7 @@ namespace StateOfNeo.Data.Caching.Redis
             return result.ToArray();
         }
 
+
         private T ConvertToObj<T>(RedisValue value)
         {
             if (typeof(T).Name.Equals(typeof(string).Name))
@@ -96,7 +106,7 @@ namespace StateOfNeo.Data.Caching.Redis
 
         #endregion Tool
 
-        #region Others
+        #region Transaction
 
         /// <summary>
         /// Create transaction
@@ -115,15 +125,6 @@ namespace StateOfNeo.Data.Caching.Redis
         public IServer GetServer(string hostAndPort)
         {
             return _conn.GetServer(hostAndPort);
-        }
-
-        /// <summary>
-        /// Set system custom key
-        /// </summary>
-        /// <param name="customKey"></param>
-        public void SetSysCustomKey(string customKey)
-        {
-            CustomKey = customKey;
         }
 
         #endregion Others
