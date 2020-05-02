@@ -42,10 +42,33 @@ namespace StateOfNeo.Data.Caching.Redis
             return func(database);
         }
 
+        private void Do(Action<IDatabase> action)
+        {
+            var database = _conn.GetDatabase(DbNum);
+            action(database);
+        }
+
         private string ConvertToJson<T>(T value)
         {
             string result = value is string ? value.ToString() : JsonConvert.SerializeObject(value);
             return result;
+        }
+
+        private RedisValue[] ConvertToJson<T>(T[] values)
+        {
+            var result = new List<RedisValue>();
+            foreach (var item in values)
+            {
+                if (item is string)
+                {
+                    result.Add(item as string);
+                }
+                else
+                {
+                    result.Add(JsonConvert.SerializeObject(item));
+                }
+            }
+            return result.ToArray();
         }
 
         private T ConvertToObj<T>(RedisValue value)

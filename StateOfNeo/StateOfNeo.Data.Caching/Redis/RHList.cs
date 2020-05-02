@@ -8,6 +8,18 @@ namespace StateOfNeo.Data.Caching.Redis
         #region Sync
 
         /// <summary>
+        /// Set element by index
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="index"></param>
+        public void ListSetByIndex<T>(string key, long index, T value)
+        {
+            key = AddSysCustomKey(key);
+            string json = ConvertToJson(value);
+            Do(db => db.ListSetByIndex(key, index, json));
+        }
+
+        /// <summary>
         /// Get list element by index
         /// </summary>
         /// <param name="key"></param>
