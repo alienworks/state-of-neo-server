@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace StateOfNeo.Data.Caching.Redis
 {
@@ -249,5 +250,98 @@ namespace StateOfNeo.Data.Caching.Redis
         }
 
         #endregion Sync
+
+
+        #region Async
+
+        /// <summary>
+        /// Remove list element
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        /// <returns>The number of removed elements</returns>
+        public async Task<long> ListRemoveAsync<T>(string key, T value)
+        {
+            key = AddSysCustomKey(key);
+            return await Do(db => db.ListRemoveAsync(key, ConvertToJson(value)));
+        }
+
+        /// <summary>
+        /// Get list
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="start">The start index of the list</param>
+        /// <param name="end">The end index of the list</param>
+        /// <returns>List of elements in the specified range</returns>
+        public async Task<List<T>> ListRangeAsync<T>(string key, long start = 0, long end = -1)
+        {
+            key = AddSysCustomKey(key);
+            var values = await Do(redis => redis.ListRangeAsync(key, start, end));
+            return ConvertToList<T>(values);
+        }
+
+        /// <summary>
+        /// Enqueue from right
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public async Task<long> ListRightPushAsync<T>(string key, T value)
+        {
+            key = AddSysCustomKey(key);
+            return await Do(db => db.ListRightPushAsync(key, ConvertToJson(value)));
+        }
+
+        /// <summary>
+        /// Dequeue from right
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="key"></param>
+        /// <returns>The element being popped, or nil when key does not exist</returns>
+        public async Task<T> ListRightPopAsync<T>(string key)
+        {
+            key = AddSysCustomKey(key);
+            var value = await Do(db => db.ListRightPopAsync(key));
+            return ConvertToObj<T>(value);
+        }
+
+        /// <summary>
+        /// Enqueue from left
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        /// <returns>The length of the list after the push operations</returns>
+        public async Task<long> ListLeftPushAsync<T>(string key, T value)
+        {
+            key = AddSysCustomKey(key);
+            return await Do(db => db.ListLeftPushAsync(key, ConvertToJson(value)));
+        }
+
+        /// <summary>
+        /// Dequeue from left
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="key"></param>
+        /// <returns>The element being popped, or nil when key does not exist</returns>
+        public async Task<T> ListLeftPopAsync<T>(string key)
+        {
+            key = AddSysCustomKey(key);
+            var value = await Do(db => db.ListLeftPopAsync(key));
+            return ConvertToObj<T>(value);
+        }
+
+        /// <summary>
+        /// Get list length
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns></returns>
+        public async Task<long> ListLengthAsync(string key)
+        {
+            key = AddSysCustomKey(key);
+            return await Do(redis => redis.ListLengthAsync(key));
+        }
+
+        #endregion Async
     }
 }
