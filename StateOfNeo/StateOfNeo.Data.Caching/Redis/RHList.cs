@@ -319,6 +319,50 @@ namespace StateOfNeo.Data.Caching.Redis
         }
 
         /// <summary>
+        /// Enqueue element from the left
+        /// Fixed length list
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        /// <returns>The result of this operation</returns>
+        public async Task<bool> ListLeftPushLimitAsync<T>(string key, T value, int length)
+        {
+            if (value == null || length <= 0) return false;
+            key = AddSysCustomKey(key);
+            return await Do(db =>
+            {
+                var tran = db.CreateTransaction();
+                db.ListLeftPushAsync(key, ConvertToJson(value));
+                db.ListTrimAsync(key, 0, length - 1);
+                var committed = tran.ExecuteAsync();
+                return committed;
+            });
+        }
+
+        /// <summary>
+        /// Enqueue elements from the left
+        /// Fixed length list
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="key"></param>
+        /// <param name="values"></param>
+        /// <returns>The result of this operation</returns>
+        public async Task<bool> ListLeftPushLimitAsync<T>(string key, T[] values, int length)
+        {
+            if (values == null || length <= 0) return false;
+            key = AddSysCustomKey(key);
+            return await Do(db =>
+            {
+                var tran = db.CreateTransaction();
+                db.ListLeftPushAsync(key, ConvertToJson(values));
+                db.ListTrimAsync(key, 0, length - 1);
+                var committed = tran.ExecuteAsync();
+                return committed;
+            });
+        }
+
+        /// <summary>
         /// Dequeue from left
         /// </summary>
         /// <typeparam name="T"></typeparam>
